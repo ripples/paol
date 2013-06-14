@@ -43,7 +43,7 @@ log="tee $pth/main.log"
 
 #location of capture scripts; hw:microphone; number corresponds to mic and cam
 
-vidCam="/home/paol/paol-code/scripts/capture/videoCapture /dev/video2 hw:2"
+vidCam="/home/paol/paol-code/scripts/capture/videoCapture /dev/video1 hw:2"
 dataCam="/home/paol/paol-code/captureProcessCode/camCap"
 cameraFile="/home/paol/paol-code/cameraSetup.txt"
 
