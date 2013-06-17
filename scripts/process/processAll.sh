@@ -20,27 +20,3 @@ do
 	done
     done
 done
-next=( $(find ~/recordings/raw/Summer13 -iname "*-*-*--*-*-*" -type d) )
-next=${next[0]}
-echo $next
-#if [ "$1" == "" ]; then
-#    next=( $(find ~/recordings/raw/Summer13 -iname "*-*-*--*-*-*" -type d) )
-#    next=${next[0]}
-#    echo $next
-#else
-#    next=$1;
-#fi
-
-#if [ "$(ls -A $next/computer/*)" ]; then
-#    screenDir="$next/computer/"
-#    for screenFirst in $(ls $next/computer/vgaTwoUsbIn000000*)
-#    do
-#	echo screenFirst
-#	firstIm="$(basename $screenFirst)"
-#	echo "Will process screen: $screenDir $firstIm"
-#	$procComp $next/computer/ $firstIm $outDir/computer/ &> $outDir/logs/procComp.log
-#    done
-#else
-#    echo "No computer to process"
-#fi
-
