@@ -88,5 +88,5 @@ mv $next $moveClassDir
 
 #where the upload script would go if it were updated
 #echo "Uploading"
-#/home/paol-code/scripts/upload/proc/upload.sh $outDir
+#/home/paol/paol-code/scripts/upload/proc/upload.sh $outDir
 rm -rf $lck
