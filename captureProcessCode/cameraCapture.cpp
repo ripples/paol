@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
   int num;
   int i;
   char dev[256];
+  vector<int> vga2usbLabels;
 
   time(&startTime);
   printf("%d\n",duration);
@@ -38,6 +39,7 @@ int main(int argc, char* argv[]) {
     if (strcmp("VGA2USB",dev)==0){
       vga2usb.push_back(VideoCapture(num));
       numVGA2USB++;
+	  vga2usbLabels.push_back(num);
     }
     if (strcmp("Whiteboard",dev)==0){
       camera.push_back(VideoCapture(num));
@@ -47,19 +49,29 @@ int main(int argc, char* argv[]) {
     }
   }
   printf("numcamera=%d\n",numCamera);
+  printf("VGA labels: ");
+  for(vector<int>::iterator i = vga2usbLabels.begin(); i != vga2usbLabels.end(); i++)
+	printf("%d ", *i);
+  printf("\n");
   //capture data
   while ( currentTime<duration ) {
     //computer capture
     if (numVGA2USB!=0){
       for(i=0;i<numVGA2USB;i++){ 
-	vga2usb[i] >> frame;
-	time(&cTime);
-	currentTime=(int)(cTime-startTime);
-	//sprintf arguments
-	//argv[1] folder to write output to
-	sprintf(filename,"%svgaTwoUsbIn%06d-%10d-%1d.png",argv[1],compCount,(int)cTime,i);
-	imwrite(filename,frame);
-	printf("%s\n",filename);
+		// check if VGA state has been changed
+		VideoCapture curVGA = VideoCapture(vga2usbLabels[i]);
+		if(curVGA.get(CV_CAP_PROP_FRAME_WIDTH) != vga2usb[i].get(CV_CAP_PROP_FRAME_WIDTH)) {
+			vga2usb[i] = curVGA;
+			printf("VGA state has changed (plugged or unplugged)\n");
+		}
+		vga2usb[i] >> frame;
+		time(&cTime);
+		currentTime=(int)(cTime-startTime);
+		//sprintf arguments
+		//argv[1] folder to write output to
+		sprintf(filename,"%svgaTwoUsbIn%06d-%10d-%1d.png",argv[1],compCount,(int)cTime,i);
+		imwrite(filename,frame);
+		printf("%s\n",filename);
       }
       compCount++;
     }
@@ -67,14 +79,14 @@ int main(int argc, char* argv[]) {
     if(numCamera!=0){
       //whiteboard capture
       for(i=0;i<numCamera;i++){ 
-	camera[i] >> frame;
-	time(&cTime);
-	currentTime=(int)(cTime-startTime);
-	//sprintf arguments
-	//argv[1] folder to write output to
-	sprintf(filename,"%scameraIn%06d-%10d-%1d.png",argv[2],camCount,(int)cTime,i);
-	imwrite(filename,frame);
-	printf("%s\n",filename);
+		camera[i] >> frame;
+		time(&cTime);
+		currentTime=(int)(cTime-startTime);
+		//sprintf arguments
+		//argv[1] folder to write output to
+		sprintf(filename,"%scameraIn%06d-%10d-%1d.png",argv[2],camCount,(int)cTime,i);
+		imwrite(filename,frame);
+		printf("%s\n",filename);
       }
       camCount++;
     }
