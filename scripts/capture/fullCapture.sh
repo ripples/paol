@@ -62,9 +62,28 @@ cd $pth
 ####################
 ## Record ##########
 ####################
-$dataCam $pth/computer/ $pth/wboard/ $dur $cameraFile &> $pth/dataCam.log &
+vgaCount=0 #counter for vga feeds
+camCount=0 #counter for wboard feeds
+pids="" #pids for each camCap process
+while read num type
+do
+	if [ "$type" = "Whiteboard" ]; then
+		$dataCam $pth/wboard/ $dur $type $num $camCount &> $pth/wboardDataCam$camCount.log &
+		pids="$pids $!" #add new camCap pid
+		camCount=$(($camCount+1)) #increment counter
+	fi
+	if [ "$type" = "VGA2USB" ]; then
+		$dataCam $pth/computer/ $dur $type $num $vgaCount &> $pth/vgaDataCam$vgaCount.log &
+		pids="$pids $!" #add new camCap pid
+		vgaCount=$(($outNo+1)) #increment counter
+	fi
+done < $cameraFile #read from camera file
 
-dataCamPID=$!
+echo "VGA and whiteboard PIDs:" $pids
+
+#$dataCam $pth/computer/ $pth/wboard/ $dur $cameraFile &> $pth/dataCam.log &
+
+#dataCamPID=$!
 
 $vidCam $dur $pth/video.mpeg &> $pth/vidCam.log &
 
@@ -80,7 +99,8 @@ echo "start: `date +%Y,%m,%d,%k,%M,%S`" >> $pth/INFO
 echo "duration: $dur" >>$pth/INFO
 
 echo "waiting for processes to finish"
-wait $dataCamPID
+#wait $dataCamPID
+wait $pids
 wait $vidCamPID
 
 echo "Finished" | $log
