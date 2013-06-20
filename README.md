@@ -1,6 +1,12 @@
 # paol
 The code/scripts contained in this directory are all that is required in order
  to run PAOL and upload the processed lectures to the web server. 
+## Note When Doing Hardware Configuration
+It appears that we can only capture from one video device per rate synced bus. 
+ The command lsusb will return the bus structure of the machine. From experience
+ it is possible to put as many video devices on a non-rate synced bus as there  
+ are ports but not on rate synced buses. Hanging ethernet hubs off of the
+ non-rate synced bus does not give any additional working ports on that bus.
 
 ## Directory Structure of Input
 (* lines need to be updated as we figure out what we want)
