@@ -27,39 +27,52 @@ int main(int argc, char* argv[]) {
 	time_t startTime,cTime;
 	int currentTime=0;
 
-	VideoCapture cam = VideoCapture(camLabel);
-	if(strcmp("VGA2USB", devType) == 0)
-	filenameStart = "vgaTwoUsbIn";
-	else {
-		filenameStart = "cameraIn";
-		cam.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
-		cam.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
-	}
 	time(&startTime);
+
+	//print all information related to device number and camera number for debugging
+	printf("device: %s /dev/video%d number=%d\n",devType,camLabel,outDevNum);
 	printf("Duration: %d\n",duration);
 
+	//open connection to the device
+	VideoCapture cam = VideoCapture(camLabel);
+	//if there is a failure while connecting to the device try again as long
+	//as recording is still going on
+	while ( currentTime<duration && !cam.isOpened()) {
+	  cam = VideoCapture(camLabel);
+	  time(&cTime);
+	  currentTime=(int)(cTime-startTime);
+	}
+	
+	if(strcmp("VGA2USB", devType) == 0)
+	  filenameStart = "vgaTwoUsbIn";
+	else {
+	  filenameStart = "cameraIn";
+	  cam.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
+	  cam.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+	}
+	
 	//capture data
 	while ( currentTime<duration ) {
-		if(strcmp("VGA2USB", devType) == 0) {
-			// check if VGA state has been changed
-			VideoCapture curVGA = VideoCapture(camLabel);
-			if(curVGA.get(CV_CAP_PROP_FRAME_WIDTH) != cam.get(CV_CAP_PROP_FRAME_WIDTH)) {
-				cam = curVGA;
-				printf("VGA state has changed (plugged or unplugged)\n");
-			}
-		}
-		cam >> frame;
-		time(&cTime);
-		currentTime=(int)(cTime-startTime);
-		//sprintf arguments
-		//saveDir: folder to write output to
-		sprintf(filename,"%s%s%06d-%10d-%1d.png",saveDir,filenameStart,frameCount,(int)cTime,outDevNum);
-		imwrite(filename,frame);
-		printf("%s\n",filename);
-		frameCount++;
+	  if(strcmp("VGA2USB", devType) == 0) {
+	    // check if VGA state has been changed
+	    VideoCapture curVGA = VideoCapture(camLabel);
+	    if(curVGA.get(CV_CAP_PROP_FRAME_WIDTH) != cam.get(CV_CAP_PROP_FRAME_WIDTH)) {
+	      cam = curVGA;
+	      printf("VGA state has changed (plugged or unplugged)\n");
+	    }
+	  }
+	  cam >> frame;
+	  time(&cTime);
+	  currentTime=(int)(cTime-startTime);
+	  //sprintf arguments
+	  //saveDir: folder to write output to
+	  sprintf(filename,"%s%s%06d-%10d-%1d.png",saveDir,filenameStart,frameCount,(int)cTime,outDevNum);
+	  imwrite(filename,frame);
+	  printf("%s\n",filename);
+	  frameCount++;
 	}
 	return 0;
-
+	
 }
 //what the number in cap refers to:
 // 0: video0 on laptops this is internal camera
