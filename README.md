@@ -50,6 +50,14 @@ The capture scripts generate all folders and files shown from class on down
 
 ## To Run
 
+### cameraSetup.txt
+This file must be created to run paol. It specifies where the video, whiteboard, and computer cameras are. Below is an example of the format:
+
+```
+0 Video
+1 VGA2USB
+2 Whiteboard
+```
 ### Capture
 ```
 % /paul-code/scripts/capture/fullCapture.sh Summer13 comp171 3600
