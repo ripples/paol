@@ -517,19 +517,24 @@ void paolMat::difference(Ptr<paolMat> img, int thresh, int size, int maskBottom)
   int cenx;
   int ceny;
   int total;
-    
+  //mask is set to a blank state
   mask = Mat::zeros(mask.size(), mask.type());
   
   numDiff = 0;
   first = true;
+  //distance --
   dist = 0;
+  //for every row
   for (int y = size; y < (src.rows-(size+1+maskBottom)); y++)
     {	
+      //for every column
       for (int x = size; x < (src.cols-(size+1)); x++)
 	{
 	  diff = false;
+	  //for each color channel
 	  for(int i = 0; i < 3; i++)
 	    {
+	      //if the difference (for this pixel) between the the current img and the previous img is greater than the threshold, difference is noted; diff = true
 	      if(abs((double)img->src.at<Vec3b>(y,x)[i]-(double)src.at<Vec3b>(y,x)[i])>thresh)
 		diff = true;
 	    }
@@ -537,12 +542,15 @@ void paolMat::difference(Ptr<paolMat> img, int thresh, int size, int maskBottom)
 	    {
 	      //std::cout<<"First if dif size: "<<size<<std::endl;
 	      //mask.at<Vec3b>(y,x)[1]=255;
+	      // for all the pixels surrounding the current pixel
 	      for(int yy = y-size; yy < y+size; yy++)
 		{
 		  for(int xx = x-size; xx < x+size; xx++)
 		    {
+		      //for each color channel
 		      for(int ii = 0; ii < 3; ii++)
 			{
+			  //ignore all differneces found at the edges; sometimes pixels get lost in tranmission
 			  if(abs(((double)(img->src.at<Vec3b>(yy,xx)[ii]))-(((double)(img->src.at<Vec3b>((yy+1),xx)[ii])))>surroundThresh))
 			    diff = false;
 			  if(abs(((double)(img->src.at<Vec3b>(yy,xx)[ii]))-(((double)(img->src.at<Vec3b>(yy,(xx+1))[ii])))>surroundThresh))
@@ -554,7 +562,8 @@ void paolMat::difference(Ptr<paolMat> img, int thresh, int size, int maskBottom)
 	  if(diff)
 	    {
 	      //std::cout<<"Second if diff"<<std::endl;
-	      //numDiff++;
+	      numDiff++;
+	      //calculates total difference and modifies the mask accordingly
 	      total = abs((double)img->src.at<Vec3b>(y,x)[0]-(double)src.at<Vec3b>(y,x)[0]) +
 		abs((double)img->src.at<Vec3b>(y,x)[1]-(double)src.at<Vec3b>(y,x)[1]) +
 		abs((double)img->src.at<Vec3b>(y,x)[2]-(double)src.at<Vec3b>(y,x)[2]);
@@ -568,6 +577,7 @@ void paolMat::difference(Ptr<paolMat> img, int thresh, int size, int maskBottom)
 		  numDiff++;
 		}
 	      mask.at<Vec3b>(y,x)[2]=255;
+	      //sets location of first differnce found
 	      if(first)
 		{
 		  first = false;
@@ -575,12 +585,13 @@ void paolMat::difference(Ptr<paolMat> img, int thresh, int size, int maskBottom)
 		  ceny = y;
 		}
 	      //std::cout<<"Difference x: "<<x<<" cenx: "<<cenx<<" y:"<<y<<" ceny: "<<ceny<<std::endl;
-	      dist+=sqrt(((x-cenx)*(x-cenx))+((y-ceny)*(y-ceny)));
+	      //distance between pixels
+  	      dist+=sqrt(((x-cenx)*(x-cenx))+((y-ceny)*(y-ceny)));
 	    }
 	}
     }
   //std::cout<<"Difference dist: "<<dist<<std::endl;
-  if((dist<10000)&&(maskBottom>0))
+  if((dist<10000))//&&(maskBottom>0))
     difs = 0;
   else
     difs = numDiff;
