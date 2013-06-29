@@ -1,11 +1,29 @@
 #!/bin/bash
 
-#localMachName = name of local machine (ex. cap140)
-localMachName=cap140
-user=webmanic
-host=present.cs.umass.edu
+localMachName=
+user=
+host=
 
-#above could be moved to a config file
+config=/home/paol/paol-code/uploadConfig.txt
+while read a b; do
+
+	if [ "$a" = "localMachName:" ] ; then
+		localMachName=$b
+	elif [ "$a" = "user:" ]; then
+		user=$b
+	elif [ "$a" = "host:" ]; then
+		host=$b
+	fi
+done < $config
+
+echo "Local machine name: $localMachName"
+echo "User: $user"
+echo "Host: $host"
+
+if [ -z "$localMachName" ] || [ -z "$user" ] || [ -z "$host" ]; then
+	echo "Upload configuration file has the wrong format"
+	exit 1
+fi
 
 outDir=$1
 sem=$(basename $(dirname $(dirname $outDir)))
