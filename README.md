@@ -64,11 +64,21 @@ This file must be created to run paol. It specifies where the video, whiteboard,
 1 VGA2USB
 2 Whiteboard
 ```
-### Capture
+
+### uploadConfig.txt
+This file must be created to upload lectures. It specifies the local (capture) and remote (server) machines. Below is an example:
+
+```
+localMachName: cap142
+user: webmanic
+host: present.cs.umass.edu
+```
+
+### How to capture and process lectures
 ```
 % /paul-code/scripts/capture/fullCapture.sh Summer13 comp171 3600
 Process:
 % /paul-code/scripts/capture/processAll.sh
 Upload:
-(will be done as last step in process script, not yet implemented)
+(Run as part of the process script)
 ```
