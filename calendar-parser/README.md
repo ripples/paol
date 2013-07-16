@@ -2,7 +2,7 @@
 This is the code that interacts with Google Calendars to generate cron jobs, initialize calendars, etc.
 
 ### To compile and run CalendarParser.java
-This project requires Maven 2.2.1 or higher. To compile, run 'mvn compile'. To execute, run 'mvn -q exec:java -Dexec.args="<calendarName>"'.
+This project requires Maven 2.2.1 or higher. To compile, run 'mvn compile'. To execute, run 'mvn -q exec:java -Dexec.args="[calendarName]"'.
 Note: Look into running individual classes...
 
 ### pom.xml
