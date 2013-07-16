@@ -31,9 +31,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.List;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * @author Yaniv Inbar
@@ -54,10 +55,6 @@ public class CalendarParser {
   private static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
   private static com.google.api.services.calendar.Calendar client;
-
-  static final java.util.List<Calendar> addedCalendarsUsingBatch = Lists.newArrayList();
-  
-  private static final java.util.Map<String, String> sumryToIdMap = new java.util.HashMap<String, String>();
   
   private static final String cScriptLoc = "/home/paol/paol-code/scripts/capture/fullCapture.sh";
   
@@ -78,7 +75,7 @@ public class CalendarParser {
         new InputStreamReader(CalendarParser.class.getResourceAsStream("/client_secrets.json")));
     if (clientSecrets.getDetails().getClientId().startsWith("Enter")
         || clientSecrets.getDetails().getClientSecret().startsWith("Enter ")) {
-      System.out.println(
+      println(
           "Enter Client ID and Secret from https://code.google.com/apis/console/?api=calendar "
           + "into calendar-cmdline-sample/src/main/resources/client_secrets.json");
       System.exit(1);
@@ -97,6 +94,11 @@ public class CalendarParser {
   public static void main(String[] args) {
     try {
       try {
+	  
+		if(args.length != 1) {
+			println("Exactly one calendar (no spaces) should be specified");
+			System.exit(1);
+		}
 
         // initialize the transport
         HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -109,24 +111,19 @@ public class CalendarParser {
             HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName(
             APPLICATION_NAME).build();
 
-        // run commands
-        showCalendars();
-        
-		System.out.print("Enter the title of the calendar to read: ");
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		String summary = in.readLine();
-		while(sumryToIdMap.get(summary) == null) {
-			if(summary.equals("")) {
-				System.out.println("Exiting");
-				System.exit(0);
-			}
-			else {
-				System.out.print("Could not find calendar. Enter another title: ");
-				summary = in.readLine();
-			}
+		// get calendars
+		Map<String, String> sumryToIdMap = initSumryToIdMap();
+		String calKey = null;
+		if((calKey = sumryToIdMap.get(args[0])) == null) {
+			println("Calendar '" + args[0] + "' was not found. Here are the available calendars:");
+			for(String key : sumryToIdMap.keySet())
+				println(key);
+			System.exit(1);
 		}
-		semester = summary;
-		Calendar calendar = client.calendars().get(sumryToIdMap.get(summary)).execute();
+		
+		semester = args[0];
+		println("Calendar '" + semester + "' was found. Writing cron lines\n");
+		Calendar calendar = client.calendars().get(calKey).execute();
 		// create file and BufferedWriter
 		File cronLines = new File(CRON_TEMP);
 		if(cronLines.exists())
@@ -135,6 +132,7 @@ public class CalendarParser {
 		BufferedWriter writer = new BufferedWriter(new FileWriter(cronLines));
         writeEvents(calendar, writer);
 		writer.close();
+		System.exit(0);
 
       } catch (IOException e) {
         System.err.println(e.getMessage());
@@ -144,27 +142,25 @@ public class CalendarParser {
     }
     System.exit(1);
   }
-
-  private static void showCalendars() throws IOException {
-    CalendarList feed = client.calendarList().list().execute();
+  
+  public static Map<String, String> initSumryToIdMap() throws IOException {
+	HashMap<String, String> ret = new HashMap<String, String>();
+	CalendarList feed = client.calendarList().list().execute();
 	List<CalendarListEntry> entries = feed.getItems();
-	System.out.println("Available calendars:");
-	for(CalendarListEntry e : entries) {
-		sumryToIdMap.put(e.getSummary(), e.getId());
-		System.out.println(e.getSummary() + " - " + e.getId());
-	}
+	for(CalendarListEntry e : entries)
+		ret.put(e.getSummary(), e.getId());
+	return ret;
   }
 
   private static void writeEvents(Calendar calendar, BufferedWriter writer) throws IOException {
-    System.out.println("Below are the events from the calendar:\n");
-	Date start = new Date();
+    Date start = new Date();
 	Date end = new Date(start.getTime() + scanPeriod*24*3600*1000);
 	DateTime startDT = new DateTime(start);
 	DateTime endDT = new DateTime(end);
     Events feed = client.events().list(calendar.getId()).set("singleEvents", true)
 			.set("orderBy", "startTime")
 			.set("timeMin", startDT).set("timeMax", endDT).execute();
-	java.util.List<Event> events = feed.getItems();
+	List<Event> events = feed.getItems();
 	for(Event e : events) {
 		if(e.getStart().getDateTime() == null)
 			continue;
@@ -172,19 +168,23 @@ public class CalendarParser {
 		long eEndLong = e.getEnd().getDateTime().getValue();
 		long duration = (eEndLong - eStartLong)/1000;
 		Date eventStart = new Date(eStartLong);
-		System.out.println(e.getSummary());
-		System.out.println("Start: " + eventStart.toString());
-		System.out.println("Duration (s): " + duration);
-		System.out.println("Writing cron job:");
-		System.out.println(cronLine(e, semester));
+		println(e.getSummary());
+		println("Start: " + eventStart.toString());
+		println("Duration (s): " + duration);
+		println("Writing cron job:");
+		println(cronLine(e, semester));
 		System.out.println();
 		writeLineToFile(writer, cronLine(e, semester));
 	}
+	if(events.size() == 0)
+		println("Warning: No events found within the scan period. cron_temp.txt should be empty");
+	else
+		println("Finished writing lines to file");
   }
   
   private static String cronLine(Event e, String sem) {
 	if(e.getStart().getDateTime() == null) {
-		System.err.println("Tried to parse all-day event");
+		System.err.println("[CalendarParser] Tried to parse all-day event");
 		return null;
 	}
 	long eStartLong = e.getStart().getDateTime().getValue();
@@ -196,12 +196,16 @@ public class CalendarParser {
   
   // m h  dom mon dow year   command
   private static String cronLine(int min, int hr, int dayOfMon, int mon, int year, String sem, String course, long dur) {
-	return min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + (year+1900) + " " + cScriptLoc + " " + sem + " " + course + " " + dur;
+	return "#" + min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + (year+1900) + " " + cScriptLoc + " " + sem + " " + course + " " + dur;
   }
   
   private static void writeLineToFile(BufferedWriter writer, String line) throws IOException {
 	writer.write(line);
 	writer.newLine();
+  }
+  
+  private static void println(String toPrint) {
+	System.out.println("[CalendarParser] " + toPrint);
   }
 
 }
