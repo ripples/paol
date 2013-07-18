@@ -1,26 +1,21 @@
 #!/bin/bash
 
-localMachName=
 user=
 host=
 
 config=/home/paol/paol-code/uploadConfig.txt
 while read a b; do
-
-	if [ "$a" = "localMachName:" ] ; then
-		localMachName=$b
-	elif [ "$a" = "user:" ]; then
+	if [ "$a" = "user:" ]; then
 		user=$b
 	elif [ "$a" = "host:" ]; then
 		host=$b
 	fi
 done < $config
 
-echo "Local machine name: $localMachName"
 echo "User: $user"
 echo "Host: $host"
 
-if [ -z "$localMachName" ] || [ -z "$user" ] || [ -z "$host" ]; then
+if [ -z "$user" ] || [ -z "$host" ]; then
 	echo "Upload configuration file has the wrong format"
 	exit 1
 fi
@@ -31,7 +26,6 @@ class=$(basename $(dirname $outDir))
 
 uploaded=/home/paol/recordings/uploaded
 sshid=/home/paol/.ssh/id_rsa
-#rmt_upload_fldr=/data1/recording/$localMachName/recordings/uploaded
 mediaDirTag=`curl http://$host/api/config | grep mediaDirectory`
 #trim {"mediaDirectory":"\ and "\}
 mediaDirTag=${mediaDirTag:20:${#mediaDirTag}-23}

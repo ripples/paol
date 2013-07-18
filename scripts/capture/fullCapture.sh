@@ -31,9 +31,12 @@ touch /var/lock/manic.lck
 touch $lck
 #//end lock
 
+# Sets environment variables when running from cron (might not be portable)
+. /etc/environment
+
 #location for the recordings to be stored
 #record=/recordings/raw
-record=~/recordings/raw
+record=/home/paol/recordings/raw
 mkdir -p $record
 
 pth=$record/$term/$crs/`date +%m-%d-%Y--%H-%M-%S`
@@ -97,6 +100,7 @@ echo "" >> $pth/INFO
 echo "[pres]" >> $pth/INFO
 echo "start: `date +%Y,%m,%d,%k,%M,%S`" >> $pth/INFO
 echo "duration: $dur" >>$pth/INFO
+echo "source: $(hostname)" >> $pth/INFO
 
 echo "waiting for processes to finish"
 #wait $dataCamPID
