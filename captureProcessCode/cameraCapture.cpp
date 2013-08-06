@@ -26,6 +26,7 @@ int main(int argc, char* argv[]) {
 	Mat frame;
 	time_t startTime,cTime;
 	int currentTime=0;
+	int prevFrameTime=0;
 
 	time(&startTime);
 
@@ -34,7 +35,13 @@ int main(int argc, char* argv[]) {
 	printf("Duration: %d\n",duration);
 
 	//open connection to the device
-	VideoCapture cam = VideoCapture(camLabel);
+	VideoCapture cam;
+	try {
+		cam = VideoCapture(camLabel);
+	} catch (Exception& e) {
+		printf(e.what());
+		return 1;
+	}
 	//if there is a failure while connecting to the device try again as long
 	//as recording is still going on
 	while ( currentTime<duration && !cam.isOpened()) {
@@ -61,15 +68,18 @@ int main(int argc, char* argv[]) {
 	      printf("VGA state has changed (plugged or unplugged)\n");
 	    }
 	  }
-	  cam >> frame;
+	  if(currentTime > prevFrameTime) {
+		  cam >> frame;
+		  //sprintf arguments
+		  //saveDir: folder to write output to
+		  sprintf(filename,"%s%s%06d-%10d-%1d.png",saveDir,filenameStart,frameCount,(int)cTime,outDevNum);
+		  imwrite(filename,frame);
+		  printf("%s\n",filename);
+		  frameCount++;
+		  prevFrameTime = currentTime;
+	  }
 	  time(&cTime);
 	  currentTime=(int)(cTime-startTime);
-	  //sprintf arguments
-	  //saveDir: folder to write output to
-	  sprintf(filename,"%s%s%06d-%10d-%1d.png",saveDir,filenameStart,frameCount,(int)cTime,outDevNum);
-	  imwrite(filename,frame);
-	  printf("%s\n",filename);
-	  frameCount++;
 	}
 	return 0;
 	

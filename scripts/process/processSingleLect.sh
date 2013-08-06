@@ -49,6 +49,7 @@ echo "Copying video"
 #    ffmpeg -i $next/video.mpeg -an -pass 2 -vcodec libx264 -vpre normal -b 200k -threads 8 -y $outDir/video.mp4
 #    ffmpeg -i $next/video.mpeg -an -vcodec libtheora -threads 8 -y $outDir/video.ogv
 #fi
+cp $next/video.mpeg $outDir
 echo "Copying INFO"
 cp $next/INFO $outDir/INFO
 
@@ -56,8 +57,7 @@ procComp=~/paol-code/captureProcessCode/processCOMP
 procWB=~/paol-code/captureProcessCode/processWB
 #args=" -O $outDir/ -I $outDir/INFO"
 
-
-if [ "$(ls -A $next/computer/*)" ]; then
+if [ "$(find $next/computer -iname vgaTwoUsbIn000000*)" ]; then
     screenDir="$next/computer/"
     for screenFirst in $(ls $next/computer/vgaTwoUsbIn000000*)
     do
@@ -70,7 +70,7 @@ else
     echo "No computer to process"
 fi
 
-if [ "$(ls -A $next/wboard/*)" ]; then
+if [ "$(find $next/wboard -iname cameraIn000000*)" ]; then
     screenDir="$next/wboard/"
     for screenFirst in $(ls $next/wboard/cameraIn000000*)
     do

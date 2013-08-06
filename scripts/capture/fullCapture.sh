@@ -70,15 +70,20 @@ camCount=0 #counter for wboard feeds
 pids="" #pids for each camCap process
 while read num type
 do
-	if [ "$type" = "Whiteboard" ]; then
-		$dataCam $pth/wboard/ $dur $type $num $camCount &> $pth/wboardDataCam$camCount.log &
-		pids="$pids $!" #add new camCap pid
-		camCount=$(($camCount+1)) #increment counter
-	fi
-	if [ "$type" = "VGA2USB" ]; then
-		$dataCam $pth/computer/ $dur $type $num $vgaCount &> $pth/vgaDataCam$vgaCount.log &
-		pids="$pids $!" #add new camCap pid
-		vgaCount=$(($outNo+1)) #increment counter
+	device=$(ls /dev | grep video$num)
+	if [ -n "$device" ]; then
+		if [ "$type" = "Whiteboard" ]; then
+			$dataCam $pth/wboard/ $dur $type $num $camCount &> $pth/wboardDataCam$camCount.log &
+      pids="$pids $!" #add new camCap pid
+			camCount=$(($camCount+1)) #increment counter
+		fi
+		if [ "$type" = "VGA2USB" ]; then
+			$dataCam $pth/computer/ $dur $type $num $vgaCount &> $pth/vgaDataCam$vgaCount.log &
+			pids="$pids $!" #add new camCap pid
+			vgaCount=$(($outNo+1)) #increment counter
+		fi
+	else
+		echo "Could not find video$num"
 	fi
 done < $cameraFile #read from camera file
 
@@ -101,6 +106,10 @@ echo "[pres]" >> $pth/INFO
 echo "start: `date +%Y,%m,%d,%k,%M,%S`" >> $pth/INFO
 echo "duration: $dur" >>$pth/INFO
 echo "source: $(hostname)" >> $pth/INFO
+
+lsusb >> $pth/devices.log
+echo "" >> $pth/devices.log
+ls /dev | grep video >> $pth/devices.log
 
 echo "waiting for processes to finish"
 #wait $dataCamPID
