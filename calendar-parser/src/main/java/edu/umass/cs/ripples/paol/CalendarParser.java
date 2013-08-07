@@ -142,8 +142,8 @@ public class CalendarParser {
 			System.exit(1);
 		}
 
-		println("Calendar '" + capComp + "' was found. Writing cron lines\n");
-		println("Setting semester");
+		println("Calendar '" + capComp + "' was found. Writing cron lines");
+		println("Setting semester\n");
 		if(!setSemester(SEM_DATES))
 			errPrintln("Failed to set semester");
 		Calendar calendar = client.calendars().get(calKey).execute();
@@ -197,7 +197,9 @@ public class CalendarParser {
 		println("Writing cron job:");
 		println(cronLine(e, semester));
 		System.out.println();
-		writeLineToFile(writer, cronLine(e, semester));
+		String crline = cronLine(e, semester);
+		if(crline != null)
+			writeLineToFile(writer, crline);
 	}
 	if(events.size() == 0)
 		errPrintln("Warning: No events found within the scan period. cron_temp.txt should be empty");
@@ -207,14 +209,21 @@ public class CalendarParser {
   
   private static String cronLine(Event e, String sem) {
 	if(e.getStart().getDateTime() == null) {
-		errPrintln("[CalendarParser] Tried to parse all-day event");
+		errPrintln("Tried to parse all-day event");
 		return null;
 	}
 	long eStartLong = e.getStart().getDateTime().getValue();
 	long eEndLong = e.getEnd().getDateTime().getValue();
 	long duration = (eEndLong - eStartLong)/1000;
 	Date sDate = new Date(eStartLong - buffer*1000);
-	return cronLine(sDate.getMinutes(), sDate.getHours(), sDate.getDate(), sDate.getMonth(), sDate.getYear(), sem, e.getSummary(), duration+2*buffer);
+	String summary = e.getSummary();
+	int colonIdx = summary.indexOf(":");
+	if(colonIdx <= 0) {
+		errPrintln("Malformatted event title");
+		return null;
+	}
+	String course = summary.substring(0, colonIdx);
+	return cronLine(sDate.getMinutes(), sDate.getHours(), sDate.getDate(), sDate.getMonth(), sDate.getYear(), sem, course, duration+2*buffer);
   }
   
   // m h  dom mon dow year   command
@@ -241,8 +250,7 @@ public class CalendarParser {
 		BufferedReader reader = new BufferedReader(new FileReader(datesFile));
 		String line;
 		while((line = reader.readLine()) != null) {
-			println(line);
-			StringTokenizer tokenizer = new StringTokenizer(line);
+			StringTokenizer tokenizer = new StringTokenizer(line, " :");
 			if(tokenizer.countTokens() != 3) {
 				errPrintln("Malformated semester file");
 				return false;
