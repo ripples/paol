@@ -35,6 +35,12 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.StringTokenizer;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
+import java.io.FileNotFoundException;
 
 /**
  * @author Yaniv Inbar
@@ -56,11 +62,11 @@ public class CalendarParser {
 
   private static com.google.api.services.calendar.Calendar client;
   
-  private static final String cScriptLoc = "/home/paol/paol-code/scripts/capture/fullCapture.sh";
-  
-  private static String semester = "Default";
-  
+  private static final String CAP_SCRIPT = "/home/paol/paol-code/scripts/capture/fullCapture.sh";
   private static final String CRON_TEMP = "/home/paol/paol-code/cron_temp.txt";
+  private static final String SEM_DATES = "/home/paol/paol-code/semesterDates.txt";
+  
+  private static String semester = "default";
   
   // How many seconds before lecture to start capture
   private static final long buffer = 300;
@@ -96,7 +102,7 @@ public class CalendarParser {
       try {
 	  
 		if(args.length != 1) {
-			println("Exactly one calendar (no spaces) should be specified");
+			errPrintln("Exactly one calendar (no spaces) should be specified");
 			System.exit(1);
 		}
 
@@ -114,15 +120,18 @@ public class CalendarParser {
 		// get calendars
 		Map<String, String> sumryToIdMap = initSumryToIdMap();
 		String calKey = null;
-		if((calKey = sumryToIdMap.get(args[0])) == null) {
-			println("Calendar '" + args[0] + "' was not found. Here are the available calendars:");
+		String capComp = args[0]; // computer that is running this code
+		if((calKey = sumryToIdMap.get(capComp)) == null) {
+			println("Calendar '" + capComp + "' was not found. Here are the available calendars:");
 			for(String key : sumryToIdMap.keySet())
 				println(key);
 			System.exit(1);
 		}
-		
-		semester = args[0];
-		println("Calendar '" + semester + "' was found. Writing cron lines\n");
+
+		println("Calendar '" + capComp + "' was found. Writing cron lines\n");
+		println("Setting semester");
+		if(!setSemester(SEM_DATES))
+			errPrintln("Failed to set semester");
 		Calendar calendar = client.calendars().get(calKey).execute();
 		// create file and BufferedWriter
 		File cronLines = new File(CRON_TEMP);
@@ -135,7 +144,7 @@ public class CalendarParser {
 		System.exit(0);
 
       } catch (IOException e) {
-        System.err.println(e.getMessage());
+        errPrintln(e.getMessage());
       }
     } catch (Throwable t) {
       t.printStackTrace();
@@ -177,14 +186,14 @@ public class CalendarParser {
 		writeLineToFile(writer, cronLine(e, semester));
 	}
 	if(events.size() == 0)
-		println("Warning: No events found within the scan period. cron_temp.txt should be empty");
+		errPrintln("Warning: No events found within the scan period. cron_temp.txt should be empty");
 	else
 		println("Finished writing lines to file");
   }
   
   private static String cronLine(Event e, String sem) {
 	if(e.getStart().getDateTime() == null) {
-		System.err.println("[CalendarParser] Tried to parse all-day event");
+		errPrintln("[CalendarParser] Tried to parse all-day event");
 		return null;
 	}
 	long eStartLong = e.getStart().getDateTime().getValue();
@@ -196,7 +205,7 @@ public class CalendarParser {
   
   // m h  dom mon dow year   command
   private static String cronLine(int min, int hr, int dayOfMon, int mon, int year, String sem, String course, long dur) {
-	return "#" + min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + (year+1900) + " " + cScriptLoc + " " + sem + " " + course + " " + dur;
+	return "#" + min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + (year+1900) + " " + CAP_SCRIPT + " " + sem + " " + course + " " + dur;
   }
   
   private static void writeLineToFile(BufferedWriter writer, String line) throws IOException {
@@ -206,6 +215,54 @@ public class CalendarParser {
   
   private static void println(String toPrint) {
 	System.out.println("[CalendarParser] " + toPrint);
+  }
+  
+  private static void errPrintln(String toPrint) {
+	System.err.println("[CalendarParser] " + toPrint);
+  }
+  
+  private static boolean setSemester(String datesLoc) throws IOException {
+	try {
+		File datesFile = new File(datesLoc);
+		BufferedReader reader = new BufferedReader(new FileReader(datesFile));
+		String line;
+		while((line = reader.readLine()) != null) {
+			println(line);
+			StringTokenizer tokenizer = new StringTokenizer(line);
+			if(tokenizer.countTokens() != 3) {
+				errPrintln("Malformated semester file");
+				return false;
+			}
+			String sem = tokenizer.nextToken();
+			String start = tokenizer.nextToken();
+			String end = tokenizer.nextToken();
+			if(todayIsInSemester(start, end)) {
+				semester = sem;
+				return true;
+			}
+		}
+		errPrintln("Today is not within a semester");
+		return false;
+	} catch (FileNotFoundException e) {
+		errPrintln(e.toString());
+		return false;
+	}
+  }
+  
+  private static boolean todayIsInSemester(String startDay, String endDay) {
+	try {
+		Date today = new Date();
+		String startTime = startDay + " 12:00 AM";
+		String endTime = endDay + " 11:59 PM";
+		SimpleDateFormat df = new SimpleDateFormat();
+		Date s = df.parse(startTime);
+		Date e = df.parse(endTime);
+		return today.compareTo(s) >= 0 && today.compareTo(e) <= 0;
+	} catch (ParseException e) {
+		errPrintln(e.toString());
+		System.exit(1);
+	}
+	return false;
   }
 
 }

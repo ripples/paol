@@ -1,13 +1,13 @@
 #!/bin/bash
 
 schedFile="/home/paol/paol-code/cron_temp.txt"
-calendar="F15"
+calendar=$(hostname)
 
 scriptDir=$(pwd)
 thisScript=$(basename $0)
 updateCalJob="#0 * * * * $scriptDir/$thisScript"
 
-mvn -q exec:java -Dexec.args=$calendar
+mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args=$calendar
 status=$?
 if [ $status = 0 ]; then
 	(cat $schedFile; echo "$updateCalJob") | crontab -
