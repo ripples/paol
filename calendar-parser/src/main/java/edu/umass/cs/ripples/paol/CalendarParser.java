@@ -1,3 +1,17 @@
+/*
+ * PAOL Calendar Parser
+ *
+ * This program reads from a user's calendar and creates cron jobs for capturing
+ * lectures. The code is adapted from Google's calendar command line example, which
+ * can be found here:
+ * https://code.google.com/p/google-api-java-client/source/browse/calendar-cmdline-sample/src/main/java/com/google/api/services/samples/calendar/cmdline/CalendarSample.java?repo=samples
+ *
+ * Refer to the link below for licensing information:
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Author: Ryan Szeto
+ */
+
 package edu.umass.cs.ripples.paol;
 
 import com.google.api.client.auth.oauth2.Credential;

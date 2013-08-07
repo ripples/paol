@@ -36,7 +36,6 @@
           </execution>
         </executions>
         <configuration>
-          <mainClass>edu.umass.cs.ripples.paol.CalendarParser</mainClass>
           <systemProperties>
             <systemProperty>
               <key>java.util.logging.config.file</key>
