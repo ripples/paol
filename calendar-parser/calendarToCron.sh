@@ -2,18 +2,23 @@
 
 schedFile="/home/paol/paol-code/cron_temp.txt"
 calendar=$(hostname)
+log="/home/paol/calendarToCronOut.log"
 
-scriptDir=$(pwd)
-thisScript=$(basename $0)
-updateCalJob="#0 * * * * $scriptDir/$thisScript"
+parserDir="/home/paol/paol-code/calendar-parser"
+thisScript="$parserDir/calendarToCron.sh"
+updateCalJob="0 * * * * $thisScript"
+processAllJob="15 1 * * * /home/paol/paol-code/scripts/process/processAll.sh"
 
-mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args=$calendar
+date=$(date)
+echo "================================$date================================" >> $log
+cd $parserDir
+mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args=$calendar >> $log
 status=$?
 if [ $status = 0 ]; then
-	(cat $schedFile; echo "$updateCalJob") | crontab -
-	echo "Updated jobs in crontab"
+	(cat $schedFile; echo "$updateCalJob"; echo "$processAllJob") | crontab -
+	echo "Updated jobs in crontab" >> $log
 else
-	echo "Problem in calendar parser. Check for errors"
+	echo "Problem in calendar parser. Check for errors" >> $log
 fi
 
 # prior code for reference/future usage

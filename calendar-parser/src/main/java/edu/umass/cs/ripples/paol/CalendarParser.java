@@ -228,7 +228,8 @@ public class CalendarParser {
   
   // m h  dom mon dow year   command
   private static String cronLine(int min, int hr, int dayOfMon, int mon, int year, String sem, String course, long dur) {
-	return "#" + min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + (year+1900) + " " + CAP_SCRIPT + " " + sem + " " + course + " " + dur;
+	//return min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + (year+1900) + " " + CAP_SCRIPT + " " + sem + " " + course + " " + dur;
+	return min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + CAP_SCRIPT + " " + sem + " " + course + " " + dur;
   }
   
   private static void writeLineToFile(BufferedWriter writer, String line) throws IOException {

@@ -26,7 +26,7 @@ class=$(basename $(dirname $outDir))
 
 uploaded=/home/paol/recordings/uploaded
 sshid=/home/paol/.ssh/id_rsa
-mediaDirTag=$(curl http://$host/api/config | grep mediaDirectory)
+mediaDirTag=$(curl -k https://$host/api/config | grep mediaDirectory)
 #trim {"mediaDirectory":"/ and "/}
 mediaDirTag=${mediaDirTag:20:${#mediaDirTag}-22}
 echo $mediaDirTag
