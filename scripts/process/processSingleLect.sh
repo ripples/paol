@@ -14,7 +14,7 @@ touch $lck
 echo "running process"
 echo $(basename $next)
 #the following sets up the directory for the processed lecture
-outClassDir=~/recordings/readyToUpload/$(basename $(dirname $(dirname $next)))/$(basename $(dirname $next))
+outClassDir=/home/paol/recordings/readyToUpload/$(basename $(dirname $(dirname $next)))/$(basename $(dirname $next))
 outDir="$outClassDir/$(basename $next)" 
 presName="$(basename $next)"
 echo $outClassDir
@@ -22,7 +22,7 @@ echo $outDir
 
 #the following sets up the directory to move the processed raw data
 # to after processing
-moveClassDir=~/recordings/processed/$(basename $(dirname $(dirname $next)))/$(basename $(dirname $next))
+moveClassDir=/home/paol/recordings/processed/$(basename $(dirname $(dirname $next)))/$(basename $(dirname $next))
 moveDir="$moveClassDir/$(basename $next)" 
 presName="$(basename $next)"
 echo $moveClassDir
@@ -53,8 +53,8 @@ cp $next/video.mpeg $outDir
 echo "Copying INFO"
 cp $next/INFO $outDir/INFO
 
-procComp=~/paol-code/captureProcessCode/processCOMP
-procWB=~/paol-code/captureProcessCode/processWB
+procComp=/home/paol/paol-code/captureProcessCode/processCOMP
+procWB=/home/paol/paol-code/captureProcessCode/processWB
 #args=" -O $outDir/ -I $outDir/INFO"
 
 if [ "$(find $next/computer -iname vgaTwoUsbIn000000*)" ]; then

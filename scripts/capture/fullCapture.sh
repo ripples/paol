@@ -36,7 +36,7 @@ touch $lck
 
 #location for the recordings to be stored
 #record=/recordings/raw
-record=/home/paol/recordings/raw
+record="/home/paol/recordings/raw"
 mkdir -p $record
 
 pth=$record/$term/$crs/`date +%m-%d-%Y--%H-%M-%S`
