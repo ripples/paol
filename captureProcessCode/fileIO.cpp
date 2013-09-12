@@ -38,26 +38,32 @@ Ptr<paolMat> fileIO::read(){
   char fullNamePath[256];
   Ptr<paolMat> img=new paolMat();
 
-  int count, seconds, lastLoaded, tempCount, tempSeconds;
+  int count, seconds, lastLoaded, tempCount, tempSeconds,lastCountRead;
   char name[256];
   char fullName[256];
 
-  countRead++;
   sprintf(name,"%s%06d-%10d-%d.png",readName,countRead,time,cameraNum);
-  printf("readname=%s\n",name);
+  //printf("readname=%s\n",name);
   sprintf(fullNamePath,"%s%s",path,name);
   //printf("readName:%s \n fullPath:%s\n",readName,fullNamePath);
   img->read(std::string(fullNamePath),std::string(readName),countRead,time);
   if(!temp->src.data){
     lastLoaded=time;
-    while((time-lastLoaded)<20 && !img->src.data){
-      time++;
-      sprintf(name,"%s%06d-%10d-%d.png",readName,countRead,time,cameraNum);
-      sprintf(fullNamePath,"%s%s",path,name);
-      //printf("readName:%s \n fullPath:%s\n",readName,fullNamePath);
-      img->read(std::string(fullNamePath),std::string(readName),countRead,time);
+    lastCountRead=countRead;
+    while((countRead-lastCountRead)<10 && !img->src.data){
+      time=lastLoaded;
+      while((time-lastLoaded)<20 && !img->src.data){
+	time++;
+	sprintf(name,"%s%06d-%10d-%d.png",readName,countRead,time,cameraNum);
+	sprintf(fullNamePath,"%s%s",path,name);
+	//printf("readName:%s \n fullPath:%s\n",readName,fullNamePath);
+	//printf("1-1 %s%d-%d\n",readName,countRead,time);
+	img->read(std::string(fullNamePath),std::string(readName),countRead,time);
+      }
+      countRead++;
     }
   }
+  printf("readname=%s\n",name);
 
   return img;
 };
