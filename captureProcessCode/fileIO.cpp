@@ -39,7 +39,7 @@ Ptr<paolMat> fileIO::read(){
   Ptr<paolMat> img=new paolMat();
 
   int lastLoaded, tempCount, tempSeconds,lastCountRead;
-  int count, seconds, lastCountRead,lastLoaded, tempCount, tempSeconds,lastRead;
+  int count, seconds, lastRead;
   char name[256];
   char fullName[256];
 
