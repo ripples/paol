@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
 	      printf("VGA state has changed (plugged or unplugged)\n");
 	    }
 	  }
-	  if(currentTime > prevFrameTime) {
+	  if(currentTime > prevFrameTime && cam.get(CV_CAP_PROP_FRAME_WIDTH) != 0) {
 		  cam >> frame;
 		  //sprintf arguments
 		  //saveDir: folder to write output to
