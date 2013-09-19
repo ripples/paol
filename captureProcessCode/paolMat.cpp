@@ -221,7 +221,7 @@ void paolMat::writeMask()
       sprintf(temp,"%06d-%010d.png",count,time);
       longName.append(temp);
       cv::imwrite(longName, mask);
-      std::cout<<longName<<std::endl;
+      //std::cout<<"paul's test: "<<longName<<std::endl;
     }else
     {
       std::cout<<"   Tried to write a empty mask"<<std::endl;
@@ -287,15 +287,9 @@ void paolMat::invert()
     {
       for (int x = 0; x < src.cols; x++)
 	{
-	  temp = src.at<Vec3b>(y,x)[0];
-	  temp += src.at<Vec3b>(y,x)[1];
-	  temp += src.at<Vec3b>(y,x)[2];
-	  
-	  if (temp>40)
-	    temp=255;
-	  src.at<Vec3b>(y,x)[0]=temp;
-	  src.at<Vec3b>(y,x)[1]=temp;
-	  src.at<Vec3b>(y,x)[2]=temp;	  
+	  src.at<Vec3b>(y,x)[0]=255-src.at<Vec3b>(y,x)[0];
+	  src.at<Vec3b>(y,x)[1]=255-src.at<Vec3b>(y,x)[1];
+	  src.at<Vec3b>(y,x)[2]=255-src.at<Vec3b>(y,x)[2];
 	}
     }
 }
@@ -1144,6 +1138,17 @@ void paolMat::connected(int size){
 
 }
 
+void paolMat::keepMask(int blueThresh){
+  int count;
+  for(int x = 0; x < mask.cols; x++)
+    for(int y = 0; y < mask.rows; y++){
+      if(mask.at<Vec3b>(y,x)[0] < blueThresh){
+	src.at<Vec3b>(y,x)[0]=255;
+	src.at<Vec3b>(y,x)[1]=255;
+	src.at<Vec3b>(y,x)[2]=255;
+      }
+    }
+}
 
 void paolMat::lectArea(){
   Ptr<paolMat> profile;
@@ -1998,45 +2003,104 @@ void paolMat::updateBackground(Ptr<paolMat> alt, Ptr<paolMat> img)
       }
 }
 
+void paolMat::updateBackground()
+{
+  int x,y;
+  for(y = 0; y < mask.rows; y++)
+    for(x = 0; x < mask.cols; x++){
+      if(mask.at<Vec3b>(y,x)[2] < 255){
+	src.at<Vec3b>(y,x)[0] = 255;
+	src.at<Vec3b>(y,x)[1] = 255;
+	src.at<Vec3b>(y,x)[2] = 255;
+      }
+    }
+  //blank the first row because it had bad information for whatever reason
+  for(y = 0; y < mask.rows; y++){
+    x=0;
+    src.at<Vec3b>(y,x)[0] = 255;
+    src.at<Vec3b>(y,x)[1] = 255;
+    src.at<Vec3b>(y,x)[2] = 255;
+  }
+}
+
+void paolMat::darken()
+{
+  int x,y,temp;
+  for(y = 0; y < mask.rows; y++)
+    for(x = 0; x < mask.cols; x++){
+      for (int z=0; z<3; z++){
+	temp=src.at<Vec3b>(y,x)[z]-30;
+	if (temp<0)
+	  temp=0;
+	src.at<Vec3b>(y,x)[z]=temp;
+      }
+    }
+}
+
 void paolMat::cleanBackground(Ptr<paolMat> img)
 {
+  //This method goes first left to right then top to bottom a single row
+  //or column at a time. It looks for a single section of none pure white
+  //area (an area that contains some text, probably). When it finds a section
+  //it processes that section, ignoring all others. Within that section
+  //it figures out the darkest whiteboard section and uses that as true white 
+  //for the section. It then incresaes the difference between the text (darker
+  //then white) and the background
   Ptr<paolMat> result;
   result = new paolMat(this);
   //result->src = Scalar(255,255,255);
   result->mask = Scalar(0,0,0);
 
-  int start,end,sim,dif,r,g,b,temp,temp2,tempOld,wr,wg,wb,rOff,gOff,bOff,oRange,range,rOut,gOut,bOut;
+  int start,end;//used to store the start and end of a section of possible text
+  int darkestAve;//Average (greyscale) darkest pixel in section
+  int brightestAve;//Average (greyscale) lightest pixel in section (presumed whiteboard)
+  int r,g,b,temp,temp2,tempOld;
+  int wr,wg,wb;//darker endpoint of section (presumed darkest whiteboard)
+  int rOff,gOff,bOff;//difference (offset) of darkest whiteboard from pure white
+  int oRange,range,rOut,gOut,bOut;
+  int startBright,endBright;
+  int rangeEtoE;//range section end ot end
+  int rangeTotal;//total range of section
 
   for(int y = 0; y < src.rows; y++)
     for(int x = 0; x < src.cols; x++)
       if( src.at<Vec3b>(y,x)[0] !=255 ||
 	  src.at<Vec3b>(y,x)[1] !=255 ||
 	  src.at<Vec3b>(y,x)[2] !=255 ){
-	start = x;
-	sim = 1000;
-	dif = 0;
+	start = x;//set start of section at first non-white
+	darkestAve = 1000;//set darkest value at something brighter then it could be
+	brightestAve = 0;//set brightest value at something darger then it could ever be
+
+	//for all pixels until next white pixel
 	for(;x < src.cols && ( src.at<Vec3b>(y,x)[0] !=255 ||
 			       src.at<Vec3b>(y,x)[1] !=255 ||
 			       src.at<Vec3b>(y,x)[2] !=255 ); x++){
-	  end = x;
+	  end = x;//reset end of section
 	  r = img->src.at<Vec3b>(y,x)[2];
 	  g = img->src.at<Vec3b>(y,x)[1];
 	  b = img->src.at<Vec3b>(y,x)[0];
-	  temp = 255 * 3 -(r+g+b);
+	  temp = 255 * 3 -(r+g+b);//set temp to the average difference from white
 	  temp /= 3;
-	  if(temp < sim)
-	    sim = temp;
-	  if(temp > dif)
-	    dif = temp;
+
+	  //reset darkest and lightest as appropriate
+	  if(temp < darkestAve)
+	    darkestAve = temp;
+	  if(temp > brightestAve)
+	    brightestAve = temp;
 	}
-	tempOld = ( img->src.at<Vec3b>(y,start)[0] +
+	//get brightness of ends of section
+	startBright = ( img->src.at<Vec3b>(y,start)[0] +
 		    img->src.at<Vec3b>(y,start)[1] +
 		    img->src.at<Vec3b>(y,start)[2] );
-	temp = ( img->src.at<Vec3b>(y,end)[0] +
+	endBright = ( img->src.at<Vec3b>(y,end)[0] +
 		 img->src.at<Vec3b>(y,end)[1] +
 		 img->src.at<Vec3b>(y,end)[2] );
-	
-	if(temp > tempOld){
+
+	rangeEtoE=abs(startBright-endBright);
+	rangeTotal=brightestAve-darkestAve;
+
+	//set whiteboard RGB to pixel at darker end of section 
+	if(endBright > startBright){
 	  wr = img->src.at<Vec3b>(y,start)[2];
 	  wg = img->src.at<Vec3b>(y,start)[1];
 	  wb = img->src.at<Vec3b>(y,start)[0];	      
@@ -2045,25 +2109,30 @@ void paolMat::cleanBackground(Ptr<paolMat> img)
 	  wg = img->src.at<Vec3b>(y,end)[1];
 	  wb = img->src.at<Vec3b>(y,end)[0];	      
 	}
+	//set offset from white to difference of darker pixel from white
 	rOff = 255 - wr;
 	gOff = 255 - wg;
 	bOff = 255 - wb;
 	
-	temp = 255 * 3 - (wr+wg+wb);
+	//set temp to average difference between darker pixel and white
+	temp = rOff+gOff+bOff;//255 * 3 - (wr+wg+wb);
 	temp /=3;
 	
-	oRange = abs(temp-dif);
-	range = oRange+temp;
+	//haven't a clue anymore, but it seems to be working
+	oRange = abs(temp-brightestAve);//difference between brightest and darkest white pixels
+	range = oRange+temp;//brightest pixel
+	
 	
 	for(int xx = start; xx <= end; xx++){
-	  if(oRange == 0){
+	  //if(oRange == 0){
+	  if(rangeTotal < 5 || oRange==0){
 	    rOut = 0;
 	    gOut = 0;
 	    bOut = 0;
 	  }else{
-	    rOut = ( (255 - img->src.at<Vec3b>(y,xx)[2]) - rOff) * range/oRange;
-	    gOut = ( (255 - img->src.at<Vec3b>(y,xx)[1]) - gOff) * range/oRange;
-	    bOut = ( (255 - img->src.at<Vec3b>(y,xx)[0]) - bOff) * range/oRange;
+	    rOut = ( (255 - img->src.at<Vec3b>(y,xx)[2]) - rOff) * 3;//range/oRange;
+	    gOut = ( (255 - img->src.at<Vec3b>(y,xx)[1]) - gOff) * 3;//range/oRange;
+	    bOut = ( (255 - img->src.at<Vec3b>(y,xx)[0]) - bOff) * 3;//range/oRange;
 	    
 	    if(rOut > 255)
 	      rOut = 255;
@@ -2093,8 +2162,8 @@ void paolMat::cleanBackground(Ptr<paolMat> img)
 	    (src.at<Vec3b>(y,x)[2] != 255) )
 	  {
 	    start = y;
-	    sim = 1000;
-	    dif = 0;
+	    darkestAve = 1000;
+	    brightestAve = 0;
 	    for(;y < src.rows && ( (src.at<Vec3b>(y,x)[0] != 255) ||
 				 (src.at<Vec3b>(y,x)[1] != 255) ||
 				 (src.at<Vec3b>(y,x)[2] != 255) ); y++)
@@ -2105,7 +2174,7 @@ void paolMat::cleanBackground(Ptr<paolMat> img)
 		b = img->src.at<Vec3b>(y,x)[0];
 		temp = 255*3 - (r+g+b);
 		temp/=3;
-		oRange = abs(temp-dif);
+		oRange = abs(temp-brightestAve);
 		range=oRange+temp;
 
 		for(int yy = start; yy <= end; yy++)

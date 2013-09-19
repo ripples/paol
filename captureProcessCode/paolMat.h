@@ -35,6 +35,7 @@ class paolMat
   void edges();
   Ptr<paolMat> returnEdges();
   void invert();
+  void blockDiff(Ptr<paolMat> imIn);
   void createBackgroundImg(int kernalSize);
   Ptr<paolMat> returnCreateBackgroundImg(int kernalSize);
   void improveInputImg(Ptr<paolMat> background);
@@ -64,6 +65,7 @@ class paolMat
   void connected();
   //Must be the same size as differenceLect
   void connected(int size);
+  void keepMask(int blueThresh);
   void lectArea();
   Ptr<paolMat> crop(int x, int y, int width, int height);
   Ptr<paolMat> cropFrame(int width, int height);
@@ -94,6 +96,8 @@ class paolMat
   void getCombine(Ptr<paolMat> img);
   void blackMaskByMask(Ptr<paolMat> img);
   void updateBackground(Ptr<paolMat> alt, Ptr<paolMat> img);
+  void updateBackground();
+  void darken();
   void cleanBackground(Ptr<paolMat> img);
   void differenceDarken(Ptr<paolMat> img);
   void maskGrowRed(int size);

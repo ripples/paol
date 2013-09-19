@@ -20,6 +20,7 @@ void ComputerProcess(fileIO *disk){
   Ptr<paolMat> previous;
   double percentDifference;
   int countStable;
+  int timeDif;
 
   previous = disk->read();
   if (previous != NULL){
@@ -42,10 +43,12 @@ void ComputerProcess(fileIO *disk){
       if (countStable>=repeat){
 	//save image
 	previous->name = "slide";
+	previous->time = timeDif;
 	disk->write(previous);//send to write
       } 
       
       countStable=0;
+      timeDif=current->time;
     } else {
       countStable++;
     }
@@ -55,6 +58,7 @@ void ComputerProcess(fileIO *disk){
   //save last image
   if(previous != NULL){
     previous->name = "slide";
+    previous->time = timeDif;
     disk->write(previous);
   }
 };

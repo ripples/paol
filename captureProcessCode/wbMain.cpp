@@ -51,20 +51,21 @@ void WhiteBoardProcess(fileIO *disk){
   background->src = Scalar(255,255,255);
 
   img->blur(1);
-  img->name = "blurred";
-  //img->write();
+  img->name = "1-blurred";
+  img->write();
   
   Ptr<paolMat> alt;
   alt = new paolMat(img);
   alt->copy(img);
 
   img->pDrift();
-  img->name = "pDrift";
-  //img->writeMask();
+  img->name = "2-pDrift";
+  printf("before write mask\n");
+  img->writeMask();
 
   img->grow(30,3);
-  img->name = "grow";
-  //img->writeMask();
+  img->name = "3-grow";
+  img->writeMask();
   
   Ptr<paolMat> old;
   old = new paolMat(img);
@@ -75,8 +76,8 @@ void WhiteBoardProcess(fileIO *disk){
     cleanImg->copy(img);
     //img->differenceLect(lastImg,150,1);
     img->differenceLect(old,150,1);
-    img->name="differenceLect";
-    //img->writeMask();
+    img->name="4-differenceLect";
+    img->writeMask();
     
     cleanImg->copyNoSrc(img);
     //disk->write(cleanImg);
@@ -86,47 +87,47 @@ void WhiteBoardProcess(fileIO *disk){
     //std::cout<<"WhiteBoardProc:: frame "<<img->count<<" had "<<img->difs<<" differences "<<std::endl;
     std::cout<<"WhiteBoardProc:: frame "<<img->count<<" had "<<temp<<" differences "<<std::endl;
 
-    if(temp > .1) { //this should be img->difs > 20000, but debugging yo
+    if(temp > .00000001){//.1) { //this should be img->difs > 20000, but debugging yo
       alt->copy(img);
       alt->differenceLect(old,150,1);
       
       img->blur(1);
-      img->name="blur";
-      //img->write();
+      img->name="1-blur";
+      img->write();
       
       img->pDrift();
-      img->name="pdrift";
-      //img->writeMask();
+      img->name="2-pdrift";
+      img->writeMask();
       
       img->grow(30,3);
-      img->name="grow";
-      //img->writeMask();
+      img->name="3-grow";
+      img->writeMask();
       
       old->name = "old";
-      //old->writeMask();
+      old->writeMask();
       img->name = "img";
-      //img->writeMask();
+      img->writeMask();
       img->threshedDifference(old);
       img->name = "threshedDifference";
-      //img->writeMask();
+      img->writeMask();
       
       
       alt->decimateMask(254);
       alt->decimateMask(254);
       alt->name = "alt-double-decimate";
       //
-      //alt->writeMask();
+      alt->writeMask();
       alt->sweepDown();
       alt->name = "alt-sweptDown";
       //
-      //alt->writeMask();
+      alt->writeMask();
       
       
       background->copyNoSrc(img);
       background->updateBackground(alt,img);
       background->name = "background-updated";
       //
-      //background->writeMask();
+      background->writeMask();
       background->cleanBackground(img);
       background->name = "background-clean";
       //
@@ -138,6 +139,174 @@ void WhiteBoardProcess(fileIO *disk){
       disk->write(background);
       
     }
+    
+    //std::cout<<"WhiteBoardProc: about to pop"<<std::endl;
+    img = disk->read();
+    //std::cout<<"WhiteBoardProc: popped"<<std::endl;
+  }
+};
+
+void WhiteBoardProcessQuick(fileIO *disk){
+  Ptr<paolMat> img;
+  Ptr<paolMat> cleanImg;
+  float temp;
+  img = disk->read();
+
+  Ptr<paolMat> background;
+  background = new paolMat(img);
+  background->name = "background";
+  background->copy(img);
+  //background->src = Scalar(255,255,255);
+
+  img->blur(1);
+  //img->name = "1-blurred";
+  //img->write();
+  
+  img->pDrift();
+  //img->name = "2-pDrift";
+  //printf("before write mask\n");
+  //img->writeMask();
+  
+  img->grow(30,3);
+  //img->name = "3-grow";
+  //img->writeMask();
+  /*
+  Ptr<paolMat> old;
+  old = new paolMat(img);
+  old->name = "old";
+  //cleanImg = new paolMat(img);
+  */
+  background->copy(img);
+  //background->name = "background-updated";
+  //  background->writeMask();
+  background->updateBackground();
+  //background->name = "background-clean-first";
+  //background->write();
+  background->cleanBackground(img);
+  //background->name = "background-clean";
+  //
+  //background->writeMask();
+  //  background->write();
+  //testing for clarity
+  //background->invert();
+  //background->name="background-clean-inverted";
+  //background->write();
+  //background->invert();
+  background->name="background-clean-darkened";
+  background->darken();
+  //background->write();
+  disk->write(background);
+  
+
+  
+  while(img->src.data != NULL){
+    background->copy(img);
+    //background->src = Scalar(255,255,255);
+    img->blur(1);
+    //img->name = "1-blurred";
+    //img->write();
+  
+    img->pDrift();
+    //img->name = "2-pDrift";
+    printf("before write mask\n");
+    img->writeMask();
+    
+    img->grow(30,3);
+    //img->name = "3-grow";
+    //img->writeMask();
+    /*
+    old->blockDiff(img);
+    old->name="blockDiff";
+    old->writeMask();
+    old->copy(img);
+    */
+    background->copy(img);
+    //background->name = "background-updated";
+    //  background->writeMask();
+    background->updateBackground();
+    //background->name = "background-clean-first";
+    //background->write();
+    background->cleanBackground(img);
+    //background->name = "background-clean";
+    //
+    //background->writeMask();
+    //  background->write();
+    //testing for clarity
+    //background->invert();
+    //background->name="background-clean-inverted";
+    //background->write();
+    //background->invert();
+    background->name="background-clean-darkened";
+    background->darken();
+    //background->write();
+    disk->write(background);
+/*
+    cleanImg->copy(img);
+    //img->differenceLect(lastImg,150,1);
+    img->differenceLect(old,150,1);
+    img->name="4-differenceLect";
+    img->writeMask();
+    
+    cleanImg->copyNoSrc(img);
+    //disk->write(cleanImg);
+    //std::cout<<"LocateSpeaker:: Frame :"<<img->count<<std::endl;
+
+    temp=((float)img->difs/(img->src.rows*img->src.cols));
+    //std::cout<<"WhiteBoardProc:: frame "<<img->count<<" had "<<img->difs<<" differences "<<std::endl;
+    std::cout<<"WhiteBoardProc:: frame "<<img->count<<" had "<<temp<<" differences "<<std::endl;
+
+    if(temp > .00000001){//.1) { //this should be img->difs > 20000, but debugging yo
+      alt->copy(img);
+      alt->differenceLect(old,150,1);
+      
+      img->blur(1);
+      img->name="1-blur";
+      img->write();
+      
+      img->pDrift();
+      img->name="2-pdrift";
+      img->writeMask();
+      
+      img->grow(30,3);
+      img->name="3-grow";
+      img->writeMask();
+      
+      old->name = "old";
+      old->writeMask();
+      img->name = "img";
+      img->writeMask();
+      img->threshedDifference(old);
+      img->name = "threshedDifference";
+      img->writeMask();
+      
+      
+      alt->decimateMask(254);
+      alt->decimateMask(254);
+      alt->name = "alt-double-decimate";
+      //
+      alt->writeMask();
+      alt->sweepDown();
+      alt->name = "alt-sweptDown";
+      //
+      alt->writeMask();
+      
+      
+      background->copyNoSrc(img);
+      background->updateBackground(alt,img);
+      background->name = "background-updated";
+      //
+      background->writeMask();
+      background->cleanBackground(img);
+      background->name = "background-clean";
+      //
+      background->write();
+      //
+      //background->writeMask();
+      old->copy(img);
+      //background->mask = img->mask.clone();
+      disk->write(background);
+      
+      }*/
     
     //std::cout<<"WhiteBoardProc: about to pop"<<std::endl;
     img = disk->read();
@@ -190,7 +359,7 @@ int main(int argc, char* argv[]) {
   //filestuff3=new fileIO(argv[1],argv[2],"frameProcess","frameFoot");
 
   //locateSpeaker(filestuff);
-  WhiteBoardProcess(filestuff2);
+  WhiteBoardProcessQuick(filestuff2);
   //WhiteBoardFoot(filestuff3);
   
   /*  im=filestuff->read();
