@@ -5,6 +5,7 @@ AUDIO=$2
 DURATION=$3
 OUT=$4
 
-ffmpeg -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -threads 1 -t $DURATION -r 30 $OUT
+#ffmpeg -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -threads 1 -t $DURATION -r 30 $OUT
+ffmpeg -s 853x480 -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -acodec libfdk_aac -b:a 128k -vcodec libx264 -preset ultrafast -b:v 260k -flags +aic+mv4 -threads 4 -t $DURATION -r 30 $OUT
 #ffmpeg -t $DURATION -f alsa -ac 1 -i $AUDIO -threads 1 -f video4linux2 -s 480x360 -i $CAMERA $OUT
 #-s 960x720

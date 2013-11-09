@@ -93,7 +93,8 @@ echo "VGA and whiteboard PIDs:" $pids
 
 #dataCamPID=$!
 
-$vidCam $dur $pth/video.mpeg &> $pth/vidCam.log &
+#$vidCam $dur $pth/video.mpeg &> $pth/vidCam.log &
+$vidCam $dur $pth/video.mp4 &> $pth/vidCam.log &
 
 vidCamPID=$!
 

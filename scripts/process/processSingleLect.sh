@@ -49,7 +49,8 @@ echo "Copying video"
 #    ffmpeg -i $next/video.mpeg -an -pass 2 -vcodec libx264 -vpre normal -b 200k -threads 8 -y $outDir/video.mp4
 #    ffmpeg -i $next/video.mpeg -an -vcodec libtheora -threads 8 -y $outDir/video.ogv
 #fi
-cp $next/video.mpeg $outDir
+#cp $next/video.mpeg $outDir
+cp $next/video.mp4 $outDir
 echo "Copying INFO"
 cp $next/INFO $outDir/INFO
 
