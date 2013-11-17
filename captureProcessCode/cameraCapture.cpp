@@ -68,18 +68,22 @@ int main(int argc, char* argv[]) {
 	      printf("VGA state has changed (plugged or unplugged)\n");
 	    }
 	  }
-	  if(currentTime > prevFrameTime && cam.get(CV_CAP_PROP_FRAME_WIDTH) != 0) {
-		  cam >> frame;
-		  //sprintf arguments
-		  //saveDir: folder to write output to
-		  sprintf(filename,"%s%s%06d-%10d-%1d.png",saveDir,filenameStart,frameCount,(int)cTime,outDevNum);
-		  imwrite(filename,frame);
-		  printf("%s\n",filename);
-		  frameCount++;
-		  prevFrameTime = currentTime;
+	  if(currentTime > prevFrameTime) {
+	      prevFrameTime = currentTime;
+		  printf("Current time: %d\n", currentTime);
+		  if(cam.get(CV_CAP_PROP_FRAME_WIDTH) != 0) {
+			  cam >> frame;
+			  //sprintf arguments
+			  //saveDir: folder to write output to
+			  sprintf(filename,"%s%s%06d-%10d-%1d.png",saveDir,filenameStart,frameCount,(int)cTime,outDevNum);
+			  imwrite(filename,frame);
+			  printf("%s\n",filename);
+			  frameCount++;
+		  }
 	  }
 	  time(&cTime);
 	  currentTime=(int)(cTime-startTime);
+	  fflush(stdout);
 	}
 	return 0;
 	
