@@ -58,19 +58,26 @@ int main(int argc, char* argv[]) {
 	  cam.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
 	}
 	
+	cam.release();
+	
 	//capture data
 	while ( currentTime<duration ) {
-	  if(strcmp("VGA2USB", devType) == 0) {
-	    // check if VGA state has been changed
-	    VideoCapture curVGA = VideoCapture(camLabel);
-	    if(curVGA.get(CV_CAP_PROP_FRAME_WIDTH) != cam.get(CV_CAP_PROP_FRAME_WIDTH)) {
-	      cam = curVGA;
-	      printf("VGA state has changed (plugged or unplugged)\n");
-	    }
-	  }
+	  // if(strcmp("VGA2USB", devType) == 0) {
+	    // // check if VGA state has been changed
+	    // VideoCapture curVGA = VideoCapture(camLabel);
+	    // if(curVGA.get(CV_CAP_PROP_FRAME_WIDTH) != cam.get(CV_CAP_PROP_FRAME_WIDTH)) {
+	      // cam = curVGA;
+	      // printf("VGA state has changed (plugged or unplugged)\n");
+	    // }
+	  // }
 	  if(currentTime > prevFrameTime) {
 	      prevFrameTime = currentTime;
 		  printf("Current time: %d\n", currentTime);
+		  cam = VideoCapture(camLabel);
+		  if(strcmp("VGA2USB", devType) != 0) {
+			cam.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
+			cam.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+		  }
 		  if(cam.get(CV_CAP_PROP_FRAME_WIDTH) != 0) {
 			  cam >> frame;
 			  //sprintf arguments
@@ -80,6 +87,7 @@ int main(int argc, char* argv[]) {
 			  printf("%s\n",filename);
 			  frameCount++;
 		  }
+		  cam.release();
 	  }
 	  time(&cTime);
 	  currentTime=(int)(cTime-startTime);
