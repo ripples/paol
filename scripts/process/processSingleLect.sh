@@ -87,7 +87,4 @@ fi
 #move processed files to processed directory
 mv $next $moveClassDir
 
-#where the upload script would go if it were updated
-echo "Uploading"
-/home/paol/paol-code/scripts/upload/upload.sh $outDir
 rm -rf $lck
