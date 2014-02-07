@@ -48,6 +48,7 @@ int main(int argc, char* argv[]) {
 	  cam = VideoCapture(camLabel);
 	  time(&cTime);
 	  currentTime=(int)(cTime-startTime);
+	  printf("Trying to connect to device. Time: %d\n", currentTime);
 	}
 	
 	if(strcmp("VGA2USB", devType) == 0)
