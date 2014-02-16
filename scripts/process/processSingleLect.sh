@@ -51,6 +51,8 @@ echo "Copying video"
 #fi
 #cp $next/video.mpeg $outDir
 cp $next/video.mp4 $outDir
+ffmpeg -i $next/video.mp4 -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/video.webm
+
 echo "Copying INFO"
 cp $next/INFO $outDir/INFO
 
