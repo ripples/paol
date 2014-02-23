@@ -11,6 +11,7 @@ next=$1
 
 touch $lck
 
+ffmpeg="/usr/local/bin/ffmpeg"
 echo "running process"
 echo $(basename $next)
 #the following sets up the directory for the processed lecture
@@ -51,7 +52,7 @@ echo "Copying video"
 #fi
 #cp $next/video.mpeg $outDir
 cp $next/video.mp4 $outDir
-ffmpeg -i $next/video.mp4 -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/video.webm
+$ffmpeg -i $next/video.mp4 -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/video.webm
 
 echo "Copying INFO"
 cp $next/INFO $outDir/INFO
