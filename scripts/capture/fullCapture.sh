@@ -49,7 +49,9 @@ log="tee $pth/main.log"
 cameraFile="/home/paol/paol-code/cameraSetup.txt"
 line=$(grep Video $cameraFile)
 vidNum=${line:0:1}
-vidCam="/home/paol/paol-code/scripts/capture/videoCapture /dev/video$vidNum hw:$vidNum"
+line=$(grep Audio $cameraFile)
+audNum=${line:0:1}
+vidCam="/home/paol/paol-code/scripts/capture/videoCapture /dev/video$vidNum hw:$audNum"
 dataCam="/home/paol/paol-code/captureProcessCode/camCap"
 
 ##################
