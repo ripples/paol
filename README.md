@@ -76,9 +76,9 @@ host: present.cs.umass.edu
 
 ### How to capture and process lectures
 ```
-% /paul-code/scripts/capture/fullCapture.sh Summer13 comp171 3600
+% ~/paol-code/scripts/capture/fullCapture.sh Summer13 comp171 3600
 Process:
-% /paul-code/scripts/capture/processAll.sh
+% ~/paol-code/scripts/capture/processAll.sh
 Upload:
 (Run as part of the process script)
 ```
