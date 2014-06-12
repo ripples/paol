@@ -63,6 +63,7 @@ This file must be created to run paol. It specifies where the video, whiteboard,
 0 Video
 1 VGA2USB
 2 Whiteboard
+0 Audio
 ```
 
 ### uploadConfig.txt
