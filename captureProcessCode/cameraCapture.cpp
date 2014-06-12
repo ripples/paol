@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 	try {
 		cam = VideoCapture(camLabel);
 	} catch (Exception& e) {
-		printf(e.what());
+	  //printf(e.what());
 		//return 1;
 	}
 	//if there is a failure while connecting to the device try again as long

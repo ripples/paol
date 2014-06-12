@@ -1,111 +1,97 @@
-// ; -*-C++-*-
-#ifndef _paolMat_h_
-#define _poalMat_h_
+#ifndef PAOLMAT_H
+#define PAOLMAT_H
+
+//Including C++ Libs
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
+#include <iostream>
+
+#include <vector>
+
+#include <iostream>
+#include <iterator>
+#include <queue>
+#include <algorithm>
+#include <cstdio>
+#include <ctime>
 
 using namespace cv;
 
 class paolMat
 {
- public:
-  cv::Mat src;
-  cv::Mat mask;
-  int count;
-  int time;
-  int difs;
-  std::string name;
-  cv::Point camera;
-  cv::Point prof;
-  bool lectFound;
-  int r,g,b;
+public:
+    VideoCapture cam;
 
-  paolMat();
-  ~paolMat();
-  paolMat(Ptr<paolMat> m);
-  paolMat(paolMat* m);
-  void copy(Ptr<paolMat> m);
-  void copyNoSrc(Ptr<paolMat> m);
-  void read(std::string fullName, std::string fileName, int countIn, int timeIn);
-  void capture(CvCapture* capture, int count);
-  void write();
-  void write(std::string outDir);
-  void write2(std::string outDir,std::string nameOut,int camNum);
-  void writeByCount(std::string outDir);
-  void writeMask();
-  void print();
-  void edges();
-  Ptr<paolMat> returnEdges();
-  void invert();
-  void blockDiff(Ptr<paolMat> imIn);
-  void createBackgroundImg(int kernalSize);
-  Ptr<paolMat> returnCreateBackgroundImg(int kernalSize);
-  void improveInputImg(Ptr<paolMat> background);
-  Ptr<paolMat> returnImproveInputImg(Ptr<paolMat> background);
-  void removeProf(Ptr<paolMat> oldImg);
-  Ptr<paolMat> returnRemoveProf(Ptr<paolMat> oldImg);
-  void createContrast();
-  Ptr<paolMat> returnCreateContrast();
-  void sharpen();
-  Ptr<paolMat> returnSharpen();
-  void shrink();
-  Ptr<paolMat> returnShrink();
-  //One to One comparison of colors in each pixel of src
-  void difference(Ptr<paolMat> img);
-  //Ont to One comparison of the colors in each pixel of mask
-  void maskDifference(Ptr<paolMat> img);
-  //difference for computer proc
-  void difference(Ptr<paolMat> img, int thresh, int size, int maskBottom);
-  // thresh: old rgb - new rgb > thresh // size: downsample x/y+=size
-  void differenceLect(Ptr<paolMat> inImg, int thresh, int size);
-  void localizeSpeaker();
-  void decimateMask();
-  void decimateMask(int thresh);
-  //Grow mask by adding values to bordering pixels
-  void growMask();
-  void shrinkMask();
-  void connected();
-  //Must be the same size as differenceLect
-  void connected(int size);
-  void keepMask(int blueThresh);
-  void lectArea();
-  Ptr<paolMat> crop(int x, int y, int width, int height);
-  Ptr<paolMat> cropFrame(int width, int height);
-  vector<int> vertMaskHistogram();
-  vector<int> horMaskHistogram();
-  void decimateMaskByHistogram(int hThresh, int vThresh);
-  //drift is y+1, x+1
-  void drift();
-  void driftWAverage();
-  void sweepMask();
-  void sweepDown();
-  //Scan left to right, top to botton toggling mask everytime the src color changes
-  void intensityMask(int thresh);
-  //Scan a rectangle around a pixel and change it to white,black, or red.
-  void maskToWhite(int thresh);
-  void average();
-  void blackSrcByMask();
-  //blur size is pixels adjacent i.e. 1 would be a 3x3 square centered on each pixel
-  void blur(int size);
-  //pDrift is y+-1 x+-1
-  void pDrift();
-  //Grow by blue thresh and by size
-  void grow(int blueThresh, int size);
-  //Shrink by blue thresh and size
-  void shrink(int blueThresh, int size);
-  //threshedDifference, only where both masks blue > 30
-  void threshedDifference(Ptr<paolMat> old);
-  void getCombine(Ptr<paolMat> img);
-  void blackMaskByMask(Ptr<paolMat> img);
-  void updateBackground(Ptr<paolMat> alt, Ptr<paolMat> img);
-  void updateBackground();
-  void darken();
-  void cleanBackground(Ptr<paolMat> img);
-  void differenceDarken(Ptr<paolMat> img);
-  void maskGrowRed(int size);
-  void countDiffsMasked(Ptr<paolMat> img);
-  void finalWBUpdate(Ptr<paolMat> current);
+    //image data
+    Mat src;
+    Mat mask;
+    Mat maskMin;//mask shrunk by scale factor squared
+    Mat displayMin;
+    Mat display;
+
+    int scale;//scale factor for maskMin
+
+    //image read variables
+    int cameraNum;
+    char readName[256];
+    int countRead;
+    int time;
+    std::string dirOut;
+
+    //variables used by comp process
+    int difs;
+    std::string name;
+    int count;
 
 
+    paolMat();
+    ~paolMat();
+    paolMat(paolMat* m);
+    void copy(paolMat* m);
+    void copyClean(paolMat* m);
+    void copyMask(paolMat* m);
+    void copyMaskMin(paolMat* m);
+
+    void setCameraNum(int i);
+    void takePicture();
+
+    //maskMin methods
+    float differenceMin(paolMat *img, int thresh, int size);
+    float shrinkMaskMin();
+    void extendMaskMinToEdges();
+    void sweepDownMin();
+    void keepWhiteMaskMin();
+    void growMin(int size);
+    void findContoursMaskMin();
+    void maskMinToMaskBinary();
+
+    //src and mask methods
+    //blur size is pixels adjacent i.e. 1 would be a 3x3 square centered on each pixel
+    void blur(int size);
+    //pDrift is y+-1 x+-1
+    void pDrift();
+    void grow(int blueThresh, int size);
+    void nontextToWhite();
+    void updateBackgroundMaskMin(paolMat *m, paolMat *foreground);
+    void updateBack2(paolMat *foreground, paolMat *edgeInfo);
+    void processText(paolMat *m);
+    void darkenText();
+    void averageWhiteboard(int size);
+    void enhanceText();
+    float countDifsMask(paolMat *newIm);
+
+    //for computer process
+    void difference(paolMat *img, int thresh, int size, int maskBottom);
+    void read(std::string fullName, std::string fileName, int countIn, int timeIn);
+    void write2(std::string outDir,std::string nameOut,int camNum);
 };
 
-
-#endif
+#endif // PAOLMAT_H

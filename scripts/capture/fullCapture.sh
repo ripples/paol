@@ -52,7 +52,7 @@ vidNum=${line:0:1}
 line=$(grep Audio $cameraFile)
 audNum=${line:0:1}
 vidCam="/home/paol/paol-code/scripts/capture/videoCapture /dev/video$vidNum hw:$audNum"
-dataCam="/home/paol/paol-code/captureProcessCode/camCap"
+dataCam="/home/paol/paol-code/captureProcessCode/multiCap"
 
 ##################
 ## PRE RECORDING ##
@@ -69,34 +69,12 @@ cd $pth
 ####################
 vgaCount=0 #counter for vga feeds
 camCount=0 #counter for wboard feeds
-pids="" #pids for each camCap process
-while read num type
-do
-	device=$(ls /dev | grep video$num)
-	if [ -n "$device" ]; then
-		if [ "$type" = "Whiteboard" ]; then
-			$dataCam $pth/wboard/ $dur $type $num $camCount &> $pth/wboardDataCam$camCount.log &
-      pids="$pids $!" #add new camCap pid
-			camCount=$(($camCount+1)) #increment counter
-		fi
-		if [ "$type" = "VGA2USB" ]; then
-			$dataCam $pth/computer/ $dur $type $num $vgaCount &> $pth/vgaDataCam$vgaCount.log &
-			pids="$pids $!" #add new camCap pid
-			vgaCount=$(($outNo+1)) #increment counter
-		fi
-	else
-		echo "Could not find video$num"
-	fi
-done < $cameraFile #read from camera file
 
-echo "VGA and whiteboard PIDs:" $pids
+$dataCam $pth/wboard/ $pth/computer/ $dur $cameraFile &> $pth/dataCam.log &
 
-#$dataCam $pth/computer/ $pth/wboard/ $dur $cameraFile &> $pth/dataCam.log &
-
-#dataCamPID=$!
-
+tfe="$(date +%s)"
 #$vidCam $dur $pth/video.mpeg &> $pth/vidCam.log &
-$vidCam $dur $pth/video.mp4 &> $pth/vidCam.log &
+$vidCam $dur $pth/video-tfe.mp4 &> $pth/vidCam.log &
 
 vidCamPID=$!
 
