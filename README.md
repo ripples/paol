@@ -79,7 +79,7 @@ host: present.cs.umass.edu
 ```
 % ~/paol-code/scripts/capture/fullCapture.sh Summer13 comp171 3600
 Process:
-% ~/paol-code/scripts/capture/processAll.sh
+% ~/paol-code/scripts/process/processAll.sh
 Upload:
 (Run as part of the process script)
 ```
