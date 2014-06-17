@@ -14,10 +14,10 @@ class fileIO
   int time;
   int countRead;
   int countWrite;
-  char readName[256];
-  char writeName[256];
-  char path[256];
-  char pathOut[256];
+  char readName[512];
+  char writeName[512];
+  char path[512];
+  char pathOut[512];
   
   fileIO(char* pathIn,char* firstIm,char* writeNameIn,char* pathOut);
   void print();

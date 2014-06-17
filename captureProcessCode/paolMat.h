@@ -41,10 +41,8 @@ public:
 
     //image read variables
     int cameraNum;
-    char readName[256];
     int countRead;
     int time;
-    std::string dirOut;
 
     //variables used by comp process
     int difs;

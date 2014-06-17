@@ -42,8 +42,6 @@ void ComputerProcess(fileIO *disk){
       //then if the number of identical images is greater then or equal to 3
       if (countStable>=repeat){
 	//save image
-	previous->name = "slide";
-	previous->time = timeDif;
 	disk->write(previous);//send to write
       } 
       
@@ -55,10 +53,9 @@ void ComputerProcess(fileIO *disk){
     previous->copy(current);
     current = disk->read();
   }
+printf("here\n");
   //save last image
-  if(previous != NULL){
-    previous->name = "slide";
-    previous->time = timeDif;
+  if(previous->src.data != NULL){
     disk->write(previous);
   }
 };

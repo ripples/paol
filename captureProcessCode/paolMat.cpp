@@ -19,10 +19,8 @@ paolMat::paolMat(paolMat* m)
         maskMin = m->maskMin.clone();
 
     cameraNum=m->cameraNum;
-    sprintf(readName,"%s",m->readName);
     countRead=m->countRead;
     time=m->time;
-    dirOut=m->dirOut;
     scale=m->scale;
     name = m->name;
     difs = m->difs;
@@ -62,10 +60,8 @@ void paolMat::copy(paolMat *m){
         maskMin = m->maskMin.clone();
 
     cameraNum=m->cameraNum;
-    sprintf(readName,"%s",m->readName);
     countRead=m->countRead;
     time=m->time;
-    dirOut=m->dirOut;
     scale=m->scale;
     difs = m->difs;
     name = m->name;
@@ -88,10 +84,8 @@ void paolMat::copyClean(paolMat *m){
     }
 
     cameraNum=m->cameraNum;
-    sprintf(readName,"%s",m->readName);
     countRead=m->countRead;
     time=m->time;
-    dirOut=m->dirOut;
     scale=m->scale;
 }
 
@@ -771,7 +765,7 @@ void paolMat::processText(paolMat *m){
 //method for darkening text and setting whiteboard to white
 void paolMat::darkenText(){
     //int temp;
-    Mat tempOut;
+  Mat tempOut=mask.clone();
 
     //for every pixel
     for(int y = 0; y < src.rows; y++)

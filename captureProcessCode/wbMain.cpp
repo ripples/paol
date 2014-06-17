@@ -14,12 +14,12 @@ void WhiteBoardProcess(fileIO *disk){
   bool everyImage=true;//true if you want to process every image
   //if statement that uses everyImage should be removed once we can
   //tell which ones to save
-  paolMat *cam;
-  paolMat *old;
-  paolMat *background;
-  paolMat *backgroundRefined;
-  paolMat *oldBackgroundRefined;
-  paolMat *rawEnhanced;
+  Ptr<paolMat> cam;
+  Ptr<paolMat> old;
+  Ptr<paolMat> background;
+  Ptr<paolMat> backgroundRefined;
+  Ptr<paolMat> oldBackgroundRefined;
+  Ptr<paolMat> rawEnhanced;
   float numDif,refinedNumDif,saveNumDif;
   int count=0;
 
@@ -32,6 +32,9 @@ void WhiteBoardProcess(fileIO *disk){
   int firstTime = disk->time;
   cam = disk->read();
   old->copy(cam);
+  background->copyClean(cam);
+  backgroundRefined->copyClean(cam);
+  rawEnhanced->copyClean(cam);
 
   cam = disk->read();
   while(cam->src.data != NULL){
@@ -110,14 +113,17 @@ void WhiteBoardProcess(fileIO *disk){
 
         //count the number of differences in the refined text area between refined images
         saveNumDif = oldBackgroundRefined->countDifsMask(backgroundRefined);
-	if (saveNumDif>.004)
+	if (saveNumDif>.004){
+	  oldBackgroundRefined->time=old->time;
 	  disk->write(oldBackgroundRefined);
-
+	  printf("saveNumDif=%f\n",saveNumDif);
+	}
         //copy last clean whiteboard image
         oldBackgroundRefined->copy(backgroundRefined);
 
       }
     }
+    old->copy(cam);
     //grab next image
     cam = disk->read();
   }

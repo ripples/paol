@@ -50,7 +50,6 @@ Ptr<paolMat> fileIO::read(){
   sprintf(name,"%s%06d-%10d-%d.png",readName,countRead,time,cameraNum);
   //printf("readname=%s\n",name);
   sprintf(fullNamePath,"%s%s",path,name);
-  printf("readName:%s \n fullPath:%s\n",readName,fullNamePath);
   img->read(std::string(fullNamePath),std::string(readName),countRead,time);
   lastRead=countRead;
   if(!temp->src.data){
@@ -70,6 +69,7 @@ Ptr<paolMat> fileIO::read(){
       countRead++;
     }
   }
+  printf("readName:%s \n fullPath:%s\n",readName,fullNamePath);
   
   countRead=lastRead;
 
