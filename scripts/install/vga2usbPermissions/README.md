@@ -15,7 +15,6 @@ Create a file named "chmodBash" and place the following lines in it
 #!/bin/bash
 
 sudo chmod 777 /dev/vga2usb*
-#
 ```
 
 Change permissions on that file:
@@ -35,8 +34,8 @@ RUN+="/home/paol/paol-code/scripts/install/vga2usbPermissions/chmodBash"
 
 Copy the rules file to the correct location and set it running:
 ```
-sudo cp 85-paol_rule.rules /etc/udev/rules.d/
-sudo /etc/init.d/udev restart
+$ sudo cp 85-paol_rule.rules /etc/udev/rules.d/
+$ sudo /etc/init.d/udev restart
 ```
 
 ##Test
