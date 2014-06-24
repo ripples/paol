@@ -19,6 +19,11 @@ OpenCV and single file needed by qtCreator (script was made based on instruction
 $ ./opencvInstall
 ```
 
+VGA2USB rule to ensure that permissions change when device is plugged in.
+```
+vga2usbPermission.sh
+```
+
 ##Other Drivers and Software
 ###VGA2USB BROKEN
 Find the kernal being run

@@ -17,3 +17,6 @@ sudo apt-get install ant
 
 #install ffmpeg
 ./ffmpegInstall.sh
+
+#install rule to change permissions on vga2usb
+./vga2usbPermission.sh

@@ -1,0 +1,4 @@
+ACTION=="add", \
+SUBSYSTEM=="usb", \
+ATTRS{idVendor}=="5555", \
+RUN+="/home/paol/paol-code/scripts/install/vga2usbPermissions/chmodBash"
