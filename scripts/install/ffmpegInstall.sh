@@ -5,7 +5,7 @@ sudo apt-get -y install autoconf automake build-essential libass-dev libfreetype
   libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libx11-dev \
   libxext-dev libxfixes-dev pkg-config texi2html zlib1g-dev
 mkdir ~/ffmpeg_sources
-sudo apt-get install yasm
+sudo apt-get install -y yasm
 cd ~/ffmpeg_sources
 wget http://www.tortall.net/projects/yasm/releases/yasm-1.2.0.tar.gz
 tar xzvf yasm-1.2.0.tar.gz
@@ -32,8 +32,8 @@ autoreconf -fiv
 make
 make install
 make distclean
-sudo apt-get install libmp3lame-dev
-sudo apt-get install nasm
+sudo apt-get install -y libmp3lame-dev
+sudo apt-get install -y nasm
 cd ~/ffmpeg_sources
 wget http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz
 tar xzvf lame-3.99.5.tar.gz
@@ -42,7 +42,7 @@ cd lame-3.99.5
 make
 make install
 make distclean
-sudo apt-get install libopus-dev
+sudo apt-get install -y libopus-dev
 cd ~/ffmpeg_sources
 wget http://downloads.xiph.org/releases/opus/opus-1.1.tar.gz
 tar xzvf opus-1.1.tar.gz

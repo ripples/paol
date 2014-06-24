@@ -1,15 +1,15 @@
 #!/bin/bash
 
 #additional packages needed by openCV
-sudo apt-get install build-essential cmake libv4l-dev pkg-config
-sudo apt-get libgtk2.0-dev
-sudo apt-get libtiff4-dev
-sudo apt-get libjasper-dev
-sudo apt-get libavformat-dev
-sudo apt-get libswscale-dev
-sudo apt-get libavcodec-dev
-sudo apt-get libjpeg-dev
-sudo apt-get libpng-dev
+sudo apt-get install -y build-essential cmake libv4l-dev pkg-config
+sudo apt-get install -y libgtk2.0-dev
+sudo apt-get install -y libtiff4-dev
+sudo apt-get install -y libjasper-dev
+sudo apt-get install -y libavformat-dev
+sudo apt-get install -y libswscale-dev
+sudo apt-get install -y libavcodec-dev
+sudo apt-get install -y libjpeg-dev
+sudo apt-get install -y libpng-dev
 
 #install openCV
 cd Downloads
@@ -24,4 +24,4 @@ sudo make install
 sudo ldconfig
 
 #needed by qtCreator
-sudo apt-get install libgl1-mesa-dev
+sudo apt-get install -y libgl1-mesa-dev
