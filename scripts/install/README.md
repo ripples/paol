@@ -25,7 +25,7 @@ vga2usbPermission.sh
 ```
 
 ##Other Drivers and Software
-###VGA2USB BROKEN
+###VGA2USB
 Find the kernal being run
 ```
 $ uname -a

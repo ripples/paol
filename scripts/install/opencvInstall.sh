@@ -12,6 +12,7 @@ sudo apt-get install -y libjpeg-dev
 sudo apt-get install -y libpng-dev
 
 #install openCV
+cd
 cd Downloads
 wget http://downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.9/opencv-2.4.9.zip
 unzip opencv-2.4.9.zip
