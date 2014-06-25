@@ -83,7 +83,6 @@ PATH="$PATH:$HOME/bin" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./conf
   --enable-libopus \
   --enable-libtheora \
   --enable-libvorbis \
-  --enable-libvpx \
   --enable-libx264 \
   --enable-nonfree \
   --enable-x11grab
