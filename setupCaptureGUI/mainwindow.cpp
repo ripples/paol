@@ -161,7 +161,7 @@ void MainWindow::processComputer(){
             }
 
             //if percentDifference is greater than the threshold
-   qDebug("percentDif=%f countStable=%d",percentDifference,countStable);
+   //qDebug("percentDif=%f countStable=%d",percentDifference,countStable);
             if(percentDifference>=thresholdDiff){
                 //then if the number of identical images is greater then or equal to 3
                 if (countStable>=repeat){
