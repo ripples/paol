@@ -940,7 +940,7 @@ void paolMat::difference(paolMat *img, int thresh, int size, int maskBottom)
   int ceny;
   int total;
   //mask is set to a blank state
-  mask = Mat::zeros(mask.size(), mask.type());
+  mask = Mat::zeros(src.size(), src.type());
   
   numDiff = 0;
   first = true;
