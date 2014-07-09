@@ -23,6 +23,7 @@ sudo apt-get install mongodb-org
 #Install required packages
 sudo npm install -g yo grunt-cli bower
 sudo npm install
+sudo npm -g install forever
 bower install
 
 #Install Ruby
