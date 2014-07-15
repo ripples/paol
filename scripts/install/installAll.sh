@@ -13,10 +13,10 @@ sudo apt-get install -y openjdk-7-jdk
 sudo apt-get install -y ant
 
 #from http://code.google.com/p/qt-opencv-multithreaded/wiki/Documentation
-/home/paol/scripts/install/opencvInstall.sh
+/home/paol/paol-code/scripts/install/opencvInstall.sh
 
 #install ffmpeg
-/home/paol/scripts/install/ffmpegInstall.sh
+/home/paol/paol-code/scripts/install/ffmpegInstall.sh
 
 #install rule to change permissions on vga2usb
-/home/paol/scripts/install/vga2usbPermission.sh
+/home/paol/paol-code/scripts/install/vga2usbPermission.sh
