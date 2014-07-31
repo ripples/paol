@@ -12,13 +12,15 @@ int main(int argc, char* argv[]) {
 	//argv 1: directory to save images
 	//argv 2: duration
 	//argv 3: device type (VGA2USB or whiteboard)
-	//argv 4: input label (/dev/video_)
-	//argv 5: output device number
+        //argv 4: 1 if device needs to be rotated 180 degrees
+	//argv 5: input label (/dev/video_)
+	//argv 6: output device number
 	char* saveDir = argv[1];
 	int duration=atoi(argv[2]);
 	char* devType = argv[3];
-	int camLabel = atoi(argv[4]);
-	int outDevNum = atoi(argv[5]);
+	int flip=atoi(argv[4]);
+	int camLabel = atoi(argv[5]);
+	int outDevNum = atoi(argv[6]);
 
 	int frameCount=0;
 	char filename[256];
@@ -84,6 +86,8 @@ int main(int argc, char* argv[]) {
 			  //sprintf arguments
 			  //saveDir: folder to write output to
 			  sprintf(filename,"%s%s%06d-%10d-%1d.png",saveDir,filenameStart,frameCount,(int)cTime,outDevNum);
+			  if (flip==1)
+			    cv::flip(frame,frame,-1);
 			  imwrite(filename,frame);
 			  printf("%s\n",filename);
 			  frameCount++;
