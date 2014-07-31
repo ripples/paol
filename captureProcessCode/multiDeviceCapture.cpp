@@ -48,6 +48,7 @@ int main(int argc, char* argv[]) {
   vector <bool> vga;
   vector <int> inDevNum;
   vector <int> outDevNum;
+  vector <bool> flip;
   int whiteboardCount=0;
   int VGAcount=0;
 
@@ -59,18 +60,29 @@ int main(int argc, char* argv[]) {
   string line;
   string placeHolder;
   int devNum;
+  int devFlipNum;
+  bool devFlip;
+
   if(infile.is_open()){
     while(getline(infile, line)){
       stringstream splitter(line);
 
       placeHolder=line.substr(0,1);
       devNum=atoi(placeHolder.c_str());
+
+      placeHolder=line.substr(2,3);
+      devFlipNum=atoi(placeHolder.c_str());
+      if (devFlipNum==0)
+	devFlip=false;
+      else
+	devFlip=true;
       
-      placeHolder=line.substr(2,line.size());
+      placeHolder=line.substr(4,line.size());
       if (placeHolder=="VGA2USB"){
 	inDevNum.push_back(devNum);
 	dev.push_back(devNum);
 	vga.push_back(true);
+	flip.push_back(devFlip);
 	outDevNum.push_back(VGAcount);
 	VGAcount++;
 	deviceCount++;
@@ -78,6 +90,7 @@ int main(int argc, char* argv[]) {
 	inDevNum.push_back(devNum);
 	dev.push_back(devNum);
 	vga.push_back(false);
+	flip.push_back(devFlip);
 	outDevNum.push_back(whiteboardCount);
 	whiteboardCount++;
 	deviceCount++;
@@ -126,6 +139,8 @@ int main(int argc, char* argv[]) {
 	
       printf("Current time: %d\n", currentTime);
       dev[i] >> frame;
+      if (flip[i])
+	cv::flip(frame,frame, -1);
 	
       //sprintf arguments
       //saveDir: folder to write output to
