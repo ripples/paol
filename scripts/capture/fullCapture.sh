@@ -36,7 +36,7 @@ touch $lck
 
 #location for the recordings to be stored
 #record=/recordings/raw
-record="/home/paul/recordings/raw"
+record="/home/paol/recordings/raw"
 mkdir -p $record
 
 pth=$record/$term/$crs/`date +%m-%d-%Y--%H-%M-%S`
@@ -46,14 +46,14 @@ log="tee $pth/main.log"
 
 #location of capture scripts; hw:microphone; number corresponds to mic and cam
 
-cameraFile="/home/paul/paol-code/cameraSetup.txt"
+cameraFile="/home/paol/paol-code/cameraSetup.txt"
 line=$(grep Video $cameraFile)
 vidNum=${line:0:1}
 vidFlip=${line:2:1}
 line=$(grep Audio $cameraFile)
 audNum=${line:0:1}
-vidCam="/home/paul/paol-code/scripts/capture/videoCapture /dev/video$vidNum hw:$audNum $vidFlip"
-dataCam="/home/paul/paol-code/captureProcessCode/multiCap"
+vidCam="/home/paol/paol-code/scripts/capture/videoCapture /dev/video$vidNum hw:$audNum $vidFlip"
+dataCam="/home/paol/paol-code/captureProcessCode/multiCap"
 
 ##################
 ## PRE RECORDING ##
