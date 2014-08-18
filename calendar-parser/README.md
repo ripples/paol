@@ -1,8 +1,16 @@
 ## Calendar Parser
 This is the code that interacts with Google Calendars to generate cron jobs, initialize calendars, etc.
 
+### Installing Maven and JDK
+This project requires Maven 2.2.1 or higher and Java 1.5 or higher with JDK. To install them, call the following commands:
+```
+sudo apt-get install default-jre
+sudo apt-get install default-jdk
+sudo apt-get install maven2
+```
+
 ### To compile and run CalendarParser.java
-This project requires Maven 2.2.1 or higher. To compile, run 'mvn compile'. To execute, run 'mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args="[calendarName]"'.
+To compile, run 'mvn compile'. To execute, run 'mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args="[calendarName]"'.
 
 ### pom.xml
 pom.xml describes the project and lists dependencies. Maven reads from this file and downloads any necessary plugins and resources. Compilation information is also specified here.
