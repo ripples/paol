@@ -70,6 +70,8 @@ public:
     void setCameraNum(int i);
     void takePicture();
 
+    void flipPicture();
+
     //maskMin methods
     float differenceMin(paolMat *img, int thresh, int size);
     float shrinkMaskMin();

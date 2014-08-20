@@ -44,6 +44,10 @@ paolMat::~paolMat()
         cam.release();
 }
 
+void paolMat::flipPicture(){
+    flip(src,src,-1);
+}
+
 void paolMat::copy(paolMat *m){
     //clear out existing images and copy in new
     if(src.data)

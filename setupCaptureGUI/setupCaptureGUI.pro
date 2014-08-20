@@ -1,6 +1,6 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2014-06-01T19:04:58
+# Project created by QtCreator 2014-08-09T15:14:36
 #
 #-------------------------------------------------
 
@@ -13,12 +13,13 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
+        mainWindow.cpp \
     paolMat.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS  += mainWindow.h \
     paolMat.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainWindow.ui
 
 LIBS += `pkg-config opencv --libs`
+
