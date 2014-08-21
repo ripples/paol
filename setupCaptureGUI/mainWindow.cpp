@@ -116,22 +116,24 @@ void MainWindow::populateGUI(){
 //Properties Modified: None
 void MainWindow::on_confirmBttn_clicked(){
     outputInfo = "";
-    int isFlipped;
     for(int l = 0; l < optionBoxes.size(); l++){
         QString text = optionBoxes[l]->currentText(); //Acquires user selected option from ComboBox
         string device = text.toLatin1().data(); //Convert QString to string
 
+        int isFlipped = 0;
         if(device != "Blank"){
             if(reverseChecks[l]->isChecked() == true){
                 isFlipped = 1;
-            }else{
-                isFlipped = 0;
-            }
-            std::string s; //String to contain converted integer
-            std::string i;
-            std::stringstream out; //string stream used to convert int to string
+
+            //String to contain converted integer
+            std::string s; //Camera Number
+            std::string i; //Reversed or not
+
+            //string stream used to convert int to string
+            std::stringstream out;
             std::stringstream out2;
 
+            //Nothing is ever convinient.
             out << l;
             s = out.str();
             out2 << isFlipped;
@@ -139,12 +141,22 @@ void MainWindow::on_confirmBttn_clicked(){
 
             outputInfo = outputInfo + s + " " + i + " " + device + "\n";
         }
+
+        //Adds which device is responsible for recording audio outputInfo
+        if(audioRecord[l]->isChecked()){
+            std::string a; //Audio Cam Num string
+            std::stringstream out3; //Stringstream to convert int to str
+            out3 << l;
+            a = out3.str();
+            outputInfo = outputInfo + a + " " + "Audio" + "\n";
+        }
     }
+
     //outputInfo = outputInfo + ui->audioCamBox->currentText().toLatin1().data() + " Audio" + "\n";
     const char *path = "/home/paol/paol-code/cameraSetup.txt";
     //Creates .txt file to which outputInfo is placed in
     //std::cout << outputInfo;
     std::ofstream file(path);
     file << outputInfo;
-
+    }
 }
