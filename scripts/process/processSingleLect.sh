@@ -51,9 +51,13 @@ echo "Copying video"
 #    ffmpeg -i $next/video.mpeg -an -vcodec libtheora -threads 8 -y $outDir/video.ogv
 #fi
 #cp $next/video.mpeg $outDir
-cp $next/video.mp4 $outDir
-$ffmpeg -i $next/video.mp4 -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/video.webm
-
+#cp $next/video.mp4 $outDir
+for vid in *.mp4;
+do
+    cp $next/$vid $outDir
+    ffmpeg -i $next/$vid -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/${vid/%.mp4}.webm
+done
+ 
 echo "Copying INFO"
 cp $next/INFO $outDir/INFO
 
