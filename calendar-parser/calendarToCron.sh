@@ -1,12 +1,17 @@
 #!/bin/bash
 
 schedFile="/home/paol/paol-code/cron_temp.txt"
+# By default, set calendar name to name of this machine
+# If an input is given to this script, set the calendar name to the input
 calendar=$(hostname)
+if [ $1 ]; then
+	calendar=$1
+fi
 log="/home/paol/calendarToCronOut.log"
 
 parserDir="/home/paol/paol-code/calendar-parser"
 thisScript="$parserDir/calendarToCron.sh"
-updateCalJob="0 * * * * $thisScript"
+updateCalJob="0 * * * * $thisScript $calendar"
 processAllJob="15 1 * * * /home/paol/paol-code/scripts/process/processAll.sh"
 
 date=$(date)

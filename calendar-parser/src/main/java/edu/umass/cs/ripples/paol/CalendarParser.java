@@ -216,13 +216,18 @@ public class CalendarParser {
 	long eEndLong = e.getEnd().getDateTime().getValue();
 	long duration = (eEndLong - eStartLong)/1000;
 	Date sDate = new Date(eStartLong - buffer*1000);
-	String summary = e.getSummary();
-	int colonIdx = summary.indexOf(":");
-	if(colonIdx <= 0) {
-		errPrintln("Malformatted event title");
-		return null;
+	String courseTitle = e.getSummary();
+	// Replace all spaces with underscores
+	courseTitle = courseTitle.replace(" ", "_");
+	// Find course list number, which will be the text before the colon in the course title
+	// If no colon is found, use the whole course title as the "list number"
+	int courseListNumEnd = courseTitle.length();
+	int colonIdx = courseTitle.indexOf(":");
+	if(colonIdx > 0) {
+		// Course list number found
+		courseListNumEnd = colonIdx;
 	}
-	String course = summary.substring(0, colonIdx);
+	String course = courseTitle.substring(0, courseListNumEnd);
 	return cronLine(sDate.getMinutes(), sDate.getHours(), sDate.getDate(), sDate.getMonth(), sDate.getYear(), sem, course, duration+2*buffer);
   }
   
