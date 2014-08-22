@@ -57,23 +57,39 @@ The capture scripts generate all folders and files shown from class on down
 ## To Run
 
 ### cameraSetup.txt
-This file must be created to run paol. It specifies where the video, whiteboard, and computer cameras are. Below is an example of the format:
+This file must be created to run paol. It specifies where the video, whiteboard, and computer cameras are. Below is a sample cameraSetup.txt file:
 
 ```
-0 Video
-1 VGA2USB
-2 Whiteboard
+0 1 Video
+1 0 VGA2USB
+2 0 Whiteboard
 0 Audio
 ```
+
+For the Video, VGA2USB, and Whiteboard lines, the first number corresponds to the input number. For the above example, PAOL would use /dev/video0 as the video camera, /dev/video1 as the VGA capture camera, and /dev/video2 as the whiteboard capture camera. The second number is a 0 or 1, depending on whether the image should be flipped. In the above example, the video camera input should be flipped.
+
+For the Audio line, the number corresponds to which webcam's microphone to use as the audio for the video capture. In the above example, the video would use hw:0 as input.
 
 ### uploadConfig.txt
 This file must be created to upload lectures. It specifies the local (capture) and remote (server) machines. Below is an example:
 
 ```
-localMachName: cap142
 user: webmanic
 host: present.cs.umass.edu
+rmt_upload: /data1/www/media/uploaded
 ```
+
+The example uploadConfig file tells the upload script to rsync to present.cs.umass.edu as user webmanic, and to put the lecture files in /data1/www/media/uploaded on present.cs.umass.edu.
+
+### semesterDates.txt
+This file is used by CalendarParser to assign semesters to lectures. This file is technically optional, but without it, no meaningful semester information is associated with the lectures. Below is an example semesterDates.txt file:
+```
+Su13: 6/1/13 8/31/13
+F13: 9/3/13 12/6/13
+W13: 12/16/13 1/18/14
+S14: 1/21/14 4/30/14
+```
+The semester name comes before the colon. After the colon and a space should be first day of the semester, inclusive. After the first date, there should be a space and then the last day of the semester, inclusive. Dates with numbers that start with 0 are not guaranteed to be read properly by CalendarParser.
 
 ### How to capture and process lectures
 ```
