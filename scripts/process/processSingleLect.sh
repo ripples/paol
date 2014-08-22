@@ -11,7 +11,7 @@ next=$1
 
 touch $lck
 
-ffmpeg="/usr/local/bin/ffmpeg"
+#ffmpeg="/usr/local/bin/ffmpeg"
 echo "running process"
 echo $(basename $next)
 #the following sets up the directory for the processed lecture
