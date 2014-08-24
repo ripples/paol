@@ -57,7 +57,7 @@ do
     vid=$(basename $vidT)
     cp $next/$vid $outDir
     echo "$vid ${vid/%.mp4}.webm"
-    $ffmpeg -i $next/$vid -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/${vid/%.mp4}.webm
+    ffmpeg -i $next/$vid -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/${vid/%.mp4}.webm
 done
  
 echo "Copying INFO"
