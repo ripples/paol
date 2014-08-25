@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
   Mat frame;
   time_t startTime,cTime;
   int currentTime=0;
+  int setupTime=0;
   int prevFrameTime=0;
   
   time(&startTime);
@@ -100,9 +101,12 @@ int main(int argc, char* argv[]) {
 
   time(&cTime);
   currentTime=(int)(cTime-startTime);
-  
+  setupTime=currentTime+1000;
+
   for (int i=0; i<deviceCount; i++){
-    while ( currentTime<duration && !dev[i].isOpened() ){
+    while ( currentTime<setupTime && 
+	    !dev[i].isOpened() &&
+	    !vga[i]){
       dev[i] = VideoCapture(inDevNum[i]);
       time(&cTime);
       currentTime=(int)(cTime-startTime);
@@ -125,42 +129,44 @@ int main(int argc, char* argv[]) {
     currentTime=(int)(cTime-startTime);
 
     for (int i=0; i<deviceCount;i++){
+      if(!dev[i].isOpened() && !vga[i])
+	dev[i] = VideoCapture(inDevNum[i]);
+
       if(vga[i]){
 	filenameStart = "vgaTwoUsbIn";
-	dev[i].release();
-	while ( currentTime<duration && !dev[i].isOpened()) {
-	  dev[i] = VideoCapture(inDevNum[i]);
-	  time(&cTime);
-	  currentTime=(int)(cTime-startTime);
-	}
+	if(dev[i].isOpened())
+	  dev[i].release();
+	dev[i] = VideoCapture(inDevNum[i]);
       } else {
 	filenameStart = "cameraIn";
       }
 	
       printf("Current time: %d\n", currentTime);
-      dev[i] >> frame;
-      if (flip[i])
-	cv::flip(frame,frame, -1);
+      if(dev[i].isOpened()){
+	dev[i] >> frame;
+	if (flip[i])
+	  cv::flip(frame,frame, -1);
 	
-      //sprintf arguments
-      //saveDir: folder to write output to
-      if(vga[i])
-	sprintf(filename,"%s%s%06d-%10d-%1d.png",compDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
-      else
-	sprintf(filename,"%s%s%06d-%10d-%1d.png",whitebDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
+	//sprintf arguments
+	//saveDir: folder to write output to
+	if(vga[i])
+	  sprintf(filename,"%s%s%06d-%10d-%1d.png",compDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
+	else
+	  sprintf(filename,"%s%s%06d-%10d-%1d.png",whitebDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
 	
-      imwrite(filename,frame);
-      printf("%s\n",filename);
+	imwrite(filename,frame);
+	printf("%s\n",filename);
+      }
     }
     frameCount++;
-
+    
     time(&cTime);
     currentTime=(int)(cTime-startTime);
     fflush(stdout);
-    }
-
+  }
+  
   return 0;
-	
+  
 }
 //what the number in cap refers to:
 // 0: video0 on laptops this is internal camera
