@@ -102,6 +102,7 @@ int main(int argc, char* argv[]) {
   time(&cTime);
   currentTime=(int)(cTime-startTime);
   setupTime=currentTime+1000;
+  prevFrameTime=currentTime;
 
   for (int i=0; i<deviceCount; i++){
     while ( currentTime<setupTime && 
@@ -128,41 +129,45 @@ int main(int argc, char* argv[]) {
     time(&cTime);
     currentTime=(int)(cTime-startTime);
 
-    for (int i=0; i<deviceCount;i++){
-      if(!dev[i].isOpened() && !vga[i])
-	dev[i] = VideoCapture(inDevNum[i]);
+    if(currentTime>=prevFrameTime+1000){
 
-      if(vga[i]){
-	filenameStart = "vgaTwoUsbIn";
-	if(dev[i].isOpened())
-	  dev[i].release();
-	dev[i] = VideoCapture(inDevNum[i]);
-      } else {
-	filenameStart = "cameraIn";
+      for (int i=0; i<deviceCount;i++){
+	if(!dev[i].isOpened() && !vga[i])
+	  dev[i] = VideoCapture(inDevNum[i]);
+	
+	if(vga[i]){
+	  filenameStart = "vgaTwoUsbIn";
+	  if(dev[i].isOpened())
+	    dev[i].release();
+	  dev[i] = VideoCapture(inDevNum[i]);
+	} else {
+	  filenameStart = "cameraIn";
+	}
+	
+	printf("Current time: %d\n", currentTime);
+	if(dev[i].isOpened()){
+	  dev[i] >> frame;
+	  if (flip[i])
+	    cv::flip(frame,frame, -1);
+	  
+	  //sprintf arguments
+	  //saveDir: folder to write output to
+	  if(vga[i])
+	    sprintf(filename,"%s%s%06d-%10d-%1d.png",compDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
+	  else
+	    sprintf(filename,"%s%s%06d-%10d-%1d.png",whitebDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
+	  
+	  imwrite(filename,frame);
+	  printf("%s\n",filename);
+	}
       }
-	
-      printf("Current time: %d\n", currentTime);
-      if(dev[i].isOpened()){
-	dev[i] >> frame;
-	if (flip[i])
-	  cv::flip(frame,frame, -1);
-	
-	//sprintf arguments
-	//saveDir: folder to write output to
-	if(vga[i])
-	  sprintf(filename,"%s%s%06d-%10d-%1d.png",compDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
-	else
-	  sprintf(filename,"%s%s%06d-%10d-%1d.png",whitebDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
-	
-	imwrite(filename,frame);
-	printf("%s\n",filename);
-      }
+      frameCount++;
+      
+      time(&cTime);
+      currentTime=(int)(cTime-startTime);
+      fflush(stdout);
     }
-    frameCount++;
-    
-    time(&cTime);
-    currentTime=(int)(cTime-startTime);
-    fflush(stdout);
+    prevFrameTime=currentTime;
   }
   
   return 0;
