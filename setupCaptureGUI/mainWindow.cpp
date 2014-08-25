@@ -147,7 +147,7 @@ void MainWindow::on_confirmBttn_clicked(){
                 std::stringstream out3; //Stringstream to convert int to str
                 out3 << l;
                 a = out3.str();
-                outputInfo = outputInfo + a + " " + "Audio" + "\n";
+                outputInfo = outputInfo + a + " 0 " + "Audio" + "\n";
             }
         }
     }
