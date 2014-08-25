@@ -166,8 +166,8 @@ int main(int argc, char* argv[]) {
       time(&cTime);
       currentTime=(int)(cTime-startTime);
       fflush(stdout);
+      prevFrameTime=currentTime;
     }
-    prevFrameTime=currentTime;
   }
   
   return 0;
