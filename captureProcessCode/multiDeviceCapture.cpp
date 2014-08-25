@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
   time(&cTime);
   currentTime=(int)(cTime-startTime);
-  setupTime=currentTime+1000;
+  setupTime=currentTime+1;
   prevFrameTime=currentTime;
 
   for (int i=0; i<deviceCount; i++){
@@ -128,9 +128,9 @@ int main(int argc, char* argv[]) {
   while ( currentTime<duration ) {
     time(&cTime);
     currentTime=(int)(cTime-startTime);
-    printf("current=%d prev=%d\n",currentTime,prevFrameTime);
+    //printf("current=%d prev=%d\n",currentTime,prevFrameTime);
 
-    if(currentTime>=prevFrameTime+1000){
+    if(currentTime>=prevFrameTime+1){
 
       for (int i=0; i<deviceCount;i++){
 	if(!dev[i].isOpened() && !vga[i])
