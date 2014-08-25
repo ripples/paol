@@ -124,7 +124,7 @@ void MainWindow::on_confirmBttn_clicked(){
         if(device != "Blank"){
             if(reverseChecks[l]->isChecked() == true){
                 isFlipped = 1;
-
+            }
             //String to contain converted integer
             std::string s; //Camera Number
             std::string i; //Reversed or not
@@ -140,23 +140,22 @@ void MainWindow::on_confirmBttn_clicked(){
             i = out2.str();
 
             outputInfo = outputInfo + s + " " + i + " " + device + "\n";
-        }
 
-        //Adds which device is responsible for recording audio outputInfo
-        if(audioRecord[l]->isChecked()){
-            std::string a; //Audio Cam Num string
-            std::stringstream out3; //Stringstream to convert int to str
-            out3 << l;
-            a = out3.str();
-            outputInfo = outputInfo + a + " " + "Audio" + "\n";
+            //Adds which device is responsible for recording audio outputInfo
+            if(audioRecord[l]->isChecked()){
+                std::string a; //Audio Cam Num string
+                std::stringstream out3; //Stringstream to convert int to str
+                out3 << l;
+                a = out3.str();
+                outputInfo = outputInfo + a + " " + "Audio" + "\n";
+            }
         }
     }
-
     //outputInfo = outputInfo + ui->audioCamBox->currentText().toLatin1().data() + " Audio" + "\n";
     const char *path = "/home/paol/paol-code/cameraSetup.txt";
     //Creates .txt file to which outputInfo is placed in
     //std::cout << outputInfo;
     std::ofstream file(path);
     file << outputInfo;
-    }
 }
+
