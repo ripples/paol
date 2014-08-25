@@ -128,6 +128,7 @@ int main(int argc, char* argv[]) {
   while ( currentTime<duration ) {
     time(&cTime);
     currentTime=(int)(cTime-startTime);
+    printf("current=%d prev=%d\n",currentTime,prevFrameTime);
 
     if(currentTime>=prevFrameTime+1000){
 
