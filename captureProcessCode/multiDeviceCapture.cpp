@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
   */
 
   
-  int frameCount=0;
+  //int frameCount=0;
   char filename[256];
   char* filenameStart;
   Mat frame;
@@ -50,6 +50,7 @@ int main(int argc, char* argv[]) {
   vector <int> inDevNum;
   vector <int> outDevNum;
   vector <bool> flip;
+  vector <int> frameCount;
   int whiteboardCount=0;
   int VGAcount=0;
 
@@ -87,6 +88,7 @@ int main(int argc, char* argv[]) {
 	outDevNum.push_back(VGAcount);
 	VGAcount++;
 	deviceCount++;
+	frameCount.push_back(0);
       } else if (placeHolder=="Whiteboard"){
 	inDevNum.push_back(devNum);
 	dev.push_back(devNum);
@@ -95,7 +97,8 @@ int main(int argc, char* argv[]) {
 	outDevNum.push_back(whiteboardCount);
 	whiteboardCount++;
 	deviceCount++;
-	}
+	frameCount.push_back(0);
+      }
     }
   }
 
@@ -154,15 +157,16 @@ int main(int argc, char* argv[]) {
 	  //sprintf arguments
 	  //saveDir: folder to write output to
 	  if(vga[i])
-	    sprintf(filename,"%s%s%06d-%10d-%1d.png",compDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
+	    sprintf(filename,"%s%s%06d-%10d-%1d.png",compDir,filenameStart,frameCount[i],(int)cTime,outDevNum[i]);
 	  else
-	    sprintf(filename,"%s%s%06d-%10d-%1d.png",whitebDir,filenameStart,frameCount,(int)cTime,outDevNum[i]);
+	    sprintf(filename,"%s%s%06d-%10d-%1d.png",whitebDir,filenameStart,frameCount[i],(int)cTime,outDevNum[i]);
 	  
 	  imwrite(filename,frame);
 	  printf("%s\n",filename);
+	  frameCount[i]++;
 	}
       }
-      frameCount++;
+      //frameCount++;
       
       time(&cTime);
       currentTime=(int)(cTime-startTime);
