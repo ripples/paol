@@ -52,6 +52,8 @@ echo "Copying video"
 #fi
 #cp $next/video.mpeg $outDir
 #cp $next/video.mp4 $outDir
+
+# Copy and create webm versions of any videos in the raw data
 for vidT in $next/*.mp4;
 do
     vid=$(basename $vidT)
