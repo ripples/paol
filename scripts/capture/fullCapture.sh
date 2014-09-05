@@ -74,8 +74,9 @@ camCount=0 #counter for wboard feeds
 $dataCam $pth/wboard/ $pth/computer/ $dur $cameraFile &> $pth/dataCam.log &
 
 tfe="$(date +%s)"
-#$vidCam $dur $pth/video.mpeg &> $pth/vidCam.log &
-$vidCam $dur $pth/video-$tfe.mp4 &> $pth/vidCam.log &
+$vidCam $dur $pth/video.mpeg &> $pth/vidCam.log &
+#if you want the video name to have start time
+#$vidCam $dur $pth/video-$tfe.mp4 &> $pth/vidCam.log &
 
 vidCamPID=$!
 
