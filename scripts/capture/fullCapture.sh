@@ -89,6 +89,7 @@ echo "[pres]" >> $pth/INFO
 echo "start: `date +%Y,%m,%d,%k,%M,%S`" >> $pth/INFO
 echo "duration: $dur" >>$pth/INFO
 echo "source: $(hostname)" >> $pth/INFO
+echo "timestamp: $(date +%s)" >> $pth/INFO
 
 lsusb >> $pth/devices.log
 echo "" >> $pth/devices.log
