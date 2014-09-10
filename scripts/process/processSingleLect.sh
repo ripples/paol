@@ -50,15 +50,15 @@ echo "Copying video"
 #    ffmpeg -i $next/video.mpeg -an -pass 2 -vcodec libx264 -vpre normal -b 200k -threads 8 -y $outDir/video.mp4
 #    ffmpeg -i $next/video.mpeg -an -vcodec libtheora -threads 8 -y $outDir/video.ogv
 #fi
-#cp $next/video.mpeg $outDir
-#cp $next/video.mp4 $outDir
-for vidT in $next/*.mp4;
-do
-    vid=$(basename $vidT)
-    cp $next/$vid $outDir
-    echo "$vid ${vid/%.mp4}.webm"
-    ffmpeg -i $next/$vid -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/${vid/%.mp4}.webm &> $outDir/logs/conv2webm.log
-done
+cp $next/video.mp4 $outDir
+$ffmpeg -i $next/video.mp4 -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/video.webm
+#for vidT in $next/*.mp4;
+#do
+#    vid=$(basename $vidT)
+#    cp $next/$vid $outDir
+#    echo "$vid ${vid/%.mp4}.webm"
+#    ffmpeg -i $next/$vid -c:v libvpx -crf 10 -b:v 200k -c:a libvorbis $outDir/${vid/%.mp4}.webm &> $outDir/logs/conv2webm.log
+#done
  
 echo "Copying INFO"
 cp $next/INFO $outDir/INFO
