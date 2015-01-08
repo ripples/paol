@@ -67,7 +67,7 @@ void MainWindow::populateSetupWindow(){
     //For each camea found connected to this computer
     //Add labels to the mainwindow.ui Grid Layout
     //Currently adds three labels per row
-    qDebug() << "Amount of Cameras plugged in: " << count;
+    qDebug() << "Number of Cameras plugged in: " << count;
     for (int i = 0; i < count; i++) {
         QGridLayout *const newLayout = new QGridLayout;
         setupLayouts.push_back(newLayout);
@@ -142,7 +142,7 @@ void MainWindow::populateCaptureWindow(){
                 qDebug() << "Adding Whiteboard from Camera Num:" << i;
                 dev.push_back(new paolProcess(i,*imgLabel, *paolLabel,true, processLocation));
             }
-            ui->captureCameraGrid->addLayout(newLayout,((i-1)+1) / 3, ((i-1)+1) % 3); //COPY AND MOVE UP
+            ui->captureCameraGrid->addLayout(newLayout,((captureCount-1)+1) / 3, ((i-1)+1) % 3); //COPY AND MOVE UP
             captureCount++;
         }
     }
@@ -225,7 +225,6 @@ void MainWindow::createCamDocument(){
 }
 
 bool MainWindow::courseInformation(){
-    qDebug() << "Value of Count in courseInformation: " << count;
     QString classText = ui->captureCourse->text();
     QString yearText = ui->captureSemester->text();
     string classIn = classText.toLatin1().data();
@@ -436,3 +435,7 @@ void MainWindow::on_captureReturnToSetup_clicked(){
     ui->setupWidget->setVisible(true);
 }
 
+
+void MainWindow::on_setupUploadFiles_clicked(){
+    system("/home/paol/paol-code/scripts/upload/upload.sh");
+}
