@@ -8,32 +8,39 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <QLabel>
+#include <QMainWindow>
+#include <QtCore>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
-#include <iostream>
-
+#include <QString>
+#include <string>
 #include <vector>
+#include <QFileDialog>
+#include <fstream>
 
+/*
 #include <iostream>
 #include <iterator>
 #include <queue>
 #include <algorithm>
 #include <cstdio>
 #include <ctime>
+*/
 
-#include <QLabel>
-#include <QMainWindow>
-#include <QtCore>
-#include <QString>
-#include <QFileDialog>
+#include "uf.h"
 
 using namespace cv;
+using namespace std;
 
 class paolMat
 {
 public:
+    // Expected upper bound on how many connected components are found in a DoG image
+    static const int DEFAULT_NUM_CC = 50000;
+
     VideoCapture cam;
 
     //image data
@@ -45,23 +52,20 @@ public:
 
     int scale;//scale factor for maskMin
 
+    int difs;
+
     //image read variables
     int cameraNum;
+    char readName[256];
     int countRead;
     int time;
 
-    //variables used by comp process
-    int difs;
-    std::string name;
-    int count;
-
-    //from qt verion
-    char readName[256];
     std::string dirOut;
 
     paolMat();
     ~paolMat();
     paolMat(paolMat* m);
+    paolMat(Mat m, int camIn);
     void copy(paolMat* m);
     void copyClean(paolMat* m);
     void copyMask(paolMat* m);
@@ -69,8 +73,16 @@ public:
 
     void setCameraNum(int i);
     void takePicture();
+    bool readNext(QWidget *fg);
 
-    void flipPicture();
+    void Standard_Hough(int,void*);
+
+    QImage convertToQImage();
+    QImage convertMaskToQImage();
+    QImage convertMaskMinToQImage();
+    void displayImage(QLabel& location);
+    void displayMask(QLabel& location);
+    void displayMaskMin(QLabel& location);
 
     //maskMin methods
     float differenceMin(paolMat *img, int thresh, int size);
@@ -97,19 +109,19 @@ public:
     void enhanceText();
     float countDifsMask(paolMat *newIm);
 
-    //for computer process
-    void difference(paolMat *img, int thresh, int size, int maskBottom);
-    void read(std::string fullName, std::string fileName, int countIn, int timeIn);
-    void write2(std::string outDir,std::string nameOut,int camNum);
+    void rectifyImage(paolMat *m);
+    void findBoard(paolMat *m);
 
-    //for qt
-    bool readNext(QWidget *fg);
-    QImage convertToQImage();
-    QImage convertMaskToQImage();
-    QImage convertMaskMinToQImage();
-    void displayImage(QLabel& location);
-    void displayMask(QLabel& location);
-    void displayMaskMin(QLabel& location);
+    void difference(paolMat *img, int thresh, int size, int maskBottom);
+
+    static Mat findMarkerWithCC(const Mat& orig);
+    static Mat getDoGEdges(const Mat& orig, int kerSize, float rad1, float rad2);
+    static Mat adjustLevels(const Mat& orig, int lo, int hi, double gamma);
+    static Mat binarize(const Mat& orig, int threshold);
+    static int** getConnectedComponents(const Mat& components);
+    static Mat pDrift(const Mat& orig);
+    static Mat filterConnectedComponents(const Mat& compsImg, const Mat& keepCompLocs);
+    static Mat whitenWhiteboard(const Mat &whiteboardImg, const Mat& markerPixels);
 };
 
 #endif // PAOLMAT_H

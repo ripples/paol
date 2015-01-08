@@ -1,16 +1,14 @@
 #include "paolMat.h"
 
-paolMat::paolMat()
-{
-  difs = -1;
-  name = "No Name"; 
-  count = -1;
-  cameraNum=-1;
-  scale=8;
+paolMat::paolMat(){
+    cameraNum=-1;
+    scale=8;
+    difs = -1;
 }
 
-paolMat::paolMat(paolMat* m)
-{
+paolMat::paolMat(paolMat* m){
+    difs = -1;
+
     if(m->src.data)
         src = m->src.clone();
     if(m->mask.data)
@@ -19,17 +17,24 @@ paolMat::paolMat(paolMat* m)
         maskMin = m->maskMin.clone();
 
     cameraNum=m->cameraNum;
-    countRead=m->countRead;
     sprintf(readName,"%s",m->readName);
+    countRead=m->countRead;
     time=m->time;
+    dirOut=m->dirOut;
     scale=m->scale;
-    name = m->name;
-    difs = m->difs;
-    count=m->count;
 }
 
-paolMat::~paolMat()
-{
+paolMat::paolMat(Mat m, int camIn){
+    difs = -1;
+
+    if(m.data)
+        src = m.clone();
+
+    cameraNum= camIn;
+    scale=8;
+}
+
+paolMat::~paolMat(){
     if(src.data)
         src.~Mat();
     if(mask.data)
@@ -42,10 +47,6 @@ paolMat::~paolMat()
         maskMin.~Mat();
     if(cam.isOpened())
         cam.release();
-}
-
-void paolMat::flipPicture(){
-    flip(src,src,-1);
 }
 
 void paolMat::copy(paolMat *m){
@@ -65,13 +66,11 @@ void paolMat::copy(paolMat *m){
         maskMin = m->maskMin.clone();
 
     cameraNum=m->cameraNum;
-    countRead=m->countRead;
     sprintf(readName,"%s",m->readName);
+    countRead=m->countRead;
     time=m->time;
+    dirOut=m->dirOut;
     scale=m->scale;
-    difs = m->difs;
-    name = m->name;
-    count=m->count;
 }
 
 void paolMat::copyClean(paolMat *m){
@@ -90,9 +89,10 @@ void paolMat::copyClean(paolMat *m){
     }
 
     cameraNum=m->cameraNum;
-    countRead=m->countRead;
     sprintf(readName,"%s",m->readName);
+    countRead=m->countRead;
     time=m->time;
+    dirOut=m->dirOut;
     scale=m->scale;
 }
 
@@ -128,6 +128,127 @@ void paolMat::takePicture(){
     for (int i=0;i<5;i++){
         cam>>src;
     }
+}
+
+bool paolMat::readNext(QWidget *fg){
+    std::string readFileName;
+    int lastLoaded, lastCountRead;
+    int lastRead;
+    int numberImagesTest = 300;
+    int timeCheckOver = 300;
+
+    //if no image has yet been loaded open a dialog to let the user select the first image
+    if (cameraNum==-1){
+        //open dialog window to find first image, return file name and path
+        QString filename=QFileDialog::getOpenFileName(fg,fg->tr("Open First Image of Sequence"),".",
+                                                      fg->tr("Image Files (*.png *.bmp *.jpg *.JPG)"));
+        //split the filename into image name and directory path
+        QStringList pieces = filename.split( "/" );
+        QString imagename = pieces.value( pieces.length() - 1 );
+        QString directory = pieces[0]+"";
+        for (int i=0;i<pieces.length()-1;i++){
+            directory+=pieces[i]+"/";
+        }
+        //convert filename and directory to std strings
+        dirOut=directory.toUtf8().constData();
+        std::string text = imagename.toUtf8().constData();
+        //read in image name and information
+        sscanf(text.c_str(),"%[^0-9]%06d-%10d-%d.png",readName,&countRead,&time,&cameraNum);
+    }
+
+    //increase image number and create new image name
+    countRead++;
+    char tempOut[256];
+    sprintf(tempOut,"%s%s%06d-%10d-%d.png",dirOut.c_str(),readName,countRead,time,cameraNum);
+
+    qDebug("readName:%s \n fullPath:%s\n",readName,tempOut);
+    //clear src mat and try to read image name
+    if(src.data)
+        src.~Mat();
+    src=imread(tempOut,CV_LOAD_IMAGE_COLOR);
+
+    lastRead=countRead;
+
+    //if image read failed
+    if(!src.data){
+        //store the time and number of last image read
+        lastLoaded=time;
+        lastCountRead=countRead;
+        //while the count is less then the maximum count between images and no image has been loaded
+        while((countRead-lastCountRead)<numberImagesTest && !src.data){
+            //reset time to that of last loaded
+            time=lastLoaded;
+            //while the time is less then the maximum time between images and no image as been loaded
+            while((time-lastLoaded)<timeCheckOver && !src.data){
+                //increment time
+                time++;
+                //create new filename
+                sprintf(tempOut,"%s%s%06d-%10d-%d.png",dirOut.c_str(),readName,countRead,time,cameraNum);
+                //try to load filename
+                src=imread(tempOut,CV_LOAD_IMAGE_COLOR);
+                lastRead=countRead;
+            }
+            countRead++;
+        }
+    }
+    //qDebug("rows=%d cols=%d",(int)src.rows,(int)src.cols);
+
+    countRead=lastRead;
+    if(!src.data){
+        return false;
+    } else {
+        return true;
+    }
+}
+
+QImage paolMat::convertToQImage(){
+    cvtColor(src,display,CV_BGR2RGB);
+
+    //convert Mat to QImage
+    QImage img=QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
+
+    return img;
+}
+
+QImage paolMat::convertMaskToQImage(){
+    //copy mask Mat to display Mat and convert from BGR to RGB format
+    cvtColor(mask,display,CV_BGR2RGB);
+
+    //convert Mat to QImage
+    QImage img=QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
+
+    return img;
+}
+
+QImage paolMat::convertMaskMinToQImage(){
+    //copy maskMin Mat to displayMin Mat and convert from BGR to RGB format
+    cvtColor(maskMin,displayMin,CV_BGR2RGB);
+
+    //convert Mat to QImage
+    QImage img=QImage((const unsigned char*)(displayMin.data),displayMin.cols,displayMin.rows,displayMin.step,QImage::Format_RGB888);
+
+    return img;
+}
+
+void paolMat::displayImage(QLabel &location){
+    //call method to convert Mat to QImage
+    QImage img=convertToQImage();
+    //push image to display location "location"
+    location.setPixmap(QPixmap::fromImage(img));
+}
+
+void paolMat::displayMask(QLabel &location){
+    //call method to convert Mat to QImage
+    QImage img=convertMaskToQImage();
+    //push image to display location "location"
+    location.setPixmap(QPixmap::fromImage(img));
+}
+
+void paolMat::displayMaskMin(QLabel &location){
+    //call method to convert Mat to QImage
+    QImage img=convertMaskMinToQImage();
+    //push image to display location "location"
+    location.setPixmap(QPixmap::fromImage(img));
 }
 
 float paolMat::differenceMin(paolMat *img, int thresh, int size){
@@ -189,6 +310,97 @@ float paolMat::differenceMin(paolMat *img, int thresh, int size){
   //return the percent of maskMin that are differences
   return (float)numDiff/(float)(maskMin.rows*maskMin.cols);
 }
+
+void paolMat::difference(paolMat *img, int thresh, int size, int maskBottom)
+{
+  bool diff;
+  int numDiff;
+  int surroundThresh = 50;
+  int dist;
+  bool first;
+  int cenx;
+  int ceny;
+  int total;
+  //mask is set to a blank state
+  mask = Mat::zeros(src.size(), src.type());
+
+  numDiff = 0;
+  first = true;
+  //distance --
+  dist = 0;
+  //for every row
+  for (int y = size; y < (src.rows-(size+1+maskBottom)); y++)
+    {
+      //for every column
+      for (int x = size; x < (src.cols-(size+1)); x++)
+    {
+      diff = false;
+      //for each color channel
+      for(int i = 0; i < 3; i++)
+        {
+          //if the difference (for this pixel) between the the current img and the previous img is greater than the threshold, difference is noted; diff = true
+          if(abs((double)img->src.at<Vec3b>(y,x)[i]-(double)src.at<Vec3b>(y,x)[i])>thresh)
+        diff = true;
+        }
+      if(diff)
+        {
+          //std::cout<<"First if dif size: "<<size<<std::endl;
+          //mask.at<Vec3b>(y,x)[1]=255;
+          // for all the pixels surrounding the current pixel
+          for(int yy = y-size; yy < y+size; yy++)
+        {
+          for(int xx = x-size; xx < x+size; xx++)
+            {
+              //for each color channel
+              for(int ii = 0; ii < 3; ii++)
+            {
+              //ignore all differneces found at the edges; sometimes pixels get lost in tranmission
+              if(abs(((double)(img->src.at<Vec3b>(yy,xx)[ii]))-(((double)(img->src.at<Vec3b>((yy+1),xx)[ii])))>surroundThresh))
+                diff = false;
+              if(abs(((double)(img->src.at<Vec3b>(yy,xx)[ii]))-(((double)(img->src.at<Vec3b>(yy,(xx+1))[ii])))>surroundThresh))
+                diff = false;
+            }
+            }
+        }
+        }
+      if(diff)
+        {
+          //std::cout<<"Second if diff"<<std::endl;
+          numDiff++;
+          //calculates total difference and modifies the mask accordingly
+          total = abs((double)img->src.at<Vec3b>(y,x)[0]-(double)src.at<Vec3b>(y,x)[0]) +
+        abs((double)img->src.at<Vec3b>(y,x)[1]-(double)src.at<Vec3b>(y,x)[1]) +
+        abs((double)img->src.at<Vec3b>(y,x)[2]-(double)src.at<Vec3b>(y,x)[2]);
+          if(total > 512)
+        {
+          mask.at<Vec3b>(y,x)[0] = 255;
+        }
+          if(total > 255)
+        {
+          mask.at<Vec3b>(y,x)[1] = 255;
+          numDiff++;
+        }
+          mask.at<Vec3b>(y,x)[2]=255;
+          //sets location of first differnce found
+          if(first)
+        {
+          first = false;
+          cenx = x;
+          ceny = y;
+        }
+          //std::cout<<"Difference x: "<<x<<" cenx: "<<cenx<<" y:"<<y<<" ceny: "<<ceny<<std::endl;
+          //distance between pixels
+          dist+=sqrt(((x-cenx)*(x-cenx))+((y-ceny)*(y-ceny)));
+        }
+    }
+    }
+  //std::cout<<"Difference dist: "<<dist<<std::endl;
+  if((dist<10000))//&&(maskBottom>0))
+    difs = 0;
+  else
+    difs = numDiff;
+}
+
 
 float paolMat::shrinkMaskMin()
 {
@@ -666,6 +878,7 @@ void paolMat::updateBackgroundMaskMin(paolMat *m, paolMat *foreground){
             }
         }
     }
+    //qDebug("count=%d",count);
 }
 
 //this method updates the whiteboard image, removing the professor
@@ -772,7 +985,7 @@ void paolMat::processText(paolMat *m){
 //method for darkening text and setting whiteboard to white
 void paolMat::darkenText(){
     //int temp;
-  Mat tempOut=mask.clone();
+    Mat tempOut;
 
     //for every pixel
     for(int y = 0; y < src.rows; y++)
@@ -917,9 +1130,11 @@ void paolMat::enhanceText(){
 // in the other
 float paolMat::countDifsMask(paolMat *newIm){
     int difs=0;
+    int sizeBuffer=40;//area around edge of whiteboard that is ignored when looking for difference
+    //there is often a lot of noise at the edges
 
-    for(int x = 0; x < src.cols; x++)
-        for(int y = 0; y < src.rows; y++){
+    for(int x = sizeBuffer; x < src.cols-sizeBuffer; x++)
+        for(int y = sizeBuffer; y < src.rows-sizeBuffer; y++){
             if((mask.at<Vec3b>(y,x)[0]!=0 and newIm->mask.at<Vec3b>(y,x)[2]!=255) ||
                 (newIm->mask.at<Vec3b>(y,x)[0]!=0 and mask.at<Vec3b>(y,x)[2]!=255)){
                 difs++;
@@ -931,252 +1146,505 @@ float paolMat::countDifsMask(paolMat *newIm){
                 mask.at<Vec3b>(y,x)[1]=0;
                 mask.at<Vec3b>(y,x)[2]=0;
             }
+            //src.at<Vec3b>(y,x)[2]=255;
         }
 
     return (double)difs/((double)(mask.cols*mask.rows));
 }
 
-void paolMat::difference(paolMat *img, int thresh, int size, int maskBottom)
-{
-    bool diff;
-    int numDiff;
-    int surroundThresh = 50;
-    int dist;
-    bool first;
-    int cenx;
-    int ceny;
-    int total;
-    //mask is set to a blank state
-    mask = Mat::zeros(src.size(), src.type());
+void paolMat::rectifyImage(paolMat *m){
+    double widthP,heightP;
+    double LTx,LTy,LBx,LBy,RTx,RTy,RBx,RBy;//L left R right T top B bottom
+    LTx=547;
+    LTy=290;
+    LBx=527;
+    LBy=932;
+    RTx=1831;
+    RTy=222;
+    RBx=1914;
+    RBy=904;
+    int xInput,yInput;
+    double LPx,LPy,RPx,RPy;//end points of line between edges on which point is found
+    /*int rows,cols;
+    if (RTx-LTx>RBx-LBx)
+        cols=RTx-LTx;
+    else
+        cols=RBx-LBx;
+    if (RBy-RTy>LBy-LTy)
+        rows=RBy-RTy;
+    else
+        rows=LBy-LTy;
+*/
+    if(src.data)
+        src.~Mat();
+    //src=Mat::zeros(rows,cols,m->src.type());
+    src=Mat::zeros(m->src.size(),m->src.type());
 
-    numDiff = 0;
-    first = true;
-    //distance --
-    dist = 0;
+    for(int x = 0; x < src.cols; x++)
+        for(int y = 0; y < src.rows; y++){
+            widthP=(double)x/(double)src.cols;
+            heightP=(double)y/(double)src.rows;
+            LPx=LTx+(LBx-LTx)*heightP;
+            LPy=LTy+(LBy-LTy)*heightP;
+            RPx=RTx+(RBx-RTx)*heightP;
+            RPy=RTy+(RBy-RTy)*heightP;
 
-    //for every row
-    for (int y = size; y < (src.rows-(size+1+maskBottom)); y++)
-    {
+            xInput=(int)(LPx+(RPx-LPx)*widthP);
+            yInput=(int)(LPy+(RPy-LPy)*widthP);
 
-        //for every column
-        for (int x = size; x < (src.cols-(size+1)); x++)
-        {
-            diff = false;
-            //for each color channel
-            for(int i = 0; i < 3; i++)
-            {
-                //if the difference (for this pixel) between the the current img and the previous img is greater than the threshold, difference is noted; diff = true
-                if(abs((double)img->src.at<Vec3b>(y,x)[i]-(double)src.at<Vec3b>(y,x)[i])>thresh)
-                    diff = true;
+            if (xInput>=0 &&
+                    xInput<m->src.cols &&
+                    yInput>=0 &&
+                    yInput<m->src.rows){
+                src.at<Vec3b>(y,x)[0]=m->src.at<Vec3b>(yInput,xInput)[0];
+                src.at<Vec3b>(y,x)[1]=m->src.at<Vec3b>(yInput,xInput)[1];
+                src.at<Vec3b>(y,x)[2]=m->src.at<Vec3b>(yInput,xInput)[2];
+            } else {
+                src.at<Vec3b>(y,x)[0]=0;
+                src.at<Vec3b>(y,x)[1]=0;
+                src.at<Vec3b>(y,x)[2]=0;
             }
-            if(diff)
-            {
-                //std::cout<<"First if dif size: "<<size<<std::endl;
-                //mask.at<Vec3b>(y,x)[1]=255;
-                // for all the pixels surrounding the current pixel
-                for(int yy = y-size; yy < y+size; yy++)
-                {
-                    for(int xx = x-size; xx < x+size; xx++)
-                    {
-                        //for each color channel
-                        for(int ii = 0; ii < 3; ii++)
-                        {
-                            //ignore all differneces found at the edges; sometimes pixels get lost in tranmission
-                            if(abs(((double)(img->src.at<Vec3b>(yy,xx)[ii]))-(((double)(img->src.at<Vec3b>((yy+1),xx)[ii])))>surroundThresh))
-                                diff = false;
-                            if(abs(((double)(img->src.at<Vec3b>(yy,xx)[ii]))-(((double)(img->src.at<Vec3b>(yy,(xx+1))[ii])))>surroundThresh))
-                                diff = false;
+        }
+}
+
+void paolMat::findBoard(paolMat *m){
+    Canny(m->src, mask, 50, 200, 3);
+    cvtColor(mask, src, CV_GRAY2BGR);
+
+    /*vector<Vec4i> lines;
+    HoughLinesP( mask, lines, 1, CV_PI/180, 80, 30, 10 );
+    for( size_t i = 0; i < lines.size(); i++ )
+    {
+        line( src, Point(lines[i][0], lines[i][1]),
+                Point(lines[i][2], lines[i][3]), Scalar(0,0,255), 3, 8 );
+    }*/
+
+
+    vector<Vec2f> lines;
+    // detect lines
+    HoughLines(mask, lines, 1, CV_PI/180, 250, 0, 0 );
+    src.~Mat();
+    src=m->src.clone();
+    // draw lines
+    for( size_t i = 0; i < lines.size(); i++ )
+    {
+        float rho = lines[i][0], theta = lines[i][1];
+        Point pt1, pt2;
+        double a = cos(theta), b = sin(theta);
+        double x0 = a*rho, y0 = b*rho;
+        pt1.x = cvRound(x0 + 2000*(-b));
+        pt1.y = cvRound(y0 + 2000*(a));
+        pt2.x = cvRound(x0 - 2000*(-b));
+        pt2.y = cvRound(y0 - 2000*(a));
+        line( src, pt1, pt2, Scalar(0,0,255), 3, CV_AA);
+    }
+}
+
+void paolMat::Standard_Hough(int, void*){
+    vector<Vec2f> s_lines; //lines from hough
+    //==============================
+    //INIT SET UP
+    Size s = src.size();
+    int maxY = s.height;
+    int maxX = s.width;
+
+    //0 is tl, 1 is tr, 2 is br, 3 is bl
+    int corners[4][2];
+    corners[0][0]=0;
+    corners[0][1]=0;
+    corners[1][0]=maxX;
+    corners[1][1]=0;
+    corners[2][0]=maxX;
+    corners[2][1]=maxY;
+    corners[3][0]=0;
+    corners[3][1]=maxY;
+
+    //set centers
+    int centX = (maxX / 2);
+    int centY = (maxY / 2);
+    //END OF INIT SETUP
+    //===============================
+
+    Mat src_edited;
+    Mat src_crop;
+    Mat standard_hough;
+    int x, y, width, height;
+
+    cvtColor(src, src_edited, CV_RGB2GRAY);//COLOR_RG
+    Canny(src_edited, src_edited, 50, 200, 3);//EDGES
+
+    cvtColor(src_edited, standard_hough, COLOR_GRAY2BGR); //make edges gray
+    HoughLines(src_edited, s_lines, 1, CV_PI / 180, 180, 0, 0);
+
+    //loop through each line and get points of end to end of lines and find closest to center
+    for (size_t i = 0; i < s_lines.size(); i++){
+        float r = s_lines[i][0], t = s_lines[i][1];
+        double cos_t = cos(t), sin_t = sin(t);
+        double x0 = r*cos_t, y0 = r*sin_t;
+        double alpha = 1000;
+
+        Point pt1(cvRound(x0 + alpha*(-sin_t)), cvRound(y0 + alpha*cos_t));
+        Point pt2(cvRound(x0 - alpha*(-sin_t)), cvRound(y0 - alpha*cos_t));
+        line(standard_hough, pt1, pt2, Scalar(255, 0, 0), 3, CV_AA);
+
+        //if pt1 is bottom point switch to top
+        if (pt1.y > pt2.y){
+            Point tempP = pt2;
+            pt2 = pt1;
+            pt1 = tempP;
+        }
+
+        float degree = atan2((pt2.x - pt1.x), (pt2.y - pt1.y)) * (180 / M_PI);
+
+        //make sure its a viable line, may need to be altered
+        if (abs(degree) > 70 && abs(degree) < 110){
+            if (pt1.x >= corners[0][0] && pt1.x < centX){
+                corners[0][0] = pt1.x;
+                corners[3][0] = pt2.x;
+            }
+            if (pt1.x <= corners[1][0] && pt1.x > centX){
+                corners[1][0] = pt1.x;
+                corners[2][0] = pt2.x;
+            }
+        }
+
+        //make sure its a viable line, may need to be altered
+        if (abs(degree) < 20 || abs(degree) > 160){
+            if (pt1.y >= corners[0][1] && pt1.y < centY){
+                corners[0][1] = pt1.y;
+                corners[1][1] = pt2.y;
+            }
+
+            if (pt1.y <= corners[3][1] && pt1.y > centY){
+                corners[3][1] = pt1.y;
+                corners[2][1] = pt2.y;
+            }
+        }
+    }
+
+    if (corners[0][0] < corners[3][0]){
+        x = corners[0][0];
+    }
+    else{
+        x = corners[3][0];
+    }
+
+    if (corners[1][0] > corners[2][0]){
+        width = corners[1][0] - x;
+    }
+    else{
+        width = corners[2][0] - x;
+    }
+
+    if (corners[0][1] < corners[1][1]){
+        y = corners[0][1];
+    }
+    else{
+        y = corners[1][1];
+    }
+
+    if (corners[3][1] > corners[2][1]){
+        height = corners[3][1] - y;
+    }
+    else{
+        height = corners[2][1] - y;
+    }
+    Rect xRect(x, y, width, height);
+    src = src(xRect); //This is cropped to board
+    //corners should still be coords of rect (could probably be saved off in a different for like x,y,w,h instead of 4 points)
+    string outputCorners= "";
+
+    for(int i = 0; i <= 3; i++){
+        for(int j = 0; j < 2; j++){
+            string s;
+            //string stream used to convert int to string
+            stringstream out;
+            out << corners[i][j];
+            s = out.str();
+            outputCorners = outputCorners + s + "\n";
+        }
+    }
+    string camNumStr;
+    stringstream numIn;
+    numIn << cameraNum;
+    camNumStr = numIn.str();
+
+    string path = "/home/paol/paol-code/cornersCam" + camNumStr + ".txt";
+
+    char * writeable = new char[path.size() + 1];
+
+    std::copy(path.begin(), path.end(), writeable);
+    writeable[path.size()] = '\0';
+
+    std::ofstream file(writeable);
+    file << outputCorners;
+
+ }
+
+// Locate the marker strokes with the DoG and connected components approach.
+// First, find the DoG edges and threshold them. Then, use pDrift to determine
+// which connected components from the threholded DoG edges should be kept.
+Mat paolMat::findMarkerWithCC(const Mat& orig) {
+    Mat markerCandidates = getDoGEdges(orig, 13, 17, 1);
+    markerCandidates = adjustLevels(markerCandidates, 0, 4, 1);
+    markerCandidates = binarize(markerCandidates, 10);
+    Mat markerLocations = pDrift(orig);
+    markerLocations = binarize(markerLocations, 10);
+    return filterConnectedComponents(markerCandidates, markerLocations);
+}
+
+// Runs the Difference of Gaussians (DoG) edge detector on the given image.
+// TODO: Implement the DoG detector by first subtracting the Gaussian kernels,
+//       then filter the result with orig. I can't figure out how to do this.
+// Arguments:
+//    orig: The image to locate the edges of
+//    kerSize: The kernel size for the edge detector. It must be odd, otherwise
+//             the filter fails.
+//    sig1: The sigma of the first Gaussian blur. Should be larger than sig2.
+//    sig2: The sigma of the second Gaussian blur.
+Mat paolMat::getDoGEdges(const Mat& orig, int kerSize, float sig1, float sig2) {
+    Mat g1, g2;
+    GaussianBlur(orig, g1, Size(kerSize, kerSize), sig1);
+    GaussianBlur(orig, g2, Size(kerSize, kerSize), sig2);
+    return g1-g2;
+}
+
+// Change the brightness levels of the given image.
+// Arguments:
+//    orig: The image to adjust the brightness levels of
+//    lo: The low threshold of the input brightnesses
+//    hi: The high threshold of the input brightnesses
+//    gamma: The curvature of the level remapping
+Mat paolMat::adjustLevels(const Mat& orig, int lo, int hi, double gamma) {
+    return 255/pow(hi-lo, 1/gamma)*(orig-lo)^(1/gamma);
+}
+
+// Determine the pixels in orig where all the values of all three
+// channels are greater than the threshold
+Mat paolMat::binarize(const Mat& orig, int threshold) {
+    Mat binarized = Mat::zeros(orig.size(), orig.type());
+    for(int i = 0; i < orig.rows; i++) {
+        for(int j = 0; j < orig.cols; j++) {
+            if(orig.at<Vec3b>(i,j)[0] >= threshold &&
+                    orig.at<Vec3b>(i,j)[1] >= threshold &&
+                    orig.at<Vec3b>(i,j)[2] >= threshold) {
+                binarized.at<Vec3b>(i,j)[0] = 255;
+                binarized.at<Vec3b>(i,j)[1] = 255;
+                binarized.at<Vec3b>(i,j)[2] = 255;
+            } else {
+                binarized.at<Vec3b>(i,j)[0] = 0;
+                binarized.at<Vec3b>(i,j)[1] = 0;
+                binarized.at<Vec3b>(i,j)[2] = 0;
+            }
+        }
+    }
+    return binarized;
+}
+
+// Run a specialized edge filter on the original image. The derivative in the horizontal
+// direction is stored in the red channel (for vertical edges), the derivative in the
+// vertical direction is stored in the green channel (for horizontal edges), and the
+// sum is stored in the blue channel
+Mat paolMat::pDrift(const Mat& orig) {
+    int temp,total;
+    Mat ret = Mat::zeros(orig.size(), orig.type());
+
+    //for every pixel in image (excludeing edges where perocess would break
+    for(int y = 0; y < orig.rows -1; y++)
+        for(int x = 0; x < orig.cols -1; x++)
+        {
+            //look for edges in the vertical direction using a variation on a Sobel filter
+            //[1 -1]
+            temp = (
+                        //y,x+1
+                        abs(orig.at<Vec3b>(y,x)[0] - orig.at<Vec3b>(y,x+1)[0])+
+                    abs(orig.at<Vec3b>(y,x)[1] - orig.at<Vec3b>(y,x+1)[1])+
+                    abs(orig.at<Vec3b>(y,x)[2] - orig.at<Vec3b>(y,x+1)[2])
+                    );
+
+            if(temp > 255)
+                temp = 255;
+            //write the vertical edge information to the red color channel
+            ret.at<Vec3b>(y,x)[2] = temp;
+            total = temp;
+
+            //run the same filters in the vertical direction to look for edges in the
+            //horizontal direction.
+            temp = (
+                        //y+1,x
+                        abs(orig.at<Vec3b>(y,x)[0] - orig.at<Vec3b>(y+1,x)[0])+
+                    abs(orig.at<Vec3b>(y,x)[1] - orig.at<Vec3b>(y+1,x)[1])+
+                    abs(orig.at<Vec3b>(y,x)[2] - orig.at<Vec3b>(y+1,x)[2])
+                    );
+            if(temp > 255)
+                temp = 255;
+            total+=temp;
+            if(total > 255)
+                total = 255;
+
+            //write the horizontal edge information to the green color channel
+            ret.at<Vec3b>(y,x)[1] = temp;
+            //write the addition of the horizontal and vertical edges found to the blue color channel
+            ret.at<Vec3b>(y,x)[0] = total;
+        }
+    return ret;
+}
+
+// Given a binary image, locate the connected components in the image
+// WARNING: The returned array must be manually destroyed after use.
+int** paolMat::getConnectedComponents(const Mat& components) {
+    int** componentLabels = new int*[components.rows];
+    for(int i = 0; i < components.rows; i++) {
+        componentLabels[i] = new int[components.cols];
+    }
+
+    // The disjoint set structure that keeps track of component classes
+    UF compClasses(DEFAULT_NUM_CC);
+    // Counter for the components in the image
+    int regCounter = 1;
+    for(int i = 0; i < components.rows; i++) {
+        for(int j = 0; j < components.cols; j++) {
+            // Set component class if mask is white at current pixel
+            if(components.at<Vec3b>(i, j)[0] == 255) {
+                // Check surrounding pixels
+                if(i-1 < 0) {
+                    // On top boundary, so just check left
+                    if(j-1 < 0) {
+                        // This is the TL pixel, so set as new class
+                        componentLabels[i][j] = regCounter;
+                        regCounter++;
+                    }
+                    else if(componentLabels[i][j-1] == -1) {
+                        // No left neighbor, so set pixel as new class
+                        componentLabels[i][j] = regCounter;
+                        regCounter++;
+                    }
+                    else {
+                        // Assign pixel class to the same as left neighbor
+                        componentLabels[i][j] = componentLabels[i][j-1];
+                    }
+                }
+                else {
+                    if(j-1 < 0) {
+                        // On left boundary, so just check top
+                        if(componentLabels[i-1][j] == -1) {
+                            // No top neighbor, so set pixel as new class
+                            componentLabels[i][j] = regCounter;
+                            regCounter++;
+                        }
+                        else {
+                            // Assign pixel class to same as top neighbor
+                            componentLabels[i][j] = componentLabels[i-1][j];
+                        }
+                    }
+                    else {
+                        // Normal case (get top and left neighbor and reassign classes if necessary)
+                        int topClass = componentLabels[i-1][j];
+                        int leftClass = componentLabels[i][j-1];
+                        if(topClass == -1 && leftClass == -1) {
+                            // No neighbor exists, so set pixel as new class
+                            componentLabels[i][j] = regCounter;
+                            regCounter++;
+                        }
+                        else if(topClass == -1 && leftClass != -1) {
+                            // Only left neighbor exists, so copy its class
+                            componentLabels[i][j] = leftClass;
+                        }
+                        else if(topClass != -1 && leftClass == -1) {
+                            // Only top neighbor exists, so copy its class
+                            componentLabels[i][j] = topClass;
+                        }
+                        else {
+                            // Both neighbors exist
+                            int minNeighbor = std::min(componentLabels[i-1][j], componentLabels[i][j-1]);
+                            int maxNeighbor = std::max(componentLabels[i-1][j], componentLabels[i][j-1]);
+                            componentLabels[i][j] = minNeighbor;
+                            // If we have differing neighbor values, merge them
+                            if(minNeighbor != maxNeighbor) {
+                                compClasses.merge(minNeighbor, maxNeighbor);
+                            }
                         }
                     }
                 }
             }
-            if(diff)
-            {
-                //std::cout<<"Second if diff"<<std::endl;
-                numDiff++;
-                //calculates total difference and modifies the mask accordingly
-                total = abs((double)img->src.at<Vec3b>(y,x)[0]-(double)src.at<Vec3b>(y,x)[0]) +
-                        abs((double)img->src.at<Vec3b>(y,x)[1]-(double)src.at<Vec3b>(y,x)[1]) +
-                        abs((double)img->src.at<Vec3b>(y,x)[2]-(double)src.at<Vec3b>(y,x)[2]);
-                if(total > 512)
-                {
-                    mask.at<Vec3b>(y,x)[0] = 255;
-                }
-                if(total > 255)
-                {
-                    mask.at<Vec3b>(y,x)[1] = 255;
-                    numDiff++;
-                }
-                mask.at<Vec3b>(y,x)[2]=255;
-                //sets location of first differnce found
-                if(first)
-                {
-                    first = false;
-                    cenx = x;
-                    ceny = y;
-                }
-                //std::cout<<"Difference x: "<<x<<" cenx: "<<cenx<<" y:"<<y<<" ceny: "<<ceny<<std::endl;
-                //distance between pixels
-                dist+=sqrt(((x-cenx)*(x-cenx))+((y-ceny)*(y-ceny)));
+            else {
+                // The pixel is black, so do not give a component label
+                componentLabels[i][j] = -1;
+            }
+        }
+    }
+    // Unify the labels such that every pixel in a component has the same label
+    for(int i=0; i < components.rows; i++) {
+        for(int j=0; j < components.cols; j++) {
+            componentLabels[i][j] = compClasses.find(componentLabels[i][j]);
+        }
+    }
+    return componentLabels;
+}
 
+// Given the connected components and an additional binary image, keep the components
+// that overlap with a pixel from the other binary image.
+// Arguments:
+//    compsImg: The connected components (labels not yet assigned)
+//    keepCompLocs: The pixels that a component must overlap with to be kept
+Mat paolMat::filterConnectedComponents(const Mat& compsImg, const Mat& keepCompLocs) {
+    // Get the component labels
+    int** components = getConnectedComponents(compsImg);
+
+    // Initialize lookup table of components to keep (initially keep no components)
+    vector<bool> componentsToKeep(DEFAULT_NUM_CC, false);
+    for(int i=0; i < keepCompLocs.rows; i++) {
+        for(int j=0; j < keepCompLocs.cols; j++) {
+            // If there is a component at the pixel and the pixel from keepCompLocs is
+            // white, then keep the component
+            if(keepCompLocs.at<Vec3b>(i,j)[2] == 255 && components[i][j] > 0) {
+                unsigned int compLabel = components[i][j];
+                // Resize the lookup table if it cannot contain the found comp label
+                if(compLabel >= componentsToKeep.size())
+                    componentsToKeep.resize(2*compLabel, false);
+                componentsToKeep[compLabel] = true;
             }
         }
     }
 
-    //std::cout<<"Difference dist: "<<dist<<std::endl;
-    if((dist<10000))//&&(maskBottom>0))
-        difs = 0;
-    else
-        difs = numDiff;
-}
-
-void paolMat::read(std::string fullName, std::string fileName,int countIn, int timeIn)
-{
-    name = fileName;
-    src = imread(fullName);
-    mask = Mat::zeros(src.size(), src.type());
-    count=countIn;
-    time=timeIn;
-    //if(src.data)
-    //std::cout<<"PaolMat:: Read: "<<fullName<<std::endl;
-}
-
-void paolMat::write2(std::string outDir,std::string nameOut,int camNum)
-{
-  if(!src.empty())
-    {
-      char temp[256];
-      std::string longName = outDir;
-      longName.append(nameOut);
-      sprintf(temp,"%010d-%d.png",time,camNum);
-      longName.append(temp);
-      cv::imwrite(longName, src);
-      //std::cout<<longName<<std::endl;
-    }else
-    {
-      std::cout<<"   Tried to write a empty src"<<std::endl;
-    }
-}
-
-bool paolMat::readNext(QWidget *fg){
-    std::string readFileName;
-    int lastLoaded, lastCountRead;
-    int lastRead;
-    int numberImagesTest = 300;
-    int timeCheckOver = 300;
-
-    //if no image has yet been loaded open a dialog to let the user select the first image
-    if (cameraNum==-1){
-        //open dialog window to find first image, return file name and path
-        QString filename=QFileDialog::getOpenFileName(fg,fg->tr("Open First Image of Sequence"),".",
-                                                      fg->tr("Image Files (*.png *.bmp *.jpg *.JPG)"));
-        //split the filename into image name and directory path
-        QStringList pieces = filename.split( "/" );
-        QString imagename = pieces.value( pieces.length() - 1 );
-        QString directory = pieces[0]+"";
-        for (int i=0;i<pieces.length()-1;i++){
-            directory+=pieces[i]+"/";
-        }
-        //convert filename and directory to std strings
-        dirOut=directory.toUtf8().constData();
-        std::string text = imagename.toUtf8().constData();
-        //read in image name and information
-        sscanf(text.c_str(),"%[^0-9]%06d-%10d-%d.png",readName,&countRead,&time,&cameraNum);
-    }
-
-    //increase image number and create new image name
-    countRead++;
-    char tempOut[256];
-    sprintf(tempOut,"%s%s%06d-%10d-%d.png",dirOut.c_str(),readName,countRead,time,cameraNum);
-
-    qDebug("readName:%s \n fullPath:%s\n",readName,tempOut);
-    //clear src mat and try to read image name
-    if(src.data)
-        src.~Mat();
-    src=imread(tempOut,CV_LOAD_IMAGE_COLOR);
-
-    lastRead=countRead;
-
-    //if image read failed
-    if(!src.data){
-        //store the time and number of last image read
-        lastLoaded=time;
-        lastCountRead=countRead;
-        //while the count is less then the maximum count between images and no image has been loaded
-        while((countRead-lastCountRead)<numberImagesTest && !src.data){
-            //reset time to that of last loaded
-            time=lastLoaded;
-            //while the time is less then the maximum time between images and no image as been loaded
-            while((time-lastLoaded)<timeCheckOver && !src.data){
-                //increment time
-                time++;
-                //create new filename
-                sprintf(tempOut,"%s%s%06d-%10d-%d.png",dirOut.c_str(),readName,countRead,time,cameraNum);
-                //try to load filename
-                src=imread(tempOut,CV_LOAD_IMAGE_COLOR);
-                lastRead=countRead;
+    // Add the components that intersected with the edge detector
+    Mat filteredComps = Mat::zeros(compsImg.size(), compsImg.type());
+    for(int i=0; i < keepCompLocs.rows; i++) {
+        for(int j=0; j < keepCompLocs.cols; j++) {
+            // If the pixel is part of a kept component, add it to the output
+            int compLabel = components[i][j];
+            if(compLabel > 0 && componentsToKeep[compLabel]) {
+                filteredComps.at<Vec3b>(i,j)[0] = 255;
+                filteredComps.at<Vec3b>(i,j)[1] = 255;
+                filteredComps.at<Vec3b>(i,j)[2] = 255;
             }
-            countRead++;
         }
     }
-    //qDebug("rows=%d cols=%d",(int)src.rows,(int)src.cols);
 
-    countRead=lastRead;
-    if(!src.data){
-        return false;
-    } else {
-        return true;
+    // Free memory used by components array
+    for(int i = 0; i < compsImg.rows; i++) {
+        delete [] components[i];
     }
+    delete [] components;
+
+    return filteredComps;
 }
 
-QImage paolMat::convertToQImage(){
-    //copy src Mat to display Mat and convert from BGR to RGB format
-    cvtColor(src,display,CV_BGR2RGB);
-
-    //convert Mat to QImage
-    QImage img=QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
-
-    return img;
+// Given a whiteboard image and the marker locations, make the non-marker pixels white
+// Arguments:
+//    whiteboardImg: The whiteboard image to modify
+//    markerPixels: A binary image where the marker pixel locations are white
+Mat paolMat::whitenWhiteboard(const Mat& whiteboardImg, const Mat& markerPixels) {
+    Mat ret = whiteboardImg.clone();
+    //for every pixel
+    for(int y = 0; y < whiteboardImg.rows; y++)
+        for(int x = 0; x < whiteboardImg.cols; x++){
+            //if there isn't and edge (text) in that location turn the pixel white
+            if (markerPixels.at<Vec3b>(y,x)[1]<50){
+                ret.at<Vec3b>(y,x)[0]=255;
+                ret.at<Vec3b>(y,x)[1]=255;
+                ret.at<Vec3b>(y,x)[2]=255;
+            }
+        }
+    return ret;
 }
-
-QImage paolMat::convertMaskToQImage(){
-    //copy mask Mat to display Mat and convert from BGR to RGB format
-    cvtColor(mask,display,CV_BGR2RGB);
-
-    //convert Mat to QImage
-    QImage img=QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
-
-    return img;
-}
-
-QImage paolMat::convertMaskMinToQImage(){
-    //copy maskMin Mat to displayMin Mat and convert from BGR to RGB format
-    cvtColor(maskMin,displayMin,CV_BGR2RGB);
-
-    //convert Mat to QImage
-    QImage img=QImage((const unsigned char*)(displayMin.data),displayMin.cols,displayMin.rows,displayMin.step,QImage::Format_RGB888);
-
-    return img;
-}
-
-void paolMat::displayImage(QLabel &location){
-    //call method to convert Mat to QImage
-    QImage img=convertToQImage();
-    //push image to display location "location"
-    location.setPixmap(QPixmap::fromImage(img));
-}
-
-void paolMat::displayMask(QLabel &location){
-    //call method to convert Mat to QImage
-    QImage img=convertMaskToQImage();
-    //push image to display location "location"
-    location.setPixmap(QPixmap::fromImage(img));
-}
-
-void paolMat::displayMaskMin(QLabel &location){
-    //call method to convert Mat to QImage
-    QImage img=convertMaskMinToQImage();
-    //push image to display location "location"
-    location.setPixmap(QPixmap::fromImage(img));
-}
-

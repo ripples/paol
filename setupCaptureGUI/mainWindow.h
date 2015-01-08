@@ -4,7 +4,8 @@
 #include <QMainWindow>
 #include <QtCore>
 #include <QTimer>
-
+#include <QTime>
+#include <QLabel>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QRadioButton>
@@ -20,51 +21,90 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <paolMat.h>
+#include <ctime>
+#include <iomanip>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include "paolMat.h"
+#include "paolProcess.h"
+#include "unistd.h"
+
+using namespace std;
+using namespace cv;
 namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow{
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-private:
-    Ui::MainWindow *ui;
-    QTimer *qTimer;
+    QVector <paolProcess*> dev;
 
-    vector <paolMat *> dev; //List containing paolMats
+    QVector <VideoCapture> recordingCams;
 
-    vector <string> camType;
-    vector <int> camNums;
-    vector <string> camNames;
-
+    QVector <QLabel*> camLabels;
     QVector <QLabel*> imLabels; //Vector containing pointers to all Labels
+    QVector <QLabel*> paolLabels;
+    QVector <QLabel*> previewLabels;
+
+    QVector <QLayout*> setupLayouts;
+    QVector <QLayout*> capLayouts;
+
     QVector <QComboBox*> optionBoxes; //Vector containing pointers to all ComboBoxes
     QVector <QCheckBox*> reverseChecks;
     QVector <QRadioButton*> audioRecord;
 
-    QString className; //Name of the class (ex. COMP171)
-    QString classYear; //Year in which class is taking place (ex. SUMMER13)
-    QString classDur; //Duration of class (ex. 2700 for 45min, 3600 for 1hr)
+    QVector <QString> camTypes;
 
-    int count; //interger containing amount of camera devices connected to device
-    bool createdUI;
-    string outputInfo; //String containing information to be written to out file
+    QTime myTimer;
+
+    string processLocation; //Contains location where to store processed images
+    string audioCamNum;
+    string vidCaptureString;
+
+    int count; //Stores amount of cameras currently connected
+    int fullCount;
+    int captureCount;
+    int captureSecondsElapsed;
+
+    bool runSetupCams;
+    bool runCaptureCams;
+    bool isVideo;
+
+    bool courseInformation();
+
+    void findCameras();
+    void populateSetupWindow();
+    void populateCaptureWindow();
+    void createCamDocument();
+    void configureCaptureSettings();
+    void timer();
+
+    void releaseSetupElements();
+    void releaseCaptureElements();
 
 private slots:
-    void populateGUI();
-    void beginRun();
-    void on_confirmBttn_clicked();
+    void runSystem(); //Continously runs the recording system
+    void on_infoReturnToSetup_clicked();
+
+    void on_setupRefreshCameras_clicked();
+
+    void on_setupContinueToCapture_clicked();
+
+    void on_infoContinue_clicked();
+
+    void on_captureReturnToSetup_clicked();
+
+
+private:
+    Ui::MainWindow *ui;
 };
 
 #endif // MAINWINDOW_H
