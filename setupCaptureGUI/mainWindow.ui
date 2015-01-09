@@ -23,7 +23,7 @@
    <widget class="QWidget" name="infoWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>2000</x>
+      <x>10</x>
       <y>0</y>
       <width>1080</width>
       <height>600</height>
@@ -198,7 +198,7 @@
    <widget class="QWidget" name="captureWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>2000</x>
+      <x>10</x>
       <y>0</y>
       <width>1080</width>
       <height>600</height>
