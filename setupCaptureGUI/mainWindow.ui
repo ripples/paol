@@ -23,7 +23,7 @@
    <widget class="QWidget" name="infoWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>2000</x>
       <y>0</y>
       <width>1080</width>
       <height>600</height>
@@ -177,6 +177,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="setupUploadFiles">
+          <property name="text">
+           <string>Upload all Files</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="setupContinueToCapture">
           <property name="text">
            <string>Continue to Course Information</string>
@@ -191,7 +198,7 @@
    <widget class="QWidget" name="captureWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>2000</x>
       <y>0</y>
       <width>1080</width>
       <height>600</height>

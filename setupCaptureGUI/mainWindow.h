@@ -103,6 +103,8 @@ private slots:
     void on_captureReturnToSetup_clicked();
 
 
+    void on_setupUploadFiles_clicked();
+
 private:
     Ui::MainWindow *ui;
 };
