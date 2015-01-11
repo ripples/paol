@@ -25,6 +25,14 @@ paolProcess::paolProcess(int camNumIn, QLabel &locationIn, QLabel &locationOut, 
     //cam->copyClean(camRaw);
     //cam->rectifyImage(camRaw);
     old->copy(cam);
+    if(whiteboard) {
+        oldFrame = cam->src.clone();
+        oldRefinedBackground = Mat::zeros(oldFrame.size(), oldFrame.type());
+        oldMarkerModel = Mat::zeros(oldFrame.size(), oldFrame.type());
+    }
+    else {
+        oldScreen = cam->src.clone();
+    }
     background->copyClean(cam);
     backgroundRefined->copyClean(cam);
     oldBackgroundRefined->copyClean(cam);
@@ -97,16 +105,19 @@ void paolProcess::flipRecord(){
 }
 
 void paolProcess::processWB(){
+    Mat currentFrame = cam->src.clone();
     //compare picture to previous picture and store differences in old->maskMin
-    numDif=old->differenceMin(cam,40,1);
+    float numDif;
+    Mat allDiffs;
+    WhiteboardProcessor::findAllDiffsMini(allDiffs, numDif, oldFrame, currentFrame, 40, 1);
 
     //if there is enough of a difference between the two images
+    float refinedNumDif = 0;
+    Mat filteredDiffs = Mat::zeros(currentFrame.size(), currentFrame.type());
     if(numDif>.03){
         //set up a new % that represents difference
-        refinedNumDif=old->shrinkMaskMin();
+        WhiteboardProcessor::filterNoisyDiffs(filteredDiffs, refinedNumDif, allDiffs);
         count=0;
-    } else {
-        refinedNumDif=0;
     }
 
     //if the images are really identical, count the number of consecultive nearly identical images
@@ -117,58 +128,28 @@ void paolProcess::processWB(){
     //for two frames, and hence no lecturer present
     if(refinedNumDif>.04 || (numDif <.000001 && count==2)){
         //copy the input image and process it to highlight the text
-        rawEnhanced->copy(cam);
-        Mat markerLocation = paolMat::findMarkerWithCC(rawEnhanced->src);
-        Mat darkenedText = paolMat::whitenWhiteboard(rawEnhanced->src, markerLocation);
-        rawEnhanced->src = darkenedText.clone();
+        Mat currentMarker = WhiteboardProcessor::findMarkerWithCC(currentFrame);
+        Mat whiteWhiteboard = WhiteboardProcessor::whitenWhiteboard(currentFrame, currentMarker);
+        Mat enhancedMarker = WhiteboardProcessor::smoothMarkerTransition(whiteWhiteboard);
 
         /////////////////////////////////////////////////////////////
         //identify where motion is
+        Mat diffHulls = WhiteboardProcessor::expandDifferencesRegion(filteredDiffs);
+        Mat diffHullsFullSize = WhiteboardProcessor::enlarge(diffHulls);
 
-        //extend the area of differences and sweep differences for more solid area
-        old->extendMaskMinToEdges();
-        old->sweepDownMin();
-        //keep only the solid area and grow that region
-        old->keepWhiteMaskMin();
-        old->growMin(8);
-        //draw a convex hull around area of differences
-        old->findContoursMaskMin();
-        //fill in area surrounded by convex hull
-        old->sweepDownMin();
-        old->keepWhiteMaskMin();
         ///////////////////////////////////////////////////////////////////////
 
-        //process to identify text location
-
-        //smooth image
-        cam->blur(1);
-        //find edge information and store total edge information in 0 (blue) color channel of mask
-        cam->pDrift();
-        //grow the area around where the edges are found (if edge in channel 0 grow in channel 2)
-        cam->grow(15,3);
-        ////////////////////////////////////////////////////////////////////////////////
-
-        //process to update background image
-
-        //copy movement information into rawEnhanced and then expand to full mask
-        rawEnhanced->copyMaskMin(old);
-        rawEnhanced->maskMinToMaskBinary();
-
-        //update the background image with new information
-        background->updateBack2(rawEnhanced,cam);
-
-        //copy the background image to one for processing
-        backgroundRefined->copy(background);
-        //copy text location information into mask
-        backgroundRefined->copyMask(background);
+        // Get what the whiteboard currently looks like
+        Mat currentWhiteboardModel = WhiteboardProcessor::updateWhiteboardModel(oldRefinedBackground, enhancedMarker, diffHullsFullSize);
+        // Get what the marker currently looks like
+        Mat newMarkerModel = WhiteboardProcessor::updateWhiteboardModel(oldMarkerModel, currentMarker, diffHullsFullSize);
         //////////////////////////////////////////////////
 
         //figure out if saves need to be made
 
         //count the number of differences in the refined text area between refined images
-        saveNumDif = oldBackgroundRefined->countDifsMask(backgroundRefined);
+        float saveNumDif = WhiteboardProcessor::findMarkerModelDiffs(oldMarkerModel, newMarkerModel);
         if (saveNumDif>.004){
-            oldBackgroundRefined->time=old->time;
 
             //SAVES OUT IMAGE
             //Convert picNum to string
@@ -189,6 +170,7 @@ void paolProcess::processWB(){
             s = out.str();
 
             //Get system time
+            // TODO: The time retrieved here doesn't reflect the time the actual image was captured.
             time_t rawtime;
             struct tm * timeinfo;
             char buffer[80];
@@ -199,14 +181,15 @@ void paolProcess::processWB(){
             strftime(buffer,80,"%H%M%S",timeinfo);
 
             string destination = outputPath + s + "-" + buffer + "-" + str2 + ".png";
-            imwrite(destination.data(), oldBackgroundRefined->src);
+            imwrite(destination.data(), oldRefinedBackground);
 
             picNum++;
         }
         //copy last clean whiteboard image
-        oldBackgroundRefined->copy(backgroundRefined);
+        oldRefinedBackground = currentWhiteboardModel.clone();
+        oldMarkerModel = newMarkerModel.clone();
     }
-    old->copy(cam);
+    oldFrame = currentFrame.clone();
 }
 
 void paolProcess::processComp(){
@@ -270,7 +253,7 @@ void paolProcess::displayInput(){
 }
 
 void paolProcess::displayWB(){
-    oldBackgroundRefined->displayImage(*locOut);
+    displayMat(oldRefinedBackground, *locOut);
 }
 
 void paolProcess::displayComp(){
@@ -286,3 +269,20 @@ void paolProcess::displayOutput(){
     }
 }
 
+QImage paolProcess::convertMatToQImage(const Mat& mat) {
+    Mat display;
+    //copy mask Mat to display Mat and convert from BGR to RGB format
+    cvtColor(mat,display,CV_BGR2RGB);
+
+    //convert Mat to QImage
+    QImage img=QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888)
+            .copy();
+    return img;
+}
+
+void paolProcess::displayMat(const Mat& mat, QLabel &location) {
+    //call method to convert Mat to QImage
+    QImage img=convertMatToQImage(mat);
+    //push image to display location "location"
+    location.setPixmap(QPixmap::fromImage(img));
+}

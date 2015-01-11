@@ -24,15 +24,25 @@
 #include <QString>
 #include <QMainWindow>
 #include <QtCore>
+#include <QImage>
 
 #include <math.h>
 
 #include "paolMat.h"
+#include "WhiteboardProcessor.h"
 
 using namespace std;
 class paolProcess : public QThread
 {
 public:
+    // Fields for whiteboard processing
+    Mat oldFrame;
+    Mat oldMarkerModel;
+    Mat oldRefinedBackground;
+
+    // Fields for computer processing
+    Mat oldScreen;
+
     Ptr<paolMat> cam;
     Ptr<paolMat> camRaw;
     Ptr<paolMat> old;
@@ -71,6 +81,9 @@ public:
     void displayWB();
     void displayComp();
     void displayOutput();
+
+    QImage convertMatToQImage(const Mat& mat);
+    void displayMat(const Mat& mat, QLabel &location);
 
 protected:
     void run();

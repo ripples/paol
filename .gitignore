@@ -1,2 +1,10 @@
 *~
 *.o
+build*
+cameraSetup.txt
+cornersCam*
+uploadConfig.txt
+captureProcessCode/camCap
+captureProcessCode/multiCap
+captureProcessCode/processCOMP
+captureProcessCode/processWB

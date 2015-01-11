@@ -16,12 +16,14 @@ SOURCES += main.cpp\
         mainWindow.cpp \
         paolMat.cpp \
         paolProcess.cpp \
-    uf.cpp
+    uf.cpp \
+    WhiteboardProcessor.cpp
 
 HEADERS  += mainWindow.h \
         paolMat.h \
         paolProcess.h \
-    uf.h
+    uf.h \
+    WhiteboardProcessor.h
 
 FORMS    += mainWindow.ui
 
