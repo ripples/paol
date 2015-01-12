@@ -11,32 +11,20 @@ paolProcess::paolProcess(int camNumIn, QLabel &locationIn, QLabel &locationOut, 
 
     secondsElapsed = 0;
     frameCount = 0;
-    cam=new paolMat();
-    old=new paolMat();
-    background=new paolMat();
-    backgroundRefined=new paolMat();
-    oldBackgroundRefined=new paolMat();
-    rawEnhanced=new paolMat();
 
-    cam->setCameraNum(camNumIn);
-    cam->takePicture();
-    //camRaw->setCameraNum(camNumIn);
-    //camRaw->takePicture();
-    //cam->copyClean(camRaw);
-    //cam->rectifyImage(camRaw);
-    old->copy(cam);
+    // Set up camera and take the first picture
+    camera = VideoCapture(camNumIn);
+    callTakePicture();
+
     if(whiteboard) {
-        oldFrame = cam->src.clone();
+        oldFrame = currentFrame.clone();
         oldRefinedBackground = Mat::zeros(oldFrame.size(), oldFrame.type());
         oldMarkerModel = Mat::zeros(oldFrame.size(), oldFrame.type());
     }
     else {
-        oldScreen = cam->src.clone();
+        oldScreen = currentScreen.clone();
+        lastStableScreen = Mat::zeros(oldScreen.size(), oldScreen.type());
     }
-    background->copyClean(cam);
-    backgroundRefined->copyClean(cam);
-    oldBackgroundRefined->copyClean(cam);
-    rawEnhanced->copyClean(cam);
 
     count=0;
     picNum = 0;
@@ -60,12 +48,9 @@ paolProcess::paolProcess(int camNumIn, QLabel &locationIn, QLabel &locationOut, 
 
 paolProcess::~paolProcess(){
     qDebug() << "Camera " << camNum << " has taken " << frameCount << " frames.";
-    cam->~paolMat();
-    old->~paolMat();
-    background->~paolMat();
-    backgroundRefined->~paolMat();
-    oldBackgroundRefined->~paolMat();
-    rawEnhanced->~paolMat();
+    if(camera.isOpened()) {
+        camera.release();
+    }
 }
 
 void paolProcess::run(){
@@ -80,11 +65,17 @@ void paolProcess::run(){
 
 
 void paolProcess::callTakePicture(){
-    cam->takePicture();
+    if(whiteboard) {
+        for(int i = 0; i < 5; i++) {
+            camera >> currentFrame;
+        }
+    }
+    else {
+        for(int i = 0; i < 5; i++) {
+            camera >> currentScreen;
+        }
+    }
     frameCount++;
-    //camRaw->takePicture();
-    //cam->copyClean(camRaw);
-    //cam->rectifyImage(camRaw,corners);
 }
 
 void paolProcess::process(){
@@ -105,8 +96,7 @@ void paolProcess::flipRecord(){
 }
 
 void paolProcess::processWB(){
-    Mat currentFrame = cam->src.clone();
-    //compare picture to previous picture and store differences in old->maskMin
+    //compare picture to previous picture and store differences in allDiffs
     float numDif;
     Mat allDiffs;
     WhiteboardProcessor::findAllDiffsMini(allDiffs, numDif, oldFrame, currentFrame, 40, 1);
@@ -115,7 +105,7 @@ void paolProcess::processWB(){
     float refinedNumDif = 0;
     Mat filteredDiffs = Mat::zeros(currentFrame.size(), currentFrame.type());
     if(numDif>.03){
-        //set up a new % that represents difference
+        // Find the true differences
         WhiteboardProcessor::filterNoisyDiffs(filteredDiffs, refinedNumDif, allDiffs);
         count=0;
     }
@@ -127,7 +117,7 @@ void paolProcess::processWB(){
     //if the differences are enough that we know where the lecturer is or the images have been identical
     //for two frames, and hence no lecturer present
     if(refinedNumDif>.04 || (numDif <.000001 && count==2)){
-        //copy the input image and process it to highlight the text
+        // Find marker strokes and enhance the whiteboard (ie. make all non-marker white)
         Mat currentMarker = WhiteboardProcessor::findMarkerWithCC(currentFrame);
         Mat whiteWhiteboard = WhiteboardProcessor::whitenWhiteboard(currentFrame, currentMarker);
         Mat enhancedMarker = WhiteboardProcessor::smoothMarkerTransition(whiteWhiteboard);
@@ -147,7 +137,7 @@ void paolProcess::processWB(){
 
         //figure out if saves need to be made
 
-        //count the number of differences in the refined text area between refined images
+        // Get a percentage for how much the marker model changed
         float saveNumDif = WhiteboardProcessor::findMarkerModelDiffs(oldMarkerModel, newMarkerModel);
         if (saveNumDif>.004){
 
@@ -193,18 +183,13 @@ void paolProcess::processWB(){
 }
 
 void paolProcess::processComp(){
-    if(old->src.rows==cam->src.rows && old->src.cols==cam->src.cols){
-        cam->difference(old, 100, 0, bottomMask);
-        //percentDifference is (all the differences)/(size of the image)
-        percentDifference=(double)cam->difs/(double)(cam->src.rows*cam->src.cols);
-    } else {
-        percentDifference=1;
-    }
+    float percentDifference = WhiteboardProcessor::difference(oldScreen, currentScreen);
+
     printf("perDif=%f\n",percentDifference);
     //if percentDifference is greater than the threshold
     if(percentDifference>=thresholdDiff){
         //printf(" perDif=%f thres=%f\n",percentDifference,thresholdDiff);
-        //then if the number of identical images is greater then or equal to 3
+        //then if the number of identical images is greater than or equal to 3
         if (countStable>=repeat){
             //SAVES OUT IMAGE
             //Convert picNum to string
@@ -225,6 +210,7 @@ void paolProcess::processComp(){
             s = out.str();
 
             //Get system time
+            // TODO: Get the system time when the image is captured
             time_t rawtime;
             struct tm * timeinfo;
             char buffer[80];
@@ -235,21 +221,25 @@ void paolProcess::processComp(){
             strftime(buffer,80,"%H%M%S",timeinfo);
 
             string destination = outputPath + s + "-" + buffer + "-" + str2 + ".png";
-            oldBackgroundRefined->copy(old);
-            imwrite(destination.data(), old->src);
+            lastStableScreen = oldScreen.clone();
+            imwrite(destination.data(), lastStableScreen);
             picNum++;
         }
 
         countStable=0;
-        timeDif=cam->time;
     } else {
         countStable++;
     }
-    old->copy(cam);
+    oldScreen = currentScreen.clone();
 }
 
 void paolProcess::displayInput(){
-    cam->displayImage(*locIn);
+    if(whiteboard) {
+        displayMat(currentFrame, *locIn);
+    }
+    else {
+        displayMat(currentScreen, *locIn);
+    }
 }
 
 void paolProcess::displayWB(){
@@ -257,7 +247,7 @@ void paolProcess::displayWB(){
 }
 
 void paolProcess::displayComp(){
-    oldBackgroundRefined->displayImage(*locOut);
+    displayMat(lastStableScreen, *locOut);
 }
 
 void paolProcess::displayOutput(){

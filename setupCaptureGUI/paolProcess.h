@@ -28,28 +28,26 @@
 
 #include <math.h>
 
-#include "paolMat.h"
 #include "WhiteboardProcessor.h"
 
 using namespace std;
 class paolProcess : public QThread
 {
 public:
+    // Device to get frames
+    VideoCapture camera;
+
     // Fields for whiteboard processing
+    Mat currentFrame;
     Mat oldFrame;
     Mat oldMarkerModel;
     Mat oldRefinedBackground;
 
     // Fields for computer processing
+    Mat currentScreen;
     Mat oldScreen;
+    Mat lastStableScreen;
 
-    Ptr<paolMat> cam;
-    Ptr<paolMat> camRaw;
-    Ptr<paolMat> old;
-    Ptr<paolMat> background;
-    Ptr<paolMat> backgroundRefined;
-    Ptr<paolMat> oldBackgroundRefined;
-    Ptr<paolMat> rawEnhanced;
     QLabel* locIn;
     QLabel* locOut;
 

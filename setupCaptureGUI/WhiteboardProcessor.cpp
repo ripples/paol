@@ -963,3 +963,97 @@ float WhiteboardProcessor::findMarkerModelDiffs(const Mat& oldMarkerModel, const
     }
     return count / (oldMarkerModel.rows*oldMarkerModel.cols);
 }
+
+float WhiteboardProcessor::difference(const Mat& oldFrame, const Mat& newFrame)
+{
+    // If the image sizes do not match, we consider it a 100% difference
+    if(oldFrame.rows != newFrame.rows || oldFrame.cols != newFrame.cols)
+        return 1;
+
+    // Process the difference between two images with the same resolution
+    bool diff;
+    float numDiff;
+    int dist;
+    bool first;
+    int cenx;
+    int ceny;
+    int total;
+    //mask is set to a blank state
+    Mat mask = Mat::zeros(oldFrame.size(), oldFrame.type());
+
+    numDiff = 0;
+    first = true;
+    //distance --
+    dist = 0;
+    //for every row
+    for (int y = WINDOW_SIZE; y < (oldFrame.rows-(WINDOW_SIZE+1+BOTTOM_MASK)); y++)
+    {
+        //for every column
+        for (int x = WINDOW_SIZE; x < (oldFrame.cols-(WINDOW_SIZE+1)); x++)
+        {
+            diff = false;
+            //for each color channel
+            for(int i = 0; i < 3; i++)
+            {
+                //if the difference (for this pixel) between the the current img and the previous img is greater than the threshold, difference is noted; diff = true
+                if(abs((double)newFrame.at<Vec3b>(y,x)[i]-(double)oldFrame.at<Vec3b>(y,x)[i])>PIXEL_DIFF_THRESHOLD)
+                    diff = true;
+            }
+            if(diff)
+            {
+                //std::cout<<"First if dif size: "<<size<<std::endl;
+                //mask.at<Vec3b>(y,x)[1]=255;
+                // for all the pixels surrounding the current pixel
+                for(int yy = y-WINDOW_SIZE; yy < y+WINDOW_SIZE; yy++)
+                {
+                    for(int xx = x-WINDOW_SIZE; xx < x+WINDOW_SIZE; xx++)
+                    {
+                        //for each color channel
+                        for(int ii = 0; ii < 3; ii++)
+                        {
+                            //ignore all differneces found at the edges; sometimes pixels get lost in tranmission
+                            if(abs(((double)(newFrame.at<Vec3b>(yy,xx)[ii]))-(((double)(newFrame.at<Vec3b>((yy+1),xx)[ii])))>BORDER_DIFF_THRESHOLD))
+                                diff = false;
+                            if(abs(((double)(newFrame.at<Vec3b>(yy,xx)[ii]))-(((double)(newFrame.at<Vec3b>(yy,(xx+1))[ii])))>BORDER_DIFF_THRESHOLD))
+                                diff = false;
+                        }
+                    }
+                }
+            }
+            if(diff)
+            {
+                //std::cout<<"Second if diff"<<std::endl;
+                numDiff++;
+                //calculates total difference and modifies the mask accordingly
+                total = abs((double)newFrame.at<Vec3b>(y,x)[0]-(double)oldFrame.at<Vec3b>(y,x)[0]) +
+                        abs((double)newFrame.at<Vec3b>(y,x)[1]-(double)oldFrame.at<Vec3b>(y,x)[1]) +
+                        abs((double)newFrame.at<Vec3b>(y,x)[2]-(double)oldFrame.at<Vec3b>(y,x)[2]);
+                if(total > 512)
+                {
+                    mask.at<Vec3b>(y,x)[0] = 255;
+                }
+                if(total > 255)
+                {
+                    mask.at<Vec3b>(y,x)[1] = 255;
+                    numDiff++;
+                }
+                mask.at<Vec3b>(y,x)[2]=255;
+                //sets location of first differnce found
+                if(first)
+                {
+                    first = false;
+                    cenx = x;
+                    ceny = y;
+                }
+                //std::cout<<"Difference x: "<<x<<" cenx: "<<cenx<<" y:"<<y<<" ceny: "<<ceny<<std::endl;
+                //distance between pixels
+                dist+=sqrt(((x-cenx)*(x-cenx))+((y-ceny)*(y-ceny)));
+            }
+        }
+    }
+    //std::cout<<"Difference dist: "<<dist<<std::endl;
+    if((dist<10000))//&&(maskBottom>0))
+        return 0;
+    else
+        return numDiff / (oldFrame.rows*oldFrame.cols);
+}

@@ -28,7 +28,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "paolMat.h"
 #include "paolProcess.h"
 #include "unistd.h"
 
