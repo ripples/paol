@@ -47,6 +47,7 @@ public:
     QVector <paolProcess*> dev;
 
     QVector <VideoCapture> recordingCams;
+    map<paolProcess*, int> threadToUIMap;
 
     QVector <QLabel*> camLabels;
     QVector <QLabel*> imLabels; //Vector containing pointers to all Labels
@@ -89,6 +90,12 @@ public:
     void releaseSetupElements();
     void releaseCaptureElements();
 
+    QImage convertMatToQImage(const Mat& mat);
+    void displayMat(const Mat& mat, QLabel &location);
+
+signals:
+    void quitProcessing();
+
 private slots:
     void runSystem(); //Continously runs the recording system
     void on_infoReturnToSetup_clicked();
@@ -103,6 +110,9 @@ private slots:
 
 
     void on_setupUploadFiles_clicked();
+
+    void onImageCaptured(Mat image, paolProcess* threadAddr);
+    void onImageProcessed(Mat image, paolProcess* threadAddr);
 
 private:
     Ui::MainWindow *ui;

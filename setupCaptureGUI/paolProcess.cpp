@@ -4,9 +4,7 @@
 #define thresholdDiff .0002
 #define repeat 3//number of consecutive stable images necessary to consider stable
 
-paolProcess::paolProcess(int camNumIn, QLabel &locationIn, QLabel &locationOut, bool whiteboardIn, string pathIn) : QThread(){
-    locIn=&locationIn;
-    locOut=&locationOut;
+paolProcess::paolProcess(int camNumIn, bool whiteboardIn, string pathIn) : QThread(){
     whiteboard=whiteboardIn;
 
     secondsElapsed = 0;
@@ -44,6 +42,8 @@ paolProcess::paolProcess(int camNumIn, QLabel &locationIn, QLabel &locationOut, 
         system(command.data());
         outputPath = outputPath + "/";
     }
+
+    keepRunning = true;
 }
 
 paolProcess::~paolProcess(){
@@ -54,26 +54,34 @@ paolProcess::~paolProcess(){
 }
 
 void paolProcess::run(){
-    //while(1){
+    while(1){
+        // Stop thread if keepRunning is false
+        keepRunningMutex.lock();
+        if(!keepRunning) {
+            keepRunningMutex.unlock();
+            break;
+        }
+        keepRunningMutex.unlock();
+
+        // keepRunning was true, so continue processing
         callTakePicture();
         process();
-        displayInput();
-        displayOutput();
-    //}
+    }
+    qDebug("Successfully stopped thread %p", this);
 }
-
-
 
 void paolProcess::callTakePicture(){
     if(whiteboard) {
         for(int i = 0; i < 5; i++) {
             camera >> currentFrame;
         }
+        emit capturedImage(currentFrame, this);
     }
     else {
         for(int i = 0; i < 5; i++) {
             camera >> currentScreen;
         }
+        emit capturedImage(currentScreen, this);
     }
     frameCount++;
 }
@@ -172,6 +180,7 @@ void paolProcess::processWB(){
 
             string destination = outputPath + s + "-" + buffer + "-" + str2 + ".png";
             imwrite(destination.data(), oldRefinedBackground);
+            emit processedImage(oldRefinedBackground, this);
 
             picNum++;
         }
@@ -185,7 +194,6 @@ void paolProcess::processWB(){
 void paolProcess::processComp(){
     float percentDifference = WhiteboardProcessor::difference(oldScreen, currentScreen);
 
-    printf("perDif=%f\n",percentDifference);
     //if percentDifference is greater than the threshold
     if(percentDifference>=thresholdDiff){
         //printf(" perDif=%f thres=%f\n",percentDifference,thresholdDiff);
@@ -223,6 +231,7 @@ void paolProcess::processComp(){
             string destination = outputPath + s + "-" + buffer + "-" + str2 + ".png";
             lastStableScreen = oldScreen.clone();
             imwrite(destination.data(), lastStableScreen);
+            emit processedImage(lastStableScreen, this);
             picNum++;
         }
 
@@ -233,46 +242,9 @@ void paolProcess::processComp(){
     oldScreen = currentScreen.clone();
 }
 
-void paolProcess::displayInput(){
-    if(whiteboard) {
-        displayMat(currentFrame, *locIn);
-    }
-    else {
-        displayMat(currentScreen, *locIn);
-    }
-}
-
-void paolProcess::displayWB(){
-    displayMat(oldRefinedBackground, *locOut);
-}
-
-void paolProcess::displayComp(){
-    displayMat(lastStableScreen, *locOut);
-}
-
-void paolProcess::displayOutput(){
-    if (whiteboard){
-        displayWB();
-    }
-    else{
-        displayComp();
-    }
-}
-
-QImage paolProcess::convertMatToQImage(const Mat& mat) {
-    Mat display;
-    //copy mask Mat to display Mat and convert from BGR to RGB format
-    cvtColor(mat,display,CV_BGR2RGB);
-
-    //convert Mat to QImage
-    QImage img=QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888)
-            .copy();
-    return img;
-}
-
-void paolProcess::displayMat(const Mat& mat, QLabel &location) {
-    //call method to convert Mat to QImage
-    QImage img=convertMatToQImage(mat);
-    //push image to display location "location"
-    location.setPixmap(QPixmap::fromImage(img));
+void paolProcess::onQuitProcessing() {
+    qDebug("Received signal to stop thread %p", this);
+    keepRunningMutex.lock();
+    keepRunning = false;
+    keepRunningMutex.unlock();
 }

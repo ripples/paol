@@ -31,9 +31,14 @@
 #include "WhiteboardProcessor.h"
 
 using namespace std;
-class paolProcess : public QThread
-{
+class paolProcess : public QThread {
+    Q_OBJECT
+
 public:
+    // Boolean and associated mutex to indicate whether we should keep processing
+    QMutex keepRunningMutex;
+    volatile bool keepRunning;
+
     // Device to get frames
     VideoCapture camera;
 
@@ -47,9 +52,6 @@ public:
     Mat currentScreen;
     Mat oldScreen;
     Mat lastStableScreen;
-
-    QLabel* locIn;
-    QLabel* locOut;
 
     float numDif,refinedNumDif,saveNumDif;
     int count;
@@ -69,22 +71,22 @@ public:
     bool record;
     void flipRecord();
 
-    paolProcess(int camNumIn, QLabel& locationIn, QLabel& locationOut, bool whiteboardIn, string pathIn);
+    paolProcess(int camNumIn, bool whiteboardIn, string pathIn);
     ~paolProcess();
     void callTakePicture();
     void processWB();
     void processComp();
     void process();
-    void displayInput();
-    void displayWB();
-    void displayComp();
-    void displayOutput();
-
-    QImage convertMatToQImage(const Mat& mat);
-    void displayMat(const Mat& mat, QLabel &location);
 
 protected:
     void run();
+
+signals:
+    void capturedImage(Mat image, paolProcess* threadAddr);
+    void processedImage(Mat image, paolProcess* threadAddr);
+
+private slots:
+    void onQuitProcessing();
 };
 
 #endif // PAOLPROCESS_H

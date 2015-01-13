@@ -46,15 +46,8 @@ void MainWindow::runSystem(){
     }
 
     if(runCaptureCams == true){
+        // Update elapsed time
         timer();
-        for (int i = 0; i < captureCount; i++){
-            /*dev[i]->callTakePicture();
-            dev[i]->process();
-            dev[i]->displayInput();
-            dev[i]->displayOutput();*/
-            dev[i]->start();
-            dev[i]->wait();
-        }
     }
 }
 
@@ -129,19 +122,32 @@ void MainWindow::populateCaptureWindow(){
             imgLabel->setScaledContents(true);
             paolLabel->setScaledContents(true);
 
-            //camLabels.push_back(imgLabel);
-            //paolLabels.push_back(paolLabel);
+            camLabels.push_back(imgLabel);
+            paolLabels.push_back(paolLabel);
 
             newLayout->addWidget(imgLabel,1,0);
             newLayout->addWidget(paolLabel,2,0);
 
+            // Required to be able to signal with Mats
+            qRegisterMetaType<Mat>("Mat");
+
+            paolProcess* thread;
             if(compare == "VGA2USB"){
                 qDebug() << "Adding USB from Camera Num:" << i;
-                dev.push_back(new paolProcess(i,*imgLabel, *paolLabel,false, processLocation));
+                thread = new paolProcess(i,false, processLocation);
             }else if(compare == "Whiteboard"){
                 qDebug() << "Adding Whiteboard from Camera Num:" << i;
-                dev.push_back(new paolProcess(i,*imgLabel, *paolLabel,true, processLocation));
+                thread = new paolProcess(i,true, processLocation);
             }
+            dev.push_back(thread);
+            // Associate the processing thread with the proper views in the capture window
+            threadToUIMap[thread] = i;
+
+            // Initialize the slots for updating the UI and stopping the processing threads
+            connect(thread, SIGNAL(capturedImage(Mat,paolProcess*)), this, SLOT(onImageCaptured(Mat,paolProcess*)));
+            connect(thread, SIGNAL(processedImage(Mat,paolProcess*)), this, SLOT(onImageProcessed(Mat,paolProcess*)));
+            connect(this, SIGNAL(quitProcessing()), thread, SLOT(onQuitProcessing()));
+
             ui->captureCameraGrid->addLayout(newLayout,((captureCount-1)+1) / 3, ((i-1)+1) % 3); //COPY AND MOVE UP
             captureCount++;
         }
@@ -333,9 +339,13 @@ void MainWindow::releaseCaptureElements(){
     vidCaptureString = "";
     qDebug() << vidCaptureString.data();
     for(int i = 0; i < captureCount; i++){
+        delete camLabels[i];
+        delete paolLabels[i];
         delete capLayouts[i];
         delete dev[i];
     }
+    camLabels.clear();
+    paolLabels.clear();
     capLayouts.clear();
     dev.clear();
 }
@@ -410,6 +420,9 @@ void MainWindow::on_infoContinue_clicked(){
         }
         populateCaptureWindow();
         runCaptureCams = true;
+        // Start timer and capture threads
+        for(int i = 0; i < captureCount; i++)
+            dev[i]->start();
         myTimer.start();
     }
 }
@@ -424,9 +437,18 @@ void MainWindow::on_infoReturnToSetup_clicked(){
 
 //Transition from Capture to Setup
 void MainWindow::on_captureReturnToSetup_clicked(){
-    ui->captureWidget->setVisible(false);
     runCaptureCams = false;
+
+    // Kill ffmpeg
     system("q");
+
+    // Signal the threads to stop and wait for them
+    emit quitProcessing();
+    for(int i = 0; i < captureCount; i++) {
+        dev[i]->wait();
+    }
+
+    ui->captureWidget->setVisible(false);
     releaseCaptureElements();
     findCameras();
     populateSetupWindow();
@@ -438,4 +460,49 @@ void MainWindow::on_captureReturnToSetup_clicked(){
 
 void MainWindow::on_setupUploadFiles_clicked(){
     system("/home/paol/paol-code/scripts/upload/upload.sh");
+}
+
+
+//////////////////////////////////////////////////////////////
+///                    Signal handling                    ///
+////////////////////////////////////////////////////////////
+
+void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr) {
+    // Only respond to the signal if the capture GUI is running
+    if(runCaptureCams) {
+        qDebug("Send captured image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
+        int displayNum = threadToUIMap[threadAddr];
+        displayMat(image, *camLabels[displayNum]);
+    }
+}
+
+void MainWindow::onImageProcessed(Mat image, paolProcess *threadAddr) {
+    // Only respond to the signal if the capture GUI is running
+    if(runCaptureCams) {
+        qDebug("Send processed image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
+        int displayNum = threadToUIMap[threadAddr];
+        displayMat(image, *paolLabels[displayNum]);
+    }
+}
+
+//////////////////////////////////////////////////////////////
+///                    Image displaying                   ///
+////////////////////////////////////////////////////////////
+
+QImage MainWindow::convertMatToQImage(const Mat& mat) {
+    Mat display;
+    //copy mask Mat to display Mat and convert from BGR to RGB format
+    cvtColor(mat,display,CV_BGR2RGB);
+
+    //convert Mat to QImage
+    QImage img=QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888)
+            .copy();
+    return img;
+}
+
+void MainWindow::displayMat(const Mat& mat, QLabel &location) {
+    //call method to convert Mat to QImage
+    QImage img=convertMatToQImage(mat);
+    //push image to display location "location"
+    location.setPixmap(QPixmap::fromImage(img));
 }
