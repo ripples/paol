@@ -1,14 +1,9 @@
 #include "paolProcess.h"
 
-#define bottomMask 115
-#define thresholdDiff .0002
-#define repeat 3//number of consecutive stable images necessary to consider stable
-
 paolProcess::paolProcess(int camNumIn, bool whiteboardIn, string pathIn) : QThread(){
     whiteboard=whiteboardIn;
 
-    secondsElapsed = 0;
-    frameCount = 0;
+    capturedImageCount = 0;
 
     // Set up camera and take the first picture
     camera = VideoCapture(camNumIn);
@@ -24,30 +19,34 @@ paolProcess::paolProcess(int camNumIn, bool whiteboardIn, string pathIn) : QThre
         lastStableScreen = Mat::zeros(oldScreen.size(), oldScreen.type());
     }
 
-    count=0;
-    picNum = 0;
-    camNum = camNumIn;
-    outputPath = pathIn;
-    record = true;
+    stableWhiteboardCount=0;
+    saveImageCount = 0;
+    deviceNum = camNumIn;
 
-    if(whiteboard){
-        outputPath = outputPath + "/wboard";
-        string command = "mkdir -p " + outputPath;
-        system(command.data());
-        outputPath = outputPath + "/";
+    if(whiteboard) {
+        // Make the whiteboard directory
+        string wbFolderPath = pathIn + "/whiteboard";
+        string mkdirCommand = "mkdir -p " + wbFolderPath;
+        system(mkdirCommand.data());
+
+        // Set saveImagePathFormat
+        sprintf(saveImagePathFormat, "%s/whiteBoard%%d-%d.png", wbFolderPath.data(), deviceNum);
     }
-    else{
-        outputPath = outputPath + "/computer";
-        string command = "mkdir -p " + outputPath;
-        system(command.data());
-        outputPath = outputPath + "/";
+    else {
+        // Make the computer directory
+        string compFolderPath = pathIn + "/computer";
+        string mkdirCommand = "mkdir -p " + compFolderPath;
+        system(mkdirCommand.data());
+
+        // Set saveImagePathFormat
+        sprintf(saveImagePathFormat, "%s/computer%%d-%d.png", compFolderPath.data(), deviceNum);
     }
 
     keepRunning = true;
 }
 
 paolProcess::~paolProcess(){
-    qDebug() << "Camera " << camNum << " has taken " << frameCount << " frames.";
+    qDebug() << "Camera " << deviceNum << " has taken " << capturedImageCount << " frames.";
     if(camera.isOpened()) {
         camera.release();
     }
@@ -64,8 +63,7 @@ void paolProcess::run(){
         keepRunningMutex.unlock();
 
         // keepRunning was true, so continue processing
-        callTakePicture();
-        process();
+        workOnNextImage();
     }
     qDebug("Successfully stopped thread %p", this);
 }
@@ -75,32 +73,29 @@ void paolProcess::callTakePicture(){
         for(int i = 0; i < 5; i++) {
             camera >> currentFrame;
         }
+        // Update time associated with current frame
+        time(&currentImageTime);
         emit capturedImage(currentFrame, this);
     }
     else {
         for(int i = 0; i < 5; i++) {
             camera >> currentScreen;
         }
+        // Update time associated with current frame
+        time(&currentImageTime);
         emit capturedImage(currentScreen, this);
     }
-    frameCount++;
+    capturedImageCount++;
 }
 
-void paolProcess::process(){
-    if (whiteboard == true){
-        if(record == true){
-            processWB();
-        }
+void paolProcess::workOnNextImage(){
+    callTakePicture();
+    if (whiteboard){
+        processWB();
     }
     else{
-        if(record == true){
-            processComp();
-        }
+        processComp();
     }
-}
-
-void paolProcess::flipRecord(){
-    record = !record;
 }
 
 void paolProcess::processWB(){
@@ -115,16 +110,16 @@ void paolProcess::processWB(){
     if(numDif>.03){
         // Find the true differences
         WhiteboardProcessor::filterNoisyDiffs(filteredDiffs, refinedNumDif, allDiffs);
-        count=0;
+        stableWhiteboardCount=0;
     }
 
     //if the images are really identical, count the number of consecultive nearly identical images
     if (numDif < .000001)
-        count++;
+        stableWhiteboardCount++;
 
     //if the differences are enough that we know where the lecturer is or the images have been identical
     //for two frames, and hence no lecturer present
-    if(refinedNumDif>.04 || (numDif <.000001 && count==2)){
+    if(refinedNumDif>.04 || (numDif <.000001 && stableWhiteboardCount==2)){
         // Find marker strokes and enhance the whiteboard (ie. make all non-marker white)
         Mat currentMarker = WhiteboardProcessor::findMarkerWithCC(currentFrame);
         Mat whiteWhiteboard = WhiteboardProcessor::whitenWhiteboard(currentFrame, currentMarker);
@@ -148,41 +143,16 @@ void paolProcess::processWB(){
         // Get a percentage for how much the marker model changed
         float saveNumDif = WhiteboardProcessor::findMarkerModelDiffs(oldMarkerModel, newMarkerModel);
         if (saveNumDif>.004){
+            // Get the path to save the image to, then save
+            char destination[256];
+            sprintf(destination, saveImagePathFormat, currentImageTime);
+            imwrite(destination, oldRefinedBackground);
 
-            //SAVES OUT IMAGE
-            //Convert picNum to string
-            stringstream ss;
-            ss << picNum;
-            string str = ss.str();
-
-            //Convert camNum to string
-            stringstream ss2;
-            ss2 << camNum;
-            string str2 = ss2.str();
-
-            string s;
-            stringstream out;
-            //Create string that has image#
-            out << setfill ('0') << setw (6);
-            out << str << endl;
-            s = out.str();
-
-            //Get system time
-            // TODO: The time retrieved here doesn't reflect the time the actual image was captured.
-            time_t rawtime;
-            struct tm * timeinfo;
-            char buffer[80];
-
-            time (&rawtime);
-            timeinfo = localtime(&rawtime);
-
-            strftime(buffer,80,"%H%M%S",timeinfo);
-
-            string destination = outputPath + s + "-" + buffer + "-" + str2 + ".png";
-            imwrite(destination.data(), oldRefinedBackground);
+            // Let listeners know that an image was processed
             emit processedImage(oldRefinedBackground, this);
 
-            picNum++;
+            // Increment number of saved images
+            saveImageCount++;
         }
         //copy last clean whiteboard image
         oldRefinedBackground = currentWhiteboardModel.clone();
@@ -195,49 +165,27 @@ void paolProcess::processComp(){
     float percentDifference = WhiteboardProcessor::difference(oldScreen, currentScreen);
 
     //if percentDifference is greater than the threshold
-    if(percentDifference>=thresholdDiff){
-        //printf(" perDif=%f thres=%f\n",percentDifference,thresholdDiff);
+    if(percentDifference>=COMP_DIFF_THRESHOLD){
         //then if the number of identical images is greater than or equal to 3
-        if (countStable>=repeat){
-            //SAVES OUT IMAGE
-            //Convert picNum to string
-            stringstream ss;
-            ss << picNum;
-            string str = ss.str();
-
-            //Convert camNum to string
-            stringstream ss2;
-            ss2 << camNum;
-            string str2 = ss2.str();
-
-            string s;
-            stringstream out;
-            //Create string that has image#
-            out << setfill ('0') << setw (6);
-            out << str << endl;
-            s = out.str();
-
-            //Get system time
-            // TODO: Get the system time when the image is captured
-            time_t rawtime;
-            struct tm * timeinfo;
-            char buffer[80];
-
-            time (&rawtime);
-            timeinfo = localtime(&rawtime);
-
-            strftime(buffer,80,"%H%M%S",timeinfo);
-
-            string destination = outputPath + s + "-" + buffer + "-" + str2 + ".png";
+        if (stableScreenCount>=COMP_REPEAT_THRESHOLD){
+            // Update the last seen stable screen
             lastStableScreen = oldScreen.clone();
-            imwrite(destination.data(), lastStableScreen);
+
+            // Get the path to save the image to, then save
+            char destination[256];
+            sprintf(destination, saveImagePathFormat, currentImageTime);
+            imwrite(destination, lastStableScreen);
+
+            // Let listeners know that an image was processed
             emit processedImage(lastStableScreen, this);
-            picNum++;
+
+            // Increment number of saved images
+            saveImageCount++;
         }
 
-        countStable=0;
+        stableScreenCount=0;
     } else {
-        countStable++;
+        stableScreenCount++;
     }
     oldScreen = currentScreen.clone();
 }

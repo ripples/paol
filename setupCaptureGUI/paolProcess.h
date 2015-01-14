@@ -35,6 +35,10 @@ class paolProcess : public QThread {
     Q_OBJECT
 
 public:
+    // Constants for processing computer image differences
+    static const float COMP_DIFF_THRESHOLD = .0002;
+    static const int COMP_REPEAT_THRESHOLD = 3;
+
     // Boolean and associated mutex to indicate whether we should keep processing
     QMutex keepRunningMutex;
     volatile bool keepRunning;
@@ -42,41 +46,35 @@ public:
     // Device to get frames
     VideoCapture camera;
 
+    // Fields for general processing
+    int saveImageCount;
+    int deviceNum;
+    int capturedImageCount; // How many images were captured from the camera
+    char saveImagePathFormat[256];
+    time_t currentImageTime;
+
     // Fields for whiteboard processing
     Mat currentFrame;
     Mat oldFrame;
     Mat oldMarkerModel;
-    Mat oldRefinedBackground;
+    Mat oldRefinedBackground; // What the whiteboard from the oldFrame looks like
+    int stableWhiteboardCount;
 
     // Fields for computer processing
     Mat currentScreen;
     Mat oldScreen;
     Mat lastStableScreen;
+    int stableScreenCount;
 
-    float numDif,refinedNumDif,saveNumDif;
-    int count;
+    // Tag
     bool whiteboard;
-
-    string outputPath;
-
-    double percentDifference;
-    int countStable;
-    int timeDif;
-    int picNum;
-    int camNum;
-
-    int secondsElapsed;
-    int frameCount;
-
-    bool record;
-    void flipRecord();
 
     paolProcess(int camNumIn, bool whiteboardIn, string pathIn);
     ~paolProcess();
     void callTakePicture();
     void processWB();
     void processComp();
-    void process();
+    void workOnNextImage();
 
 protected:
     void run();
