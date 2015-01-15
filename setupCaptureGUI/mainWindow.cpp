@@ -128,9 +128,6 @@ void MainWindow::populateCaptureWindow(){
             newLayout->addWidget(imgLabel,1,0);
             newLayout->addWidget(paolLabel,2,0);
 
-            // Required to be able to signal with Mats
-            qRegisterMetaType<Mat>("Mat");
-
             paolProcess* thread;
             if(compare == "VGA2USB"){
                 qDebug() << "Adding USB from Camera Num:" << i;
