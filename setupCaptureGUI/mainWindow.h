@@ -29,6 +29,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "paolProcess.h"
+#include "whiteboardprocess.h"
+#include "vgaprocess.h"
 #include "unistd.h"
 
 using namespace std;

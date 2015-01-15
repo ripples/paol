@@ -134,10 +134,10 @@ void MainWindow::populateCaptureWindow(){
             paolProcess* thread;
             if(compare == "VGA2USB"){
                 qDebug() << "Adding USB from Camera Num:" << i;
-                thread = new paolProcess(i,false, processLocation);
+                thread = new VGAProcess(i, i, false, processLocation);
             }else if(compare == "Whiteboard"){
                 qDebug() << "Adding Whiteboard from Camera Num:" << i;
-                thread = new paolProcess(i,true, processLocation);
+                thread = new WhiteboardProcess(i, i, false, processLocation);
             }
             dev.push_back(thread);
             // Associate the processing thread with the proper views in the capture window

@@ -34,49 +34,34 @@ using namespace std;
 class paolProcess : public QThread {
     Q_OBJECT
 
-public:
-    // Constants for processing computer image differences
-    static const float COMP_DIFF_THRESHOLD = .0002;
-    static const int COMP_REPEAT_THRESHOLD = 3;
-
+private:
     // Boolean and associated mutex to indicate whether we should keep processing
     QMutex keepRunningMutex;
     volatile bool keepRunning;
 
-    // Device to get frames
+protected:
+    // Webcam and associated properties
     VideoCapture camera;
-
-    // Fields for general processing
-    int saveImageCount;
+    bool flipCam;
     int deviceNum;
-    int capturedImageCount; // How many images were captured from the camera
+
+    // Fields for general processing (mostly saving the image)
+    int saveImageCount;
     char saveImagePathFormat[256];
     time_t currentImageTime;
+    int capturedImageCount; // How many images were captured from the camera
 
-    // Fields for whiteboard processing
-    Mat currentFrame;
-    Mat oldFrame;
-    Mat oldMarkerModel;
-    Mat oldRefinedBackground; // What the whiteboard from the oldFrame looks like
-    int stableWhiteboardCount;
+    // Methods for general processing
+    virtual void workOnNextImage() = 0;
+    virtual bool takePicture() = 0;
+    virtual void processImage() = 0;
 
-    // Fields for computer processing
-    Mat currentScreen;
-    Mat oldScreen;
-    Mat lastStableScreen;
-    int stableScreenCount;
+    // Method to save an image at the current time
+    void saveImageWithTimestamp(const Mat& image);
 
-    // Tag
-    bool whiteboard;
-
-    paolProcess(int camNumIn, bool whiteboardIn, string pathIn);
+public:
+    paolProcess();
     ~paolProcess();
-    void callTakePicture();
-    void processWB();
-    void processComp();
-    void workOnNextImage();
-
-protected:
     void run();
 
 signals:

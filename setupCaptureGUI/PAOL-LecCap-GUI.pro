@@ -16,12 +16,16 @@ SOURCES += main.cpp\
         mainWindow.cpp \
         paolProcess.cpp \
     uf.cpp \
-    WhiteboardProcessor.cpp
+    WhiteboardProcessor.cpp \
+    vgaprocess.cpp \
+    whiteboardprocess.cpp
 
 HEADERS  += mainWindow.h \
         paolProcess.h \
     uf.h \
-    WhiteboardProcessor.h
+    WhiteboardProcessor.h \
+    vgaprocess.h \
+    whiteboardprocess.h
 
 FORMS    += mainWindow.ui
 
