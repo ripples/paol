@@ -41,7 +41,7 @@ void paolProcess::saveImageWithTimestamp(const Mat& image) {
     imwrite(destination, image);
 
     // Let listeners know that an image was processed
-    emit processedImage(image, this);
+    emit savedImage(image, this);
 
     // Increment number of saved images
     saveImageCount++;

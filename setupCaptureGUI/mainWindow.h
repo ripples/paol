@@ -114,7 +114,7 @@ private slots:
     void on_setupUploadFiles_clicked();
 
     void onImageCaptured(Mat image, paolProcess* threadAddr);
-    void onImageProcessed(Mat image, paolProcess* threadAddr);
+    void onImageSaved(Mat image, paolProcess* threadAddr);
 
 private:
     Ui::MainWindow *ui;

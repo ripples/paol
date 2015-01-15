@@ -66,7 +66,7 @@ public:
 
 signals:
     void capturedImage(Mat image, paolProcess* threadAddr);
-    void processedImage(Mat image, paolProcess* threadAddr);
+    void savedImage(Mat image, paolProcess* threadAddr);
 
 private slots:
     void onQuitProcessing();

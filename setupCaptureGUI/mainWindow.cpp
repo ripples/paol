@@ -145,7 +145,7 @@ void MainWindow::populateCaptureWindow(){
 
             // Initialize the slots for updating the UI and stopping the processing threads
             connect(thread, SIGNAL(capturedImage(Mat,paolProcess*)), this, SLOT(onImageCaptured(Mat,paolProcess*)));
-            connect(thread, SIGNAL(processedImage(Mat,paolProcess*)), this, SLOT(onImageProcessed(Mat,paolProcess*)));
+            connect(thread, SIGNAL(savedImage(Mat,paolProcess*)), this, SLOT(onImageSaved(Mat,paolProcess*)));
             connect(this, SIGNAL(quitProcessing()), thread, SLOT(onQuitProcessing()));
 
             ui->captureCameraGrid->addLayout(newLayout,((captureCount-1)+1) / 3, ((i-1)+1) % 3); //COPY AND MOVE UP
@@ -476,10 +476,10 @@ void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr) {
     }
 }
 
-void MainWindow::onImageProcessed(Mat image, paolProcess *threadAddr) {
+void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr) {
     // Only respond to the signal if the capture GUI is running
     if(runCaptureCams) {
-        qDebug("Send processed image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
+        qDebug("Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
         int displayNum = threadToUIMap[threadAddr];
         displayMat(image, *paolLabels[displayNum]);
     }
