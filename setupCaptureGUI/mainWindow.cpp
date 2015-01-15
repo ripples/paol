@@ -141,7 +141,7 @@ void MainWindow::populateCaptureWindow(){
             }
             dev.push_back(thread);
             // Associate the processing thread with the proper views in the capture window
-            threadToUIMap[thread] = i;
+            threadToUIMap[thread] = captureCount;
 
             // Initialize the slots for updating the UI and stopping the processing threads
             connect(thread, SIGNAL(capturedImage(Mat,paolProcess*)), this, SLOT(onImageCaptured(Mat,paolProcess*)));
