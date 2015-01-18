@@ -28,7 +28,7 @@
 
 #include <math.h>
 
-#include "WhiteboardProcessor.h"
+#include "PAOLProcUtils.h"
 
 using namespace std;
 class paolProcess : public QThread {

@@ -51,7 +51,7 @@ bool VGAProcess::takePicture() {
 }
 
 void VGAProcess::processImage() {
-    float percentDifference = WhiteboardProcessor::difference(oldScreen, currentScreen);
+    float percentDifference = PAOLProcUtils::getVGADifferences(oldScreen, currentScreen);
 
     //if percentDifference is greater than the threshold
     if(percentDifference>=COMP_DIFF_THRESHOLD){

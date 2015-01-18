@@ -1,38 +1,29 @@
-#ifndef WHITEBOARDPROCESSOR_H
-#define WHITEBOARDPROCESSOR_H
+#ifndef PAOLPROCUTILS_H
+#define PAOLPROCUTILS_H
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <QLabel>
-#include <QFileDialog>
+#include <stdexcept>
+#include "uf.h"
 
 using namespace cv;
 
-class WhiteboardProcessor
+class PAOLProcUtils
 {
 public:
-    /// Constants
+    /// Constants for whiteboard processing
     // Scaling factor for processing on smaller versions of whiteboard
     static const int SCALE = 8;
     // Expected upper bound on how many connected components are found in a DoG image
     static const int DEFAULT_NUM_CC = 50000;
-    // Consts for VGA processing
+
+    /// Consts for VGA processing
     static const int BOTTOM_MASK = 115;
     static const float DIFF_THRESHOLD = .0002;
     static const int REPEAT = 3;
     static const int PIXEL_DIFF_THRESHOLD = 100;
     static const int BORDER_DIFF_THRESHOLD = 50;
     static const int WINDOW_SIZE = 0;
-
-    /// Fields to process whiteboard
-//    int stableImageCount;
-//    Mat oldFrame;
-//    Mat whiteboardModel;
-
-    /// Fields for debugging whiteboard processing
-//    bool debugProcessing;
-//    vector<Mat> debugFrames;
 
     /// Utility methods
 
@@ -59,6 +50,7 @@ public:
     static Mat filterConnectedComponents(const Mat& compsImg, const Mat& keepCompLocs);
     static Mat findMarkerWithMarkerBorders(const Mat& whiteboardImage);
     static Mat findMarkerWithCC(const Mat& orig);
+    static float findMarkerModelDiffs(const Mat& oldMarkerModel, const Mat& newMarkerModel);
 
     /// Methods to enhance the whiteboard
     static Mat boxBlur(const Mat& orig, int size);
@@ -70,23 +62,11 @@ public:
     static Mat smoothMarkerTransition(const Mat& whiteWhiteboardImage);
 
     /// Update the background (whiteboard) model
-    static Mat updateWhiteboardModel(const Mat& oldWboardModel, const Mat& newInfo, const Mat& mvmtInfo);
+    static Mat updateModel(const Mat& oldModel, const Mat& newInfo, const Mat& oldInfoMask);
 
-    static float findMarkerModelDiffs(const Mat& oldMarkerModel, const Mat& newMarkerModel);
-    static float difference(const Mat& oldFrame, const Mat& newFrame);
+    /// Method to find differences between computer images
+    static float getVGADifferences(const Mat& oldFrame, const Mat& newFrame);
 
-public:
-    /// Definitions for constructing and restoring original state
-    /// of the whiteboard processor
-//    WhiteboardProcessor();
-//    WhiteboardProcessor(bool debugFlag);
-//    void reset();
-
-    /// Method to process the given frame and update whiteboard model
-//    Mat processCurFrame(const Mat& currentFrame);
-
-    /// Method to get debugging frames
-//    vector<Mat> getDebugFrames();
 };
 
-#endif // WHITEBOARDPROCESSOR_H
+#endif // PAOLPROCUTILS_H
