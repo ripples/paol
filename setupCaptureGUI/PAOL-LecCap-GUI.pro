@@ -18,14 +18,16 @@ SOURCES += main.cpp\
     uf.cpp \
     vgaprocess.cpp \
     whiteboardprocess.cpp \
-    PAOLProcUtils.cpp
+    PAOLProcUtils.cpp \
+    commandlinethread.cpp
 
 HEADERS  += mainWindow.h \
         paolProcess.h \
     uf.h \
     vgaprocess.h \
     whiteboardprocess.h \
-    PAOLProcUtils.h
+    PAOLProcUtils.h \
+    commandlinethread.h
 
 FORMS    += mainWindow.ui
 
