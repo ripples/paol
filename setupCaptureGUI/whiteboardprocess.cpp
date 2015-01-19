@@ -24,19 +24,16 @@ WhiteboardProcess::WhiteboardProcess(int camNumIn, int wbNum, bool camFlipped, s
 }
 
 void WhiteboardProcess::workOnNextImage() {
-    takePicture();
-    processImage();
+    bool gotPicture = takePicture();
+    if(gotPicture)
+        processImage();
 }
 
 bool WhiteboardProcess::takePicture() {
     // Set old frame
     oldFrame = currentFrame.clone();
-
-    // Get frame
-    for(int i = 0; i < 5; i++) {
-        camera >> currentFrame;
-    }
-
+    // Set current frame
+    camera >> currentFrame;
     // Update time associated with current frame
     time(&currentImageTime);
     // Flip the image horizontally and vertically if the camera is upside-down

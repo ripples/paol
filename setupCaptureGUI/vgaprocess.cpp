@@ -69,5 +69,4 @@ void VGAProcess::processImage() {
     } else {
         stableScreenCount++;
     }
-//    oldScreen = currentScreen.clone();
 }
