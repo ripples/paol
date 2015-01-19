@@ -10,11 +10,7 @@ VGAProcess::VGAProcess(int camNumIn, int vgaNum, bool camFlipped, string lecture
     // Initialize counts for processing
     saveImageCount = 0;
     capturedImageCount = 0;
-
-    // Initialize the current frame and screen processing images
-    takePicture();
-    oldScreen = currentScreen.clone();
-    lastStableScreen = Mat::zeros(oldScreen.size(), oldScreen.type());
+    stableScreenCount = 0;
 
     // Make the computer directory
     string compFolderPath = lecturePath + "/computer";
@@ -26,28 +22,35 @@ VGAProcess::VGAProcess(int camNumIn, int vgaNum, bool camFlipped, string lecture
 }
 
 void VGAProcess::workOnNextImage() {
-    takePicture();
-    processImage();
+    bool gotPicture = takePicture();
+    if(gotPicture)
+        processImage();
 }
 
 bool VGAProcess::takePicture() {
-    // Get frame
-    for(int i = 0; i < 5; i++) {
+    // Try to open the camera
+    camera.open(deviceNum);
+    // Get the next screen if the image feed is available
+    if(camera.isOpened()) {
+        // Update old screen
+        oldScreen = currentScreen.clone();
+        // Save current screen
         camera >> currentScreen;
+        // Update time associated with current frame
+        time(&currentImageTime);
+        // Flip the image horizontally and vertically if the camera is upside-down
+        if(flipCam) {
+            flip(currentScreen, currentScreen, -1);
+        }
+        // Update number of images captured
+        capturedImageCount++;
+        // Let listeners know that an image was captured
+        emit capturedImage(currentScreen, this);
+        // Capture was successful, so return true
+        return true;
     }
-
-    // Update time associated with current frame
-    time(&currentImageTime);
-    // Flip the image horizontally and vertically if the camera is upside-down
-    if(flipCam) {
-        flip(currentScreen, currentScreen, -1);
-    }
-    // Update number of images captured
-    capturedImageCount++;
-    // Let listeners know that an image was captured
-    emit capturedImage(currentScreen, this);
-
-    return currentScreen.data;
+    // We could not pull a frame from the VGA2USB, so return false
+    return false;
 }
 
 void VGAProcess::processImage() {
@@ -66,5 +69,5 @@ void VGAProcess::processImage() {
     } else {
         stableScreenCount++;
     }
-    oldScreen = currentScreen.clone();
+//    oldScreen = currentScreen.clone();
 }
