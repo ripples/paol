@@ -1,23 +1,53 @@
 #include "commandlinethread.h"
 
-CommandLineThread::CommandLineThread(QObject *parent) : QObject(parent)
-{
+CommandLineThread::CommandLineThread(int argc, char **argv) {
+    // Make sure there were exactly four arguments given to the program
+    assert(argc == 4);
 
+    // Initialize ffmpeg command
+    ffmpegCommand = "";
+
+    // Set lecture path
+    char* semester = argv[1];
+    char* course = argv[2];
+    lecturePath = buildLecturePath(semester, course);
+    assert(lecturePath != "");
+
+    // Read thread configuration from setup file
+    setThreadConfigs("/home/paol/paol-code/cameraSetup.txt");
+    assert(threadConfigs.size() > 0);
+    // Create the threads
+    createThreadsFromConfigs();
 }
 
 CommandLineThread::~CommandLineThread()
 {
-
+    // Release the memory used the by the processing threads
+    for(unsigned int i = 0; i < procThreads.size(); i++) {
+        delete procThreads[i];
+    }
+    procThreads.clear();
 }
 
 void CommandLineThread::run() {
-    qDebug("Do the thing");
+    qDebug("Starting main thread");
 
-    setThreadConfigs("/home/paol/paol-code/cameraSetup.txt");
-    createThreadsFromConfigs();
+    // Print debug information
+    for(unsigned int i = 0; i < threadConfigs.size(); i++)
+        qDebug("%s %d %d %d", threadConfigs[i].type.c_str(), threadConfigs[i].deviceNum, threadConfigs[i].typeNum, threadConfigs[i].flipCam);
+    qDebug("%s", ffmpegCommand.c_str());
+}
 
-    // Finish
-    emit finished();
+string CommandLineThread::buildLecturePath(string semester, string course) {
+    // Get and format course time
+    time_t rawTime;
+    time(&rawTime);
+    char formatDateBuffer[80];
+    struct tm * localTime;
+    localTime = localtime(&rawTime);
+    strftime(formatDateBuffer,80,"%m-%d-%Y--%H-%M-%S",localTime);
+
+    return "/home/paol/recordings/readyToUpload/" + semester + "/" + course + "/" + formatDateBuffer;
 }
 
 bool CommandLineThread::setThreadConfigs(string configLocation) {
@@ -86,7 +116,41 @@ bool CommandLineThread::setThreadConfigs(string configLocation) {
 }
 
 void CommandLineThread::createThreadsFromConfigs() {
+    int videoDeviceNum = -1;
+    bool flipVideo;
+    int audioNum = -1;
     for(unsigned int i = 0; i < threadConfigs.size(); i++) {
-        qDebug("%s %d %d %d", threadConfigs[i].type.c_str(), threadConfigs[i].deviceNum, threadConfigs[i].typeNum, threadConfigs[i].flipCam);
+        ProcThreadConfig c = threadConfigs[i];
+        // Switch based on the configuration type
+        if(c.type == "Whiteboard") {
+            paolProcess* proc = new WhiteboardProcess(c.deviceNum, c.typeNum, c.flipCam, lecturePath);
+            procThreads.push_back(proc);
+        }
+        else if(c.type == "VGA2USB") {
+            paolProcess* proc = new VGAProcess(c.deviceNum, c.typeNum, c.flipCam, lecturePath);
+            procThreads.push_back(proc);
+        }
+        else if(c.type == "Video") {
+            videoDeviceNum = c.deviceNum;
+            flipVideo = c.flipCam;
+        }
+        else if(c.type == "Audio") {
+            audioNum = c.deviceNum;
+        }
+        else {
+            // We found a wrong type, so throw an exception
+            throw exception();
+        }
     }
+    // Make sure the video and audio device numbers were set by the configs
+    if(videoDeviceNum == -1 || audioNum == -1) {
+        throw exception();
+    }
+
+    // Set the command for running ffmpeg
+    stringstream ss;
+    ss << "/home/paol/paol-code/scripts/capture/videoCapturePortable ";
+    ss << videoDeviceNum << " " << audioNum << " " << (int)flipVideo << " ";
+    ss << lecturePath << "/video.mp4";
+    ffmpegCommand = ss.str();
 }
