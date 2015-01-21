@@ -1,6 +1,6 @@
 #include "vgaprocess.h"
 
-VGAProcess::VGAProcess(int camNumIn, int vgaNum, bool camFlipped, string lecturePath)
+VGAProcess::VGAProcess(int camNumIn, int compNum, bool camFlipped, string lecturePath)
 {
     // Initialize webcam and associated variables
     camera = VideoCapture(camNumIn);
@@ -11,6 +11,7 @@ VGAProcess::VGAProcess(int camNumIn, int vgaNum, bool camFlipped, string lecture
     saveImageCount = 0;
     capturedImageCount = 0;
     stableScreenCount = 0;
+    vgaNum = compNum;
 
     // Make the computer directory
     string compFolderPath = lecturePath + "/computer";
@@ -23,8 +24,14 @@ VGAProcess::VGAProcess(int camNumIn, int vgaNum, bool camFlipped, string lecture
 
 void VGAProcess::workOnNextImage() {
     bool gotPicture = takePicture();
-    if(gotPicture)
+    if(gotPicture) {
+        // Let listeners know that an image was captured
+        emit capturedImage(currentScreen, this);
+        // Increase captured image count
+        capturedImageCount++;
+
         processImage();
+    }
 }
 
 bool VGAProcess::takePicture() {
@@ -42,10 +49,6 @@ bool VGAProcess::takePicture() {
         if(flipCam) {
             flip(currentScreen, currentScreen, -1);
         }
-        // Update number of images captured
-        capturedImageCount++;
-        // Let listeners know that an image was captured
-        emit capturedImage(currentScreen, this);
         // Capture was successful, so return true
         return true;
     }

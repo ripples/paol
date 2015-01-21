@@ -8,6 +8,7 @@ WhiteboardProcess::WhiteboardProcess(int camNumIn, int wbNum, bool camFlipped, s
     camera.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
     flipCam = camFlipped;
     deviceNum = camNumIn;
+    whiteboardNum = wbNum;
 
     // Initialize counts for processing
     stableWhiteboardCount = 0;
@@ -25,8 +26,14 @@ WhiteboardProcess::WhiteboardProcess(int camNumIn, int wbNum, bool camFlipped, s
 
 void WhiteboardProcess::workOnNextImage() {
     bool gotPicture = takePicture();
-    if(gotPicture)
+    if(gotPicture) {
+        // Let listeners know that an image was captured
+        emit capturedImage(currentFrame, this);
+        // Increase captured image count
+        capturedImageCount++;
+
         processImage();
+    }
 }
 
 bool WhiteboardProcess::takePicture() {
@@ -40,11 +47,6 @@ bool WhiteboardProcess::takePicture() {
     if(flipCam) {
         flip(currentFrame, currentFrame, -1);
     }
-    // Update number of images captured
-    capturedImageCount++;
-    // Let listeners know that an image was captured
-    emit capturedImage(currentFrame, this);
-
     return currentFrame.data;
 }
 

@@ -1,32 +1,30 @@
 #include "commandlinethread.h"
 
 CommandLineThread::CommandLineThread(int argc, char **argv) {
-    // Make sure there were exactly four arguments given to the program
+    /// Make sure there were exactly four arguments given to the program
     assert(argc == 4);
 
-    // Initialize ffmpeg command
-    ffmpegCommand = "";
-
-    // Set lecture path
-    char* semester = argv[1];
-    char* course = argv[2];
-    lecturePath = buildLecturePath(semester, course);
-    assert(lecturePath != "");
-
+    /// Set course information
+    // Set start time of lecture
+    time(&startTime);
+    // Set semester and course name from argv
+    semester = string(argv[1]);
+    course = string(argv[2]);
     // Set duration
     char* duration = argv[3];
     lectureDuration = atoi(duration);
+    // Set lecture path
+    lecturePath = buildLecturePath(semester, course, startTime);
+    assert(lecturePath != "");
+
+    // Initialize ffmpeg command
+    ffmpegCommand = "";
 
     // Read thread configuration from setup file
     setThreadConfigs("/home/paol/paol-code/cameraSetup.txt");
     assert(threadConfigs.size() > 0);
     // Create the threads
     createThreadsFromConfigs();
-
-    // Connect stopCapture signal to processing threads
-    for(unsigned int i = 0; i < procThreads.size(); i++) {
-        connect(this, SIGNAL(stopCapture()), procThreads[i], SLOT(onQuitProcessing()));
-    }
 }
 
 CommandLineThread::~CommandLineThread()
@@ -41,12 +39,16 @@ CommandLineThread::~CommandLineThread()
 void CommandLineThread::run() {
     qDebug("Starting main thread");
 
-    // Print debug information
-    for(unsigned int i = 0; i < threadConfigs.size(); i++)
-        qDebug("%s %d %d %d", threadConfigs[i].type.c_str(), threadConfigs[i].deviceNum, threadConfigs[i].typeNum, threadConfigs[i].flipCam);
-    qDebug("%s", ffmpegCommand.c_str());
+    // Write information file
+    writeInfoFile();
+
+    // Connect stopCapture signal to processing threads
+    for(unsigned int i = 0; i < procThreads.size(); i++) {
+        connect(this, SIGNAL(stopCapture()), procThreads[i], SLOT(onQuitProcessing()));
+    }
 
     // Start capturing
+    qDebug("%s", ffmpegCommand.c_str());
     system(ffmpegCommand.c_str());
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->start();
@@ -55,7 +57,7 @@ void CommandLineThread::run() {
     // Wait for the duration of the lecture
     sleep(lectureDuration);
 
-    // Signal threads to finish
+    // Signal threads to finish and wait on them
     system("pkill ffmpeg");
     emit stopCapture();
     for(unsigned int i = 0; i < procThreads.size(); i++) {
@@ -66,13 +68,11 @@ void CommandLineThread::run() {
     emit finished();
 }
 
-string CommandLineThread::buildLecturePath(string semester, string course) {
-    // Get and format course time
-    time_t rawTime;
-    time(&rawTime);
+string CommandLineThread::buildLecturePath(string semester, string course, time_t startTime) {
+    // Format course start time
     char formatDateBuffer[80];
     struct tm * localTime;
-    localTime = localtime(&rawTime);
+    localTime = localtime(&startTime);
     strftime(formatDateBuffer,80,"%m-%d-%Y--%H-%M-%S",localTime);
 
     return "/home/paol/recordings/readyToUpload/" + semester + "/" + course + "/" + formatDateBuffer;
@@ -91,8 +91,8 @@ bool CommandLineThread::setThreadConfigs(string configLocation) {
     }
 
     // Initialize counts for how many whiteboards and VGA feeds there are
-    int whiteboardCount = 0;
-    int vgaCount = 0;
+    whiteboardCount = 0;
+    vgaCount = 0;
 
     // Read lines from the config file
     QTextStream in(&configFile);
@@ -181,4 +181,40 @@ void CommandLineThread::createThreadsFromConfigs() {
     ss << videoDeviceNum << " " << audioNum << " " << (int)flipVideo << " ";
     ss << lecturePath << "/video.mp4";
     ffmpegCommand = ss.str();
+}
+
+void CommandLineThread::writeInfoFile() {
+    // Set info file path
+    string infoPath = lecturePath + "/INFO";
+    // Construct stream to write to info file
+    QFile infoFile(QString::fromStdString(infoPath));
+    infoFile.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream infoStream(&infoFile);
+
+    // Format course start time
+    char formatDateBuffer[80];
+    struct tm * localTime;
+    localTime = localtime(&startTime);
+    //2014,12,04,12,55,01
+    strftime(formatDateBuffer,80,"%Y,%m,%d,%H,%M,%S",localTime);
+
+    // Get host name
+    char hostname[256];
+    gethostname(hostname, 256);
+
+    // Write the file
+    infoStream << "[course]" << endl;
+    infoStream << "id: " << course.c_str() << endl;
+    infoStream << "term: " << semester.c_str() << endl;
+    infoStream << endl;
+    infoStream << "[pres]" << endl;
+    infoStream << "start: " << formatDateBuffer << endl;
+    infoStream << "duration: " << lectureDuration << endl;
+    infoStream << "source: " << hostname << endl;
+    infoStream << "timestamp: " << startTime << endl;
+    infoStream << "whiteboardCount: " << whiteboardCount << endl;
+    infoStream << "computerCount: " << vgaCount << endl;
+
+    // Close the file
+    infoFile.close();
 }

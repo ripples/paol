@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <cassert>
+#include <unistd.h>
 #include "paolProcess.h"
 #include "vgaprocess.h"
 #include "whiteboardprocess.h"
@@ -26,18 +27,27 @@ class CommandLineThread : public QThread {
 private:
     vector<ProcThreadConfig> threadConfigs;
     vector<paolProcess*> procThreads;
+    string ffmpegCommand;
 
+    // Lecture information
     int lectureDuration;
     string lecturePath;
-    string ffmpegCommand;
+    string semester;
+    string course;
+    time_t startTime;
+
+    // Counts for the device types
+    int whiteboardCount;
+    int vgaCount;
 
 public:
     explicit CommandLineThread(int argc, char** argv);
     ~CommandLineThread();
 
-    string buildLecturePath(string semester, string course);
+    string buildLecturePath(string semester, string course, time_t startTime);
     bool setThreadConfigs(string configLocation);
     void createThreadsFromConfigs();
+    void writeInfoFile();
 
 signals:
     void stopCapture();
