@@ -13,11 +13,20 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
     lecturePath = buildLecturePath(semester, course);
     assert(lecturePath != "");
 
+    // Set duration
+    char* duration = argv[3];
+    lectureDuration = atoi(duration);
+
     // Read thread configuration from setup file
     setThreadConfigs("/home/paol/paol-code/cameraSetup.txt");
     assert(threadConfigs.size() > 0);
     // Create the threads
     createThreadsFromConfigs();
+
+    // Connect stopCapture signal to processing threads
+    for(unsigned int i = 0; i < procThreads.size(); i++) {
+        connect(this, SIGNAL(stopCapture()), procThreads[i], SLOT(onQuitProcessing()));
+    }
 }
 
 CommandLineThread::~CommandLineThread()
@@ -36,6 +45,25 @@ void CommandLineThread::run() {
     for(unsigned int i = 0; i < threadConfigs.size(); i++)
         qDebug("%s %d %d %d", threadConfigs[i].type.c_str(), threadConfigs[i].deviceNum, threadConfigs[i].typeNum, threadConfigs[i].flipCam);
     qDebug("%s", ffmpegCommand.c_str());
+
+    // Start capturing
+    system(ffmpegCommand.c_str());
+    for(unsigned int i = 0; i < procThreads.size(); i++) {
+        procThreads[i]->start();
+    }
+
+    // Wait for the duration of the lecture
+    sleep(lectureDuration);
+
+    // Signal threads to finish
+    system("pkill ffmpeg");
+    emit stopCapture();
+    for(unsigned int i = 0; i < procThreads.size(); i++) {
+        procThreads[i]->wait();
+    }
+
+    // Let the main application know that this thread finished
+    emit finished();
 }
 
 string CommandLineThread::buildLecturePath(string semester, string course) {

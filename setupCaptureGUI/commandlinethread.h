@@ -27,7 +27,7 @@ private:
     vector<ProcThreadConfig> threadConfigs;
     vector<paolProcess*> procThreads;
 
-    int duration;
+    int lectureDuration;
     string lecturePath;
     string ffmpegCommand;
 
@@ -38,6 +38,12 @@ public:
     string buildLecturePath(string semester, string course);
     bool setThreadConfigs(string configLocation);
     void createThreadsFromConfigs();
+
+signals:
+    void stopCapture();
+    void finished();
+
+private slots:
     void run();
 };
 

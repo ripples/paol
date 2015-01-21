@@ -12,10 +12,11 @@ int main(int argc, char *argv[])
 
     if(argc == 4) {
         // Run the command-line version if the correct number of arguments were detected
+        QCoreApplication a(argc, argv);
         CommandLineThread* cmdThread = new CommandLineThread(argc, argv);
-        cmdThread->start();
-        cmdThread->wait();
-        return 0;
+        QObject::connect(cmdThread, SIGNAL(finished()), &a, SLOT(quit()));
+        QTimer::singleShot(0, cmdThread, SLOT(run()));
+        return a.exec();
     }
     else {
         // Run the GUI application
