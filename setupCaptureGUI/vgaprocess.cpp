@@ -20,11 +20,16 @@ VGAProcess::VGAProcess(int camNumIn, int compNum, bool camFlipped, string lectur
 
     // Set saveImagePathFormat
     sprintf(saveImagePathFormat, "%s/computer%%d-%d.png", compFolderPath.data(), vgaNum);
+
+    // Print the association between this process and the output
+    qDebug("VGA %d: %p", vgaNum, this);
 }
 
 void VGAProcess::workOnNextImage() {
     bool gotPicture = takePicture();
     if(gotPicture) {
+        // Print image capture success
+        qDebug("Took picture in thread %p at time %ld", this, currentImageTime);
         // Let listeners know that an image was captured
         emit capturedImage(currentScreen, this);
         // Increase captured image count

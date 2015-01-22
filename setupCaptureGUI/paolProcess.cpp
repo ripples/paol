@@ -40,6 +40,8 @@ void paolProcess::saveImageWithTimestamp(const Mat& image) {
     // Save the image
     imwrite(destination, image);
 
+    // Print image save success
+    qDebug("Saved picture in thread %p at time %ld", this, currentImageTime);
     // Let listeners know that an image was processed
     emit savedImage(image, this);
 
