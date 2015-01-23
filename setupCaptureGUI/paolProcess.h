@@ -47,6 +47,7 @@ protected:
 
     // Field to store where the lecture is
     string lecturePath;
+    FILE* logFile;
 
     // Fields for general processing (mostly saving the image)
     int saveImageCount;
@@ -60,6 +61,9 @@ protected:
 
     // Method to save an image at the current time
     virtual void saveImageWithTimestamp(const Mat& image) = 0;
+
+    // Method to print to log
+    virtual void printToLog(char* format, ...) = 0;
 
 public:
     paolProcess();

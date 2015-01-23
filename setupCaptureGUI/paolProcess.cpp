@@ -7,6 +7,9 @@ paolProcess::paolProcess() {
 paolProcess::~paolProcess() {
     if(camera.isOpened())
         camera.release();
+    if(logFile != NULL) {
+        fclose(logFile);
+    }
 }
 
 void paolProcess::run(){
@@ -22,12 +25,12 @@ void paolProcess::run(){
         // keepRunning was true, so continue processing
         workOnNextImage();
     }
-    qDebug("Stopped thread %p after capturing %d frames and saving %d frames",
+    printToLog("Stopped thread %p after capturing %d frames and saving %d frames\n",
            this, capturedImageCount, saveImageCount);
 }
 
 void paolProcess::onQuitProcessing() {
-    qDebug("Received signal to stop thread %p", this);
+    printToLog("Received signal to stop thread %p\n", this);
     keepRunningMutex.lock();
     keepRunning = false;
     keepRunningMutex.unlock();

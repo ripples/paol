@@ -25,6 +25,7 @@ protected:
     bool takePicture();
     void processImage();
     void saveImageWithTimestamp(const Mat& image);
+    void printToLog(char* format, ...);
 
 public:
     VGAProcess(int camNumIn, int vgaNum, bool camFlipped, string lecturePath);

@@ -23,8 +23,6 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
     // Read thread configuration from setup file
     setThreadConfigs("/home/paol/paol-code/cameraSetup.txt");
     assert(threadConfigs.size() > 0);
-    // Create the threads
-    createThreadsFromConfigs();
 }
 
 CommandLineThread::~CommandLineThread()
@@ -44,6 +42,8 @@ void CommandLineThread::run() {
     // Write information file
     writeInfoFile();
 
+    // Create the threads
+    createThreadsFromConfigs();
     // Connect stopCapture signal to processing threads
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         connect(this, SIGNAL(stopCapture()), procThreads[i], SLOT(onQuitProcessing()));

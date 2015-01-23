@@ -259,6 +259,14 @@ bool MainWindow::courseInformation(){
 
         processLocation = "/home/paol/recordings/readyToUpload/" + yearIn + "/" + classIn + "/" + buffer;
 
+        string makeComputerDir = "mkdir -p " + processLocation + "/computer";
+        string makeWhiteboardDir = "mkdir -p " + processLocation + "/whiteboard";
+        string makeLogDir = "mkdir -p " + processLocation + "/logs";
+
+        system(makeComputerDir.c_str());
+        system(makeWhiteboardDir.c_str());
+        system(makeLogDir.c_str());
+
         ui->infoWidget->setVisible(false);
         ui->captureWidget->setVisible(true);
         return true;

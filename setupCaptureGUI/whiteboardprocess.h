@@ -21,6 +21,7 @@ protected:
     bool takePicture();
     void processImage();
     void saveImageWithTimestamp(const Mat& image);
+    void printToLog(char* format, ...);
 
 public:
     WhiteboardProcess(int camNumIn, int wbNum, bool camFlipped, string lecturePath);
