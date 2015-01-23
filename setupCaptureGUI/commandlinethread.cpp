@@ -10,24 +10,20 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
     // Set semester and course name from argv
     semester = string(argv[1]);
     course = string(argv[2]);
-    // Set duration
-    char* duration = argv[3];
-    lectureDuration = atoi(duration);
+    // Set duration from argv
+    lectureDuration = atoi(argv[3]);
     // Set lecture path
     lecturePath = buildLecturePath(semester, course, startTime);
     assert(lecturePath != "");
 
-    // Initialize ffmpeg command
-    ffmpegCommand = "";
-
     // Read thread configuration from setup file
     setThreadConfigs("/home/paol/paol-code/cameraSetup.txt");
-    assert(threadConfigs.size() > 0);
 }
 
 CommandLineThread::~CommandLineThread()
 {
     delete ffmpegProcess;
+    // Close the FFmpeg log file if needed
     if(ffmpegLog != NULL) {
         fclose(ffmpegLog);
     }
@@ -46,40 +42,41 @@ void CommandLineThread::run() {
     // Write information file
     writeInfoFile();
 
-    // Set FFmpeg log file
+    // Initialize handle to FFmpeg log file
     string ffmpegLogPath = lecturePath + "/logs/ffmpeg.log";
     ffmpegLog = fopen(ffmpegLogPath.c_str(), "w");
     assert(ffmpegLog != NULL);
 
-    // Create the threads
+    // Initialize the threads and the FFmpeg QProcess
     createThreadsFromConfigs();
-    // Connect stopCapture signal to processing threads
+
+    // Connect stopCapture signal to processing threads and FFmpeg QProcess
+    connect(this, SIGNAL(stopCapture()), ffmpegProcess, SLOT(terminate()));
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         connect(this, SIGNAL(stopCapture()), procThreads[i], SLOT(onQuitProcessing()));
     }
 
-    // Create and start the FFmpeg process
-    ffmpegProcess = new QProcess(this);
-    connect(ffmpegProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(onFFmpegOutput()));
-    qDebug(ffmpegCommand.c_str());
-    ffmpegProcess->start(ffmpegCommand.c_str());
+    // Connect our FFmpeg output listener
+    connect(ffmpegProcess, SIGNAL(readyReadStandardError()), this, SLOT(onFFmpegErrorOutput()));
 
-    // Start capturing from PAOL threads
+    // Start capturing from PAOL threads and FFmpeg
+    ffmpegProcess->start(ffmpegCommand.c_str());
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->start();
     }
 
-    // Wait for the duration of the lecture
+    // Wait for the duration of the lecture, then signal threads to finish
     sleep(lectureDuration);
-
-    // Signal threads to finish and wait on them
     emit stopCapture();
+
+    // Wait for FFmpeg and processing threads to finish
+    ffmpegProcess->waitForFinished();
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->wait();
     }
-    ffmpegProcess->waitForFinished();
 
     // Let the main application know that this thread finished
+    qDebug("Finishing main thread");
     emit finished();
 }
 
@@ -107,17 +104,14 @@ void CommandLineThread::makeDirectories() {
     system(makeLogDir.c_str());
 }
 
-bool CommandLineThread::setThreadConfigs(string configLocation) {
+void CommandLineThread::setThreadConfigs(string configLocation) {
     // Reset the thread configurations array
     threadConfigs.clear();
 
     // Open the configuration file
     QString locAsQStr = QString::fromStdString(configLocation);
     QFile configFile(locAsQStr);
-    if(!configFile.open(QIODevice::ReadOnly)) {
-        qWarning("Failed to open the configuration file at %s", configLocation.c_str());
-        return false;
-    }
+    assert(configFile.open(QIODevice::ReadOnly));
 
     // Initialize counts for how many whiteboards and VGA feeds there are
     whiteboardCount = 0;
@@ -137,11 +131,7 @@ bool CommandLineThread::setThreadConfigs(string configLocation) {
             int scanRes = sscanf(line.toStdString().data(), "%d %d %s", &deviceNum, &flipCam, type);
 
             // Make sure exactly three items were found on the current line
-            if(scanRes != 3) {
-                qWarning("The configuration file was not in the correct format.");
-                threadConfigs.clear();
-                return false;
-            }
+            assert(scanRes == 3);
 
             // Set thread configuration struct for the current line
             ProcThreadConfig p;
@@ -163,19 +153,17 @@ bool CommandLineThread::setThreadConfigs(string configLocation) {
     }
 
     // Make sure at least one configuration was created
-    if(threadConfigs.size() > 0) {
-        return true;
-    }
-    else {
-        qWarning("No non-empty lines were found in the config file.");
-        return false;
-    }
+    assert(threadConfigs.size() > 0);
 }
 
 void CommandLineThread::createThreadsFromConfigs() {
+    // Set parameters for creating the FFmpeg process
     int videoDeviceNum = -1;
     bool flipVideo;
     int audioNum = -1;
+
+    // Go through the thread configurations, creating the paolProcesses
+    // and setting the FFmpeg process parameters along the way
     for(unsigned int i = 0; i < threadConfigs.size(); i++) {
         ProcThreadConfig c = threadConfigs[i];
         // Switch based on the configuration type
@@ -195,14 +183,16 @@ void CommandLineThread::createThreadsFromConfigs() {
             audioNum = c.deviceNum;
         }
         else {
-            // We found a wrong type, so throw an exception
-            throw exception();
+            // We found a wrong type, so stop the program
+            assert(false);
         }
     }
+
     // Make sure the video and audio device numbers were set by the configs
-    if(videoDeviceNum == -1 || audioNum == -1) {
-        throw exception();
-    }
+    assert(videoDeviceNum != -1 && audioNum != -1);
+
+    // Initialize the QProcess for FFmpeg
+    ffmpegProcess = new QProcess(this);
 
     // Set the command for running ffmpeg
     stringstream ss;
@@ -210,6 +200,7 @@ void CommandLineThread::createThreadsFromConfigs() {
     ss << videoDeviceNum << " " << audioNum << " " << (int)flipVideo << " ";
     ss << lecturePath << "/video.mp4";
     ffmpegCommand = ss.str();
+    assert(ffmpegCommand != "");
 }
 
 void CommandLineThread::writeInfoFile() {
@@ -248,7 +239,7 @@ void CommandLineThread::writeInfoFile() {
     infoFile.close();
 }
 
-void CommandLineThread::onFFmpegOutput() {
-    QByteArray output = ffmpegProcess->readAllStandardOutput();
+void CommandLineThread::onFFmpegErrorOutput() {
+    QByteArray output = ffmpegProcess->readAllStandardError();
     fprintf(ffmpegLog, output.data());
 }

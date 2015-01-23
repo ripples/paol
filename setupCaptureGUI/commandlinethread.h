@@ -42,6 +42,7 @@ private:
     int whiteboardCount;
     int vgaCount;
 
+    // Handle to the log that will store the FFmpeg output
     FILE* ffmpegLog;
 
 public:
@@ -50,17 +51,20 @@ public:
 
     string buildLecturePath(string semester, string course, time_t startTime);
     void makeDirectories();
-    bool setThreadConfigs(string configLocation);
+    void setThreadConfigs(string configLocation);
     void createThreadsFromConfigs();
     void writeInfoFile();
 
 signals:
+    // Signal to stop FFmpeg and processing threads
     void stopCapture();
+    // Signal to let the main application know that this thread finished
     void finished();
 
 private slots:
     void run();
-    void onFFmpegOutput();
+    // Slot for capturing the output from FFmpeg
+    void onFFmpegErrorOutput();
 };
 
 #endif // COMMANDLINETHREAD_H
