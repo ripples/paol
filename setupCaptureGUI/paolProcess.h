@@ -45,9 +45,11 @@ protected:
     bool flipCam;
     int deviceNum;
 
+    // Field to store where the lecture is
+    string lecturePath;
+
     // Fields for general processing (mostly saving the image)
     int saveImageCount;
-    char saveImagePathFormat[256];
     time_t currentImageTime;
     int capturedImageCount; // How many images were captured from the camera
 
@@ -57,7 +59,7 @@ protected:
     virtual void processImage() = 0;
 
     // Method to save an image at the current time
-    void saveImageWithTimestamp(const Mat& image);
+    virtual void saveImageWithTimestamp(const Mat& image) = 0;
 
 public:
     paolProcess();

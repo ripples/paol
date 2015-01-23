@@ -45,6 +45,7 @@ public:
     ~CommandLineThread();
 
     string buildLecturePath(string semester, string course, time_t startTime);
+    void makeDirectories();
     bool setThreadConfigs(string configLocation);
     void createThreadsFromConfigs();
     void writeInfoFile();

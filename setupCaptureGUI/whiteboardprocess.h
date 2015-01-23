@@ -20,6 +20,7 @@ protected:
     void workOnNextImage();
     bool takePicture();
     void processImage();
+    void saveImageWithTimestamp(const Mat& image);
 
 public:
     WhiteboardProcess(int camNumIn, int wbNum, bool camFlipped, string lecturePath);

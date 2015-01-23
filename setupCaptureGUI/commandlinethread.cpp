@@ -39,6 +39,8 @@ CommandLineThread::~CommandLineThread()
 void CommandLineThread::run() {
     qDebug("Starting main thread");
 
+    // Make directories
+    makeDirectories();
     // Write information file
     writeInfoFile();
 
@@ -76,6 +78,20 @@ string CommandLineThread::buildLecturePath(string semester, string course, time_
     strftime(formatDateBuffer,80,"%m-%d-%Y--%H-%M-%S",localTime);
 
     return "/home/paol/recordings/readyToUpload/" + semester + "/" + course + "/" + formatDateBuffer;
+}
+
+void CommandLineThread::makeDirectories() {
+    // Set the mkdir commands
+    string makeLectureDir = "mkdir -p " + lecturePath;
+    string makeComputerDir = "mkdir -p " + lecturePath + "/computer";
+    string makeWhiteboardDir = "mkdir -p " + lecturePath + "/whiteboard";
+    string makeLogDir = "mkdir -p " + lecturePath + "/logs";
+
+    // Execute the mkdir commands
+    system(makeLectureDir.c_str());
+    system(makeComputerDir.c_str());
+    system(makeWhiteboardDir.c_str());
+    system(makeLogDir.c_str());
 }
 
 bool CommandLineThread::setThreadConfigs(string configLocation) {

@@ -6,13 +6,13 @@
 #include <QTimer>
 #include <QApplication>
 
-// Redirect Qt output to standard output. Modified from
-// http://doc.qt.io/qt-5/qtglobal.html#qInstallMessageHandler
-void paolMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
-{
-    QByteArray localMsg = msg.toLocal8Bit();
-    fprintf(stdout, "%s\n", localMsg.constData());
-}
+//// Redirect Qt output to standard output. Modified from
+//// http://doc.qt.io/qt-5/qtglobal.html#qInstallMessageHandler
+//void paolMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+//{
+//    QByteArray localMsg = msg.toLocal8Bit();
+//    fprintf(stdout, "%s\n", localMsg.constData());
+//}
 
 int main(int argc, char *argv[])
 {
@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
         // Run the command-line version if the correct number of arguments were detected
         QCoreApplication a(argc, argv);
         // Redirect Qt debugging output to standard output
-        qInstallMessageHandler(paolMessageHandler);
+//        qInstallMessageHandler(paolMessageHandler);
         CommandLineThread* cmdThread = new CommandLineThread(argc, argv);
         QObject::connect(cmdThread, SIGNAL(finished()), &a, SLOT(quit()));
         QTimer::singleShot(0, cmdThread, SLOT(run()));

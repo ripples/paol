@@ -1,25 +1,20 @@
 #include "vgaprocess.h"
 
-VGAProcess::VGAProcess(int camNumIn, int compNum, bool camFlipped, string lecturePath)
+VGAProcess::VGAProcess(int camNumIn, int compNum, bool camFlipped, string lecPath)
 {
     // Initialize webcam and associated variables
     camera = VideoCapture(camNumIn);
     flipCam = camFlipped;
     deviceNum = camNumIn;
 
+    // Set the lecture path
+    lecturePath = lecPath;
+
     // Initialize counts for processing
     saveImageCount = 0;
     capturedImageCount = 0;
     stableScreenCount = 0;
     vgaNum = compNum;
-
-    // Make the computer directory
-    string compFolderPath = lecturePath + "/computer";
-    string mkdirCommand = "mkdir -p " + compFolderPath;
-    system(mkdirCommand.data());
-
-    // Set saveImagePathFormat
-    sprintf(saveImagePathFormat, "%s/computer%%d-%d.png", compFolderPath.data(), vgaNum);
 
     // Print the association between this process and the output
     qDebug("VGA %d: %p", vgaNum, this);
@@ -77,4 +72,21 @@ void VGAProcess::processImage() {
     } else {
         stableScreenCount++;
     }
+//    saveImageWithTimestamp(currentScreen);
+}
+
+void VGAProcess::saveImageWithTimestamp(const Mat& image) {
+    // Construct the path to save the image
+    stringstream ss;
+    ss << lecturePath << "/computer/computer" << currentImageTime << "-" << vgaNum << ".png";
+    qDebug("%s", ss.str().c_str());
+    imwrite(ss.str(), image);
+
+    // Print image save success
+    qDebug("Saved picture in thread %p at time %ld", this, currentImageTime);
+    // Let listeners know that an image was processed
+    emit savedImage(image, this);
+
+    // Increment number of saved images
+    saveImageCount++;
 }
