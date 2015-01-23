@@ -197,7 +197,7 @@ void CommandLineThread::createThreadsFromConfigs() {
     // Set the command for running ffmpeg
     stringstream ss;
     ss << "/home/paol/paol-code/scripts/capture/videoCapturePortable ";
-    ss << videoDeviceNum << " " << audioNum << " " << (int)flipVideo << " ";
+    ss << "/dev/video" << videoDeviceNum << " hw:" << audioNum << " " << (int)flipVideo << " ";
     ss << lecturePath << "/video.mp4";
     ffmpegCommand = ss.str();
     assert(ffmpegCommand != "");
