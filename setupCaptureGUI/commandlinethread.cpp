@@ -27,6 +27,10 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
 
 CommandLineThread::~CommandLineThread()
 {
+    delete ffmpegProcess;
+    if(ffmpegLog != NULL) {
+        fclose(ffmpegLog);
+    }
     // Release the memory used the by the processing threads
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         delete procThreads[i];
@@ -42,6 +46,11 @@ void CommandLineThread::run() {
     // Write information file
     writeInfoFile();
 
+    // Set FFmpeg log file
+    string ffmpegLogPath = lecturePath + "/logs/ffmpeg.log";
+    ffmpegLog = fopen(ffmpegLogPath.c_str(), "w");
+    assert(ffmpegLog != NULL);
+
     // Create the threads
     createThreadsFromConfigs();
     // Connect stopCapture signal to processing threads
@@ -49,9 +58,13 @@ void CommandLineThread::run() {
         connect(this, SIGNAL(stopCapture()), procThreads[i], SLOT(onQuitProcessing()));
     }
 
-    // Start capturing
-    qDebug("%s", ffmpegCommand.c_str());
-    system(ffmpegCommand.c_str());
+    // Create and start the FFmpeg process
+    ffmpegProcess = new QProcess(this);
+    connect(ffmpegProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(onFFmpegOutput()));
+    qDebug(ffmpegCommand.c_str());
+    ffmpegProcess->start(ffmpegCommand.c_str());
+
+    // Start capturing from PAOL threads
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->start();
     }
@@ -60,11 +73,11 @@ void CommandLineThread::run() {
     sleep(lectureDuration);
 
     // Signal threads to finish and wait on them
-    system("pkill ffmpeg");
     emit stopCapture();
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->wait();
     }
+    ffmpegProcess->waitForFinished();
 
     // Let the main application know that this thread finished
     emit finished();
@@ -233,4 +246,9 @@ void CommandLineThread::writeInfoFile() {
 
     // Close the file
     infoFile.close();
+}
+
+void CommandLineThread::onFFmpegOutput() {
+    QByteArray output = ffmpegProcess->readAllStandardOutput();
+    fprintf(ffmpegLog, output.data());
 }
