@@ -22,7 +22,7 @@ parserArgs="$captureProgram $calendar"
 date=$(date)
 echo "================================$date================================" >> $log
 cd $parserDir
-mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args=$parserArgs >> $log
+mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args="$parserArgs" >> $log
 status=$?
 if [ $status = 0 ]; then
 	(cat $schedFile; echo "$updateCalJob"; echo "$processAllJob") | crontab -
