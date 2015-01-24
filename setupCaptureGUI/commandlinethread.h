@@ -42,9 +42,6 @@ private:
     int whiteboardCount;
     int vgaCount;
 
-    // Handle to the log that will store the FFmpeg output
-    FILE* ffmpegLog;
-
 public:
     explicit CommandLineThread(int argc, char** argv);
     ~CommandLineThread();
@@ -63,8 +60,6 @@ signals:
 
 private slots:
     void run();
-    // Slot for capturing the output from FFmpeg
-    void onFFmpegErrorOutput();
 };
 
 #endif // COMMANDLINETHREAD_H

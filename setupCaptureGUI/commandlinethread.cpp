@@ -23,10 +23,6 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
 CommandLineThread::~CommandLineThread()
 {
     delete ffmpegProcess;
-    // Close the FFmpeg log file if needed
-    if(ffmpegLog != NULL) {
-        fclose(ffmpegLog);
-    }
     // Release the memory used the by the processing threads
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         delete procThreads[i];
@@ -42,22 +38,13 @@ void CommandLineThread::run() {
     // Write information file
     writeInfoFile();
 
-    // Initialize handle to FFmpeg log file
-    string ffmpegLogPath = lecturePath + "/logs/ffmpeg.log";
-    ffmpegLog = fopen(ffmpegLogPath.c_str(), "w");
-    assert(ffmpegLog != NULL);
-
     // Initialize the threads and the FFmpeg QProcess
     createThreadsFromConfigs();
 
-    // Connect stopCapture signal to processing threads and FFmpeg QProcess
-    connect(this, SIGNAL(stopCapture()), ffmpegProcess, SLOT(terminate()));
+    // Connect stopCapture signal to processing threads
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         connect(this, SIGNAL(stopCapture()), procThreads[i], SLOT(onQuitProcessing()));
     }
-
-    // Connect our FFmpeg output listener
-    connect(ffmpegProcess, SIGNAL(readyReadStandardError()), this, SLOT(onFFmpegErrorOutput()));
 
     // Start capturing from PAOL threads and FFmpeg
     ffmpegProcess->start(ffmpegCommand.c_str());
@@ -68,6 +55,9 @@ void CommandLineThread::run() {
     // Wait for the duration of the lecture, then signal threads to finish
     sleep(lectureDuration);
     emit stopCapture();
+    // Terminate FFmpeg by sending a "q" keypress to it
+    ffmpegProcess->write("q");
+    ffmpegProcess->closeWriteChannel();
 
     // Wait for FFmpeg and processing threads to finish
     ffmpegProcess->waitForFinished();
@@ -193,6 +183,9 @@ void CommandLineThread::createThreadsFromConfigs() {
 
     // Initialize the QProcess for FFmpeg
     ffmpegProcess = new QProcess(this);
+    // Set the output of the FFmpeg process to a log file
+    string ffmpegLogPath = lecturePath + "/logs/ffmpeg.log";
+    ffmpegProcess->setStandardErrorFile(QString::fromStdString(ffmpegLogPath));
 
     // Set the command for running ffmpeg
     stringstream ss;
@@ -237,9 +230,4 @@ void CommandLineThread::writeInfoFile() {
 
     // Close the file
     infoFile.close();
-}
-
-void CommandLineThread::onFFmpegErrorOutput() {
-    QByteArray output = ffmpegProcess->readAllStandardError();
-    fprintf(ffmpegLog, output.data());
 }
