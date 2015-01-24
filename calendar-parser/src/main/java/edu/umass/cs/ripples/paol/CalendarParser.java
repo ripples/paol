@@ -115,8 +115,8 @@ public class CalendarParser {
     try {
       try {
 	  
-		if(args.length != 1) {
-			errPrintln("Exactly one calendar (no spaces) should be specified");
+		if(args.length != 2) {
+			errPrintln("Usage: <program to run> <name of calendar>");
 			System.exit(1);
 		}
 
@@ -134,15 +134,16 @@ public class CalendarParser {
 		// get calendars
 		Map<String, String> sumryToIdMap = initSumryToIdMap();
 		String calKey = null;
-		String capComp = args[0]; // computer that is running this code
-		if((calKey = sumryToIdMap.get(capComp)) == null) {
-			println("Calendar '" + capComp + "' was not found. Here are the available calendars:");
+		String captureProgram = args[0];
+		String calendarName = args[1];
+		if((calKey = sumryToIdMap.get(calendarName)) == null) {
+			println("Calendar '" + calendarName + "' was not found. Here are the available calendars:");
 			for(String key : sumryToIdMap.keySet())
 				println(key);
 			System.exit(1);
 		}
 
-		println("Calendar '" + capComp + "' was found. Writing cron lines");
+		println("Calendar '" + calendarName + "' was found. Writing cron lines");
 		println("Setting semester\n");
 		if(!setSemester(SEM_DATES))
 			errPrintln("Failed to set semester");
@@ -153,7 +154,7 @@ public class CalendarParser {
 			cronLines.delete();
 		cronLines.createNewFile();
 		BufferedWriter writer = new BufferedWriter(new FileWriter(cronLines));
-        writeEvents(calendar, writer);
+        writeEvents(captureProgram, calendar, writer);
 		writer.close();
 		System.exit(0);
 
@@ -175,12 +176,12 @@ public class CalendarParser {
 	return ret;
   }
 
-  private static void writeEvents(Calendar calendar, BufferedWriter writer) throws IOException {
-    Date start = new Date();
+  private static void writeEvents(String captureProgram, Calendar calendar, BufferedWriter writer) throws IOException {
+	Date start = new Date();
 	Date end = new Date(start.getTime() + scanPeriod*24*3600*1000);
 	DateTime startDT = new DateTime(start);
 	DateTime endDT = new DateTime(end);
-    Events feed = client.events().list(calendar.getId()).set("singleEvents", true)
+	Events feed = client.events().list(calendar.getId()).set("singleEvents", true)
 			.set("orderBy", "startTime")
 			.set("timeMin", startDT).set("timeMax", endDT).execute();
 	List<Event> events = feed.getItems();
@@ -195,9 +196,9 @@ public class CalendarParser {
 		println("Start: " + eventStart.toString());
 		println("Duration (s): " + duration);
 		println("Writing cron job:");
-		println(cronLine(e, semester));
+		println(cronLine(captureProgram, e, semester));
 		System.out.println();
-		String crline = cronLine(e, semester);
+		String crline = cronLine(captureProgram, e, semester);
 		if(crline != null)
 			writeLineToFile(writer, crline);
 	}
@@ -207,7 +208,7 @@ public class CalendarParser {
 		println("Finished writing lines to file");
   }
   
-  private static String cronLine(Event e, String sem) {
+  private static String cronLine(String captureProgram, Event e, String sem) {
 	if(e.getStart().getDateTime() == null) {
 		errPrintln("Tried to parse all-day event");
 		return null;
@@ -228,13 +229,13 @@ public class CalendarParser {
 		courseListNumEnd = colonIdx;
 	}
 	String course = courseTitle.substring(0, courseListNumEnd);
-	return cronLine(sDate.getMinutes(), sDate.getHours(), sDate.getDate(), sDate.getMonth(), sDate.getYear(), sem, course, duration+2*buffer);
+	return cronLine(captureProgram, sDate.getMinutes(), sDate.getHours(), sDate.getDate(), sDate.getMonth(), sDate.getYear(), sem, course, duration+2*buffer);
   }
   
   // m h  dom mon dow year   command
-  private static String cronLine(int min, int hr, int dayOfMon, int mon, int year, String sem, String course, long dur) {
+  private static String cronLine(String captureProgram, int min, int hr, int dayOfMon, int mon, int year, String sem, String course, long dur) {
 	//return min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + (year+1900) + " " + CAP_SCRIPT + " " + sem + " " + course + " " + dur;
-	return min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + CAP_SCRIPT + " " + sem + " " + course + " " + dur;
+	return min + " " + hr + " " + dayOfMon + " " + (mon+1) + " * " + captureProgram + " " + sem + " " + course + " " + dur;
   }
   
   private static void writeLineToFile(BufferedWriter writer, String line) throws IOException {

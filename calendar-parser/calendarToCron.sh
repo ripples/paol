@@ -14,10 +14,15 @@ thisScript="$parserDir/calendarToCron.sh"
 updateCalJob="0 * * * * $thisScript $calendar"
 processAllJob="15 1 * * * /home/paol/paol-code/scripts/process/processAll.sh"
 
+# Get the location of the capture program
+captureProgram=$(ls /home/paol/paol-code/build*/PAOL-LecCap-GUI)
+# Construct the arguments for the parser
+parserArgs="$captureProgram $calendar"
+
 date=$(date)
 echo "================================$date================================" >> $log
 cd $parserDir
-mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args=$calendar >> $log
+mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args=$parserArgs >> $log
 status=$?
 if [ $status = 0 ]; then
 	(cat $schedFile; echo "$updateCalJob"; echo "$processAllJob") | crontab -
@@ -25,13 +30,3 @@ if [ $status = 0 ]; then
 else
 	echo "Problem in calendar parser. Check for errors" >> $log
 fi
-
-# prior code for reference/future usage
-# cat $schedFile | while read job; do
-	# #find any jobs that match the one we want to add
-	# jobmatch=$(crontab -l | grep "${job//[*]/[*]}")
-	# #add job if no matches were found
-	# if [ -z "$jobmatch" ]; then
-		# (crontab -l; echo "$job") | crontab -
-	# fi
-# done
