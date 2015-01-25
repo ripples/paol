@@ -96,7 +96,7 @@ void WhiteboardProcess::processImage() {
             // Find how much the current marker model differs from the stored one
             float markerDiffs = PAOLProcUtils::findMarkerModelDiffs(oldMarkerModel, currentMarkerModel);
             // Save and update the models if the marker content changed enough
-            if(markerDiffs > .004) {
+            if(markerDiffs > .0055) {
                 // Save the smooth marker version of the old background image
                 Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
                 saveImageWithTimestamp(oldRefinedBackgroundSmooth);
