@@ -44,7 +44,7 @@ bool VGAProcess::takePicture() {
     // Try to open the camera
     camera.open(deviceNum);
     // Get the next screen if the image feed is available
-    if(camera.isOpened()) {
+    if(camera.isOpened() && camera.get(CV_CAP_PROP_FRAME_WIDTH) != 0) {
         // Update old screen
         oldScreen = currentScreen.clone();
         // Save current screen
@@ -55,6 +55,8 @@ bool VGAProcess::takePicture() {
         if(flipCam) {
             flip(currentScreen, currentScreen, -1);
         }
+        // Release the camera so it can be used again
+        camera.release();
         // Capture was successful, so return true
         return true;
     }
