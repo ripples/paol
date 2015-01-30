@@ -55,13 +55,9 @@ void CommandLineThread::run() {
     // Wait for the duration of the lecture, then signal threads to finish
     sleep(lectureDuration);
     emit stopCapture();
-
-    // Stop FFmpeg if it did not stop prematurely from error
-    if(!ffmpegProcess->atEnd()) {
-        // Terminate FFmpeg by sending a "q" keypress to it
-        ffmpegProcess->write("q");
-        ffmpegProcess->closeWriteChannel();
-    }
+    // Stop FFmpeg
+    ffmpegProcess->write("q");
+    ffmpegProcess->closeWriteChannel();
 
     // Wait for FFmpeg and processing threads to finish
     ffmpegProcess->waitForFinished();
