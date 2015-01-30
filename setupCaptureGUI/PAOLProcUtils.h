@@ -8,6 +8,11 @@
 
 using namespace cv;
 
+typedef struct wbc WBCorners;
+struct wbc {
+    Point2f TL, TR, BL, BR;
+};
+
 class PAOLProcUtils
 {
 public:
@@ -50,6 +55,8 @@ public:
     static Mat filterConnectedComponents(const Mat& compsImg, const Mat& keepCompLocs);
     static Mat findMarkerWithMarkerBorders(const Mat& whiteboardImage);
     static Mat findMarkerWithCC(const Mat& orig);
+    static Mat findMarkerStrokeCandidates(const Mat& orig);
+    static Mat findMarkerStrokeLocations(const Mat& orig);
     static float findMarkerModelDiffs(const Mat& oldMarkerModel, const Mat& newMarkerModel);
 
     /// Methods to enhance the whiteboard
@@ -57,7 +64,7 @@ public:
     static Mat getAvgWhiteboardColor(const Mat& whiteboardImg, int size);
     static Mat raiseMarkerContrast(const Mat& whiteboardImg);
     static Mat whitenWhiteboard(const Mat &whiteboardImg, const Mat& markerPixels);
-    static Mat rectifyImage(const Mat& whiteboardImg);
+    static Mat rectifyImage(const Mat& whiteboardImg, const WBCorners& corners);
     static Mat findWhiteboardBorders(Mat& whiteboardImg);
     static Mat smoothMarkerTransition(const Mat& whiteWhiteboardImage);
 
@@ -67,6 +74,8 @@ public:
     /// Method to find differences between computer images
     static float getVGADifferences(const Mat& oldFrame, const Mat& newFrame);
 
+    /// Method to sort whiteboard corners into TL, TR, BR, BL
+    static void sortCorners(WBCorners& corners);
 };
 
 #endif // PAOLPROCUTILS_H

@@ -1,6 +1,7 @@
 #ifndef WHITEBOARDPROCESS_H
 #define WHITEBOARDPROCESS_H
 
+#include <stdlib.h>
 #include "paolProcess.h"
 
 class WhiteboardProcess : public paolProcess
@@ -15,6 +16,12 @@ private:
     Mat oldMarkerModel;
     Mat oldRefinedBackground; // What the whiteboard from the oldFrame looks like
     int stableWhiteboardCount;
+
+    // Corner coordinates of the whiteboard images that this thread processes
+    WBCorners corners;
+
+    // Set the corners from a file
+    static WBCorners getCornersFromFile(int wbNum);
 
 protected:
     void workOnNextImage();

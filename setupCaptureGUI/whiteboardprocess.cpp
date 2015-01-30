@@ -24,6 +24,8 @@ WhiteboardProcess::WhiteboardProcess(int camNumIn, int wbNum, bool camFlipped, s
     saveImageCount = 0;
     capturedImageCount = 0;
 
+    corners = getCornersFromFile(wbNum);
+
     // Print the association between this process and the output
     printToLog("WB %d: %p\n", whiteboardNum, this);
 }
@@ -65,10 +67,14 @@ void WhiteboardProcess::processImage() {
         return;
     }
 
+    // Get rectified versions of old and current frames
+    Mat oldRectified = PAOLProcUtils::rectifyImage(oldFrame, corners);
+    Mat currentRectified = PAOLProcUtils::rectifyImage(currentFrame, corners);
+
     //compare picture to previous picture and store differences in allDiffs
     float numDif;
     Mat allDiffs;
-    PAOLProcUtils::findAllDiffsMini(allDiffs, numDif, oldFrame, currentFrame, 40, 1);
+    PAOLProcUtils::findAllDiffsMini(allDiffs, numDif, oldRectified, currentRectified, 40, 1);
 
     // If there is a large enough difference, reset the stable whiteboard image count and do further processing
     if(numDif > .01) {
@@ -87,23 +93,31 @@ void WhiteboardProcess::processImage() {
             // Rescale movement info to full size
             Mat mvmtFullSize = PAOLProcUtils::enlarge(movement);
 
-            // Get the marker model of the current frame
-            Mat currentMarkerWithProf = PAOLProcUtils::findMarkerWithCC(currentFrame);
+            // Find marker candidates
+            Mat markerCandidates = PAOLProcUtils::findMarkerStrokeCandidates(currentRectified);
+            // Find marker locations
+            Mat markerLocations = PAOLProcUtils::findMarkerStrokeLocations(currentRectified);
+            // Keep marker candidates intersecting with marker locations
+            Mat currentMarkerWithProf = PAOLProcUtils::filterConnectedComponents(markerCandidates, markerLocations);
+
             // Use the movement information to erase the professor
             Mat currentMarkerModel = PAOLProcUtils::updateModel(
                         oldMarkerModel, currentMarkerWithProf, mvmtFullSize);
 
             // Find how much the current marker model differs from the stored one
             float markerDiffs = PAOLProcUtils::findMarkerModelDiffs(oldMarkerModel, currentMarkerModel);
+            printToLog("numDif: %f\n", numDif);
+            printToLog("refinedNumDif\n: %f", refinedNumDif);
+            printToLog("markerDiffs\n: %f", markerDiffs);
             // Save and update the models if the marker content changed enough
-            if(markerDiffs > .004) {
+            if(markerDiffs > .022) {
                 // Save the smooth marker version of the old background image
                 Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
                 saveImageWithTimestamp(oldRefinedBackgroundSmooth);
                 // Update marker model
                 oldMarkerModel = currentMarkerModel.clone();
                 // Update enhanced version of background
-                Mat whiteWhiteboard = PAOLProcUtils::whitenWhiteboard(currentFrame, currentMarkerModel);
+                Mat whiteWhiteboard = PAOLProcUtils::whitenWhiteboard(currentRectified, currentMarkerModel);
                 oldRefinedBackground = PAOLProcUtils::updateModel(
                             oldRefinedBackground, whiteWhiteboard, mvmtFullSize);
             }
@@ -118,11 +132,18 @@ void WhiteboardProcess::processImage() {
             // Save the smooth marker version of the old background image
             Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
             saveImageWithTimestamp(oldRefinedBackgroundSmooth);
+
             // Update marker model
-            Mat currentMarkerModel = PAOLProcUtils::findMarkerWithCC(currentFrame);
+            // Find marker candidates
+            Mat markerCandidates = PAOLProcUtils::findMarkerStrokeCandidates(currentRectified);
+            // Find marker locations
+            Mat markerLocations = PAOLProcUtils::findMarkerStrokeLocations(currentRectified);
+            // Keep marker candidates intersecting with marker locations
+            Mat currentMarkerModel = PAOLProcUtils::filterConnectedComponents(markerCandidates, markerLocations);
+
             oldMarkerModel = currentMarkerModel.clone();
             // Update enhanced version of background
-            Mat whiteWhiteboard = PAOLProcUtils::whitenWhiteboard(currentFrame, currentMarkerModel);
+            Mat whiteWhiteboard = PAOLProcUtils::whitenWhiteboard(currentRectified, currentMarkerModel);
             oldRefinedBackground = whiteWhiteboard.clone();
         }
     }
@@ -148,4 +169,29 @@ void WhiteboardProcess::printToLog(char *format, ...) {
     va_start(argptr, format);
     vfprintf(logFile, format, argptr);
     va_end(argptr);
+}
+
+WBCorners WhiteboardProcess::getCornersFromFile(int wbNum) {
+    WBCorners ret;
+
+    // Try to open the file
+    stringstream ss;
+    ss << "/home/paol/paol-code/wbCorners" << wbNum << ".txt";
+    QFile file(QString::fromStdString(ss.str()));
+    if(file.open(QFile::ReadOnly | QFile::Text)) {
+        // Corners file was opened, so get the file text
+        QTextStream fileStream(&file);
+        QString fileText = fileStream.readAll();
+        // Split file text by commas and whitespace
+        QStringList coordinates = fileText.split(QRegExp("\n|\r\n|\r|,"));
+        // Set coordinates
+        ret.TL = Point2f(coordinates[0].toInt(), coordinates[1].toInt());
+        ret.TR = Point2f(coordinates[2].toInt(), coordinates[3].toInt());
+        ret.BR = Point2f(coordinates[4].toInt(), coordinates[5].toInt());
+        ret.BL = Point2f(coordinates[6].toInt(), coordinates[7].toInt());
+        // Sort the corners in case they are in the wrong order
+        PAOLProcUtils::sortCorners(ret);
+    }
+
+    return ret;
 }
