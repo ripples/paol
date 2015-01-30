@@ -1,10 +1,22 @@
 #!/bin/bash
 
+# Make sure that there is exactly one argument, the path of the lecture to upload
+if [ "$#" -ne 1 ]; then
+	echo "Usage: ./upload.sh <path of lecture to upload>"
+	exit
+fi
+# Set the first argument as the lecture directory to upload
+outDir=$1
+
+# The fields to read from the upload configuration file
 user=
 host=
 rmt_upload=
 
+# The location of the upload configuration file
 config=/home/paol/paol-code/uploadConfig.txt
+
+# Read each line in the config file, assuming they are of format "blah: blah", and set the fields
 while read a b; do
 	if [ "$a" = "user:" ]; then
 		user=$b
@@ -25,11 +37,13 @@ if [ -z "$user" ] || [ -z "$host" ] || [ -z "$rmt_upload" ]; then
 	exit 1
 fi
 
-outDir=$1
+# If outDir ends in a slash, remove it
+if [ ${outDir: -1} = "/" ]; then
+	outDir=${outDir:0:-1}
+fi
+# Get the semester and class name from the given lecture path
 sem=$(basename $(dirname $(dirname $outDir)))
 class=$(basename $(dirname $outDir))
-
-uploaded=/home/paol/recordings/uploaded
 
 #upload files
 sshid=/home/paol/.ssh/id_rsa
@@ -38,6 +52,9 @@ ssh -i $sshid $user@$host mkdir -p $rmt_upload/$sem/$class
 rsync -avz -e "ssh -i $sshid" $outDir $user@$host:$rmt_upload/$sem/$class
 STATUS=$?
 ssh -i $sshid $user@$host rm /var/lock/manic.lck
+
+# The path where the uploaded lectures should go
+uploaded=/home/paol/recordings/uploaded
 
 if [ $STATUS = 0 ]; then
   echo "Uploaded lecture $(basename $outDir) from $class in $sem, moving to uploaded folder"

@@ -1,0 +1,15 @@
+echo "Uploading readyToUpload lectures"
+for semester in $(ls /home/paol/recordings/readyToUpload)
+do
+    echo $semester
+    for course in $(ls /home/paol/recordings/readyToUpload/$semester)
+    do
+	echo $course
+	for lecture in $(ls /home/paol/recordings/readyToUpload/$semester/$course)
+	do
+	    echo $lecture
+	    /home/paol/paol-code/scripts/upload/upload.sh "/home/paol/recordings/readyToUpload/$semester/$course/$lecture"
+		echo
+	done
+    done
+done
