@@ -107,8 +107,8 @@ void WhiteboardProcess::processImage() {
             // Find how much the current marker model differs from the stored one
             float markerDiffs = PAOLProcUtils::findMarkerModelDiffs(oldMarkerModel, currentMarkerModel);
             printToLog("numDif: %f\n", numDif);
-            printToLog("refinedNumDif\n: %f", refinedNumDif);
-            printToLog("markerDiffs\n: %f", markerDiffs);
+            printToLog("refinedNumDif: %f\n", refinedNumDif);
+            printToLog("markerDiffs: %f\n", markerDiffs);
             // Save and update the models if the marker content changed enough
             if(markerDiffs > .022) {
                 // Save the smooth marker version of the old background image
