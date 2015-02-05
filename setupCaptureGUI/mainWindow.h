@@ -86,6 +86,7 @@ public:
     void populateSetupWindow();
     void populateCaptureWindow();
     void createCamDocument();
+    void createInfoDocument();
     void configureCaptureSettings();
     void timer();
 

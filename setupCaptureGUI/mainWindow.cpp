@@ -181,7 +181,6 @@ void MainWindow::findCameras(){
 }
 
 void MainWindow::createCamDocument(){
-    qDebug() << "Value of Count in CamDocument: " << count;
     string outputInfo = "";
     for(int l = 0; l < optionBoxes.size(); l++){
         QString text = optionBoxes[l]->currentText(); //Acquires user selected option from ComboBox
@@ -227,13 +226,55 @@ void MainWindow::createCamDocument(){
     file << outputInfo;
 }
 
+void MainWindow::createInfoDocument(){
+    string infoOut = "";
+    stringstream ss;
+    int compAmount = 0;
+    int boardAmount = 0;
+
+    //Get time since Epoch
+    time_t epoch = time(0);
+    ss << epoch;
+    infoOut = "timestamp: " + ss.str() + "\n";
+
+    ss.str(string()); //Clear out stringstream
+
+    //Get connected Whiterboard and Computer Cameras
+    for(int i = 0; i < optionBoxes.length(); i++){
+        if(optionBoxes[i]->currentText() == "Whiteboard"){
+            boardAmount++;
+        }
+        else if(optionBoxes[i]->currentText() == "VGA2USB"){
+            compAmount++;
+        }
+    }
+
+    ss << boardAmount;
+
+    infoOut = infoOut + "whiteboardCount: " + ss.str() + "\n";
+
+    ss.str(string());
+    ss << compAmount;
+
+    infoOut = infoOut + "computerCount: " + ss.str() + "\n";
+    string outLocation = processLocation + "/INFO";
+    const char *path = outLocation.data();
+    //Creates .txt file to which outputInfo is placed in
+    //std::cout << outputInfo;
+    qDebug() << outLocation.data();
+    std::ofstream file(path);
+    file << infoOut;
+
+}
+
 bool MainWindow::courseInformation(){
     QString classText = ui->captureCourse->text();
     QString yearText = ui->captureSemester->text();
     string classIn = classText.toLatin1().data();
     string yearIn = yearText.toLatin1().data();
+
     //Makes sure the user has entered text in the input fields before proceeding to create folders
-    if(classIn.length() >= 4 && yearIn.length() >= 4){
+    if(classIn.length() != 0 && yearIn.length() != 0){
         //Create directory for saving processed images
         system("mkdir -p /home/paol/recordings/readyToUpload");
         string firstCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + yearIn;
@@ -275,20 +316,14 @@ bool MainWindow::courseInformation(){
         //If the user hasn't entered any information into the subject boxes, show them an error
         ui->error_label->setStyleSheet("QLabel {color:red}");
 
-        //If the Course Name length is between 0 and 3
+        //If the Course Name length greater than 0 characters
         QString error = "";
         if(classIn.length() == 0){
             error = error + "You have not entered anything into the 'Subject' box \n";
         }
-        else{
-            error = error + "The class length is too short \n";
-        }
-        //If the Year Length is between 0 and 4
+        //If the Year Length greater than 0 characters
         if(yearIn.length() == 0){
             error = error + "You have not entered anything into the 'Semester' box \n";
-        }
-        else{
-            error = error + "The semester length is too short \n";
         }
         ui->error_label->setText(error);
         return false;
@@ -297,7 +332,6 @@ bool MainWindow::courseInformation(){
 
 void MainWindow::configureCaptureSettings(){
     bool videoExists = false;
-    qDebug() << "Value of Count in ConfigureCapture: " << count;
     for(int i = 0; i < count; i++){
         //Find if there is a Video camera selected
         if(optionBoxes[i]->currentText() == "Video" && videoExists == false){
@@ -314,7 +348,7 @@ void MainWindow::configureCaptureSettings(){
             audioCamNum.erase(std::remove(audioCamNum.begin(),audioCamNum.end(),' '),audioCamNum.end());
 
             vidCaptureString ="/home/paol/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
-                                + isChecked + " " + processLocation + "/video1.mp4 &";
+                                + isChecked + " " + processLocation + "/video.mp4 &";
 
             //recordingCams[i].release();
             //recordingCams.remove(i);
@@ -342,7 +376,6 @@ void MainWindow::releaseSetupElements(){
 void MainWindow::releaseCaptureElements(){
     system("pkill ffmpeg");
     vidCaptureString = "";
-    qDebug() << vidCaptureString.data();
     for(int i = 0; i < captureCount; i++){
         delete camLabels[i];
         delete paolLabels[i];
@@ -417,6 +450,7 @@ void MainWindow::on_setupContinueToCapture_clicked(){
 void MainWindow::on_infoContinue_clicked(){
     isVideo = courseInformation();
     configureCaptureSettings();
+    createInfoDocument();
     releaseSetupElements();
     if(isVideo == true){
         //Run FFMPEG Command, string created in courseInformation
@@ -472,7 +506,7 @@ void MainWindow::on_setupUploadFiles_clicked(){
 ///                    Signal handling                    ///
 ////////////////////////////////////////////////////////////
 
-void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr) {
+void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
     if(runCaptureCams) {
         qDebug("Send captured image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
@@ -481,7 +515,7 @@ void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr) {
     }
 }
 
-void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr) {
+void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
     if(runCaptureCams) {
         qDebug("Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
@@ -494,7 +528,7 @@ void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr) {
 ///                    Image displaying                   ///
 ////////////////////////////////////////////////////////////
 
-QImage MainWindow::convertMatToQImage(const Mat& mat) {
+QImage MainWindow::convertMatToQImage(const Mat& mat){
     Mat display;
     //copy mask Mat to display Mat and convert from BGR to RGB format
     cvtColor(mat,display,CV_BGR2RGB);
@@ -505,7 +539,7 @@ QImage MainWindow::convertMatToQImage(const Mat& mat) {
     return img;
 }
 
-void MainWindow::displayMat(const Mat& mat, QLabel &location) {
+void MainWindow::displayMat(const Mat& mat, QLabel &location){
     //call method to convert Mat to QImage
     QImage img=convertMatToQImage(mat);
     //push image to display location "location"
