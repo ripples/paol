@@ -77,7 +77,7 @@ void WhiteboardProcess::processImage() {
     PAOLProcUtils::findAllDiffsMini(allDiffs, numDif, oldRectified, currentRectified, 40, 1);
 
     // If there is a large enough difference, reset the stable whiteboard image count and do further processing
-    if(numDif > .01) {
+    if(numDif > .03) {
         // Reset stable whiteboard image count
         stableWhiteboardCount = 0;
         // Find true differences (ie. difference pixels with enough differences surrounding them)
@@ -87,7 +87,7 @@ void WhiteboardProcess::processImage() {
 
         // Find if there are enough true differences to update the current marker and whiteboard models
         // (ie. professor movement or lighting change detected)
-        if(refinedNumDif > .01) {
+        if(refinedNumDif > .04) {
             // Identify where the motion (ie. the professor) is
             Mat movement = PAOLProcUtils::expandDifferencesRegion(filteredDiffs);
             // Rescale movement info to full size
@@ -107,10 +107,10 @@ void WhiteboardProcess::processImage() {
             // Find how much the current marker model differs from the stored one
             float markerDiffs = PAOLProcUtils::findMarkerModelDiffs(oldMarkerModel, currentMarkerModel);
             printToLog("numDif: %f\n", numDif);
-            printToLog("refinedNumDif\n: %f", refinedNumDif);
-            printToLog("markerDiffs\n: %f", markerDiffs);
+            printToLog("refinedNumDif: %f\n", refinedNumDif);
+            printToLog("markerDiffs: %f\n", markerDiffs);
             // Save and update the models if the marker content changed enough
-            if(markerDiffs > .022) {
+            if(markerDiffs > .008) {
                 // Save the smooth marker version of the old background image
                 Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
                 saveImageWithTimestamp(oldRefinedBackgroundSmooth);
@@ -126,9 +126,9 @@ void WhiteboardProcess::processImage() {
     // Otherwise, check if the frames are basically identical (ie. stable)
     else if(numDif < .000001) {
         stableWhiteboardCount++;
-        // If the image has been stable for exactly three frames, the lecturer is not present, so we
+        // If the image has been stable for exactly twenty frames, the lecturer is not present, so we
         // can update the marker and whiteboard models without movement information
-        if(stableWhiteboardCount == 3) {
+        if(stableWhiteboardCount == 20) {
             // Save the smooth marker version of the old background image
             Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
             saveImageWithTimestamp(oldRefinedBackgroundSmooth);

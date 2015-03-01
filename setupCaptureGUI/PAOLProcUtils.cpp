@@ -689,7 +689,7 @@ Mat PAOLProcUtils::findMarkerStrokeCandidates(const Mat& orig) {
 
 Mat PAOLProcUtils::findMarkerStrokeLocations(const Mat& orig) {
     Mat markerLocations = pDrift(orig);
-    return binarizeOr(markerLocations, 8);
+    return binarizeOr(markerLocations, 12);
 }
 
 ///////////////////////////////////////////////////////////////////
