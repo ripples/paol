@@ -19,7 +19,10 @@ SOURCES += main.cpp\
     vgaprocess.cpp \
     whiteboardprocess.cpp \
     PAOLProcUtils.cpp \
-    commandlinethread.cpp
+    commandlinethread.cpp \
+    worker.cpp \
+    whiteboardworker.cpp \
+    vgaworker.cpp
 
 HEADERS  += mainWindow.h \
         paolProcess.h \
@@ -27,7 +30,10 @@ HEADERS  += mainWindow.h \
     vgaprocess.h \
     whiteboardprocess.h \
     PAOLProcUtils.h \
-    commandlinethread.h
+    commandlinethread.h \
+    worker.h \
+    whiteboardworker.h \
+    vgaworker.h
 
 FORMS    += mainWindow.ui
 

@@ -1,72 +1,29 @@
 #ifndef PAOLPROCESS_H
 #define PAOLPROCESS_H
 
-#include <stdio.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-#include <cstdlib>
-#include <ctime>
-#include <cstring>
-
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
-
+#include <QtCore>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
-#include <QtCore/QThread>
-#include <QLabel>
-#include <QString>
-#include <QMainWindow>
-#include <QtCore>
-#include <QImage>
+#include "worker.h"
 
-#include <math.h>
-
-#include "PAOLProcUtils.h"
-
-using namespace std;
+using namespace cv;
 class paolProcess : public QThread {
     Q_OBJECT
 
-private:
+protected:
     // Boolean and associated mutex to indicate whether we should keep processing
     QMutex keepRunningMutex;
     volatile bool keepRunning;
 
-protected:
-    // Webcam and associated properties
-    VideoCapture camera;
-    bool flipCam;
-    int deviceNum;
-
-    // Field to store where the lecture is
-    string lecturePath;
-    FILE* logFile;
-
-    // Fields for general processing (mostly saving the image)
-    int saveImageCount;
-    time_t currentImageTime;
-    int capturedImageCount; // How many images were captured from the camera
-
-    // Methods for general processing
-    virtual void workOnNextImage() = 0;
-    virtual bool takePicture() = 0;
-    virtual void processImage() = 0;
-
-    // Method to save an image at the current time
-    virtual void saveImageWithTimestamp(const Mat& image) = 0;
-
-    // Method to print to log
-    virtual void printToLog(char* format, ...) = 0;
+    // Timer to capture once per second
+    QTimer* timer;
+    // Thread to do the stuff
+    QThread* thread;
+    // Worker to do the stuff
+    Worker* worker;
 
 public:
-    paolProcess();
     ~paolProcess();
     void run();
 
@@ -76,6 +33,8 @@ signals:
 
 private slots:
     void onQuitProcessing();
+    void onImageSaved(const Mat& image);
+    void onImageCaptured(Mat image);
 };
 
 #endif // PAOLPROCESS_H

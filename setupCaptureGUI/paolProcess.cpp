@@ -1,39 +1,36 @@
 #include "paolProcess.h"
 
-paolProcess::paolProcess() {
-    keepRunning = true;
-}
-
 paolProcess::~paolProcess() {
-    if(camera.isOpened())
-        camera.release();
-    if(logFile != NULL) {
-        fclose(logFile);
-    }
+    delete worker;
+    delete timer;
+    delete thread;
 }
 
 void paolProcess::run(){
+    thread->start();
     while(1){
         // Stop thread if keepRunning is false
         keepRunningMutex.lock();
         if(!keepRunning) {
             keepRunningMutex.unlock();
+            thread->quit();
+            worker->writeFinishStatistics();
             break;
         }
         keepRunningMutex.unlock();
-
-        // keepRunning was true, so continue processing
-        workOnNextImage();
     }
-    printToLog("Stopped thread %p after capturing %d frames and saving %d frames\n",
-           this, capturedImageCount, saveImageCount);
 }
 
 void paolProcess::onQuitProcessing() {
-    printToLog("Received signal to stop thread %p\n", this);
     keepRunningMutex.lock();
     keepRunning = false;
     keepRunningMutex.unlock();
 }
 
+void paolProcess::onImageSaved(const Mat &image) {
+    emit savedImage(image, this);
+}
 
+void paolProcess::onImageCaptured(Mat image) {
+    emit capturedImage(image, this);
+}
