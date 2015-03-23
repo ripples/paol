@@ -1,43 +1,34 @@
 #include "mainWindow.h"
 #include "ui_mainWindow.h"
+#include "clickable_label.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
-{
-    runSetupCams = false;
-    runCaptureCams = false;
+    ui(new Ui::MainWindow){
     ui->setupUi(this);
+    continueToCapture = true;
+    //Disable all QWidgets that should not be visible on launch (Setup, Whiteboard Edges, Capture)
+    ui->setupMenuWidget->hide();
+    ui->whiteboardCornersWidget->hide();
+    ui->lectureDetailsWidget->hide();
+    ui->captureLectureWidget->hide();
     QTimer *qTimer=new QTimer(this);
-    findCameras();
-    populateSetupWindow();
-    ui->infoWidget->setVisible(false);
-    ui->captureWidget->setVisible(false);
-    connect(qTimer,SIGNAL(timeout()),this,SLOT(runSystem()));
+    connect(qTimer,SIGNAL(timeout()),this,SLOT(launch_System()));
+    connect(ui->wbc_label, SIGNAL(Mouse_Pressed()), this, SLOT(Mouse_Pressed()));
     qTimer->start(1);
-}
+   }
 
 MainWindow::~MainWindow(){
     delete ui;
-    system("pkill ffmpeg");
-    for(int i=0; i < count; i++){
-        if(recordingCams[i].isOpened() == true){
-            recordingCams[i].release();
-        }
-    }
 }
 
-void MainWindow::runSystem(){
 
-    //When the user has transitioned from Info to Setup
-    //Display what each connected camera currently sees
-    if(runSetupCams == true){
-        for(int i=0; i<count; i++){
-            //Capture and display camera
-            Mat frame;
-            Mat display;
+void MainWindow::launch_System(){
+    if(ui->setupMenuWidget->isVisible()){
+        for(int i=0; i < camCount; i++){
+            Mat frame,display;
             recordingCams[i] >> frame;
-            if(frame.channels() >= 3){
+            if(frame.channels() >= 3){ //If statement included in case a camera is connected, but not properly capturing
                 cvtColor(frame,display,CV_BGR2RGB);
                 QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
                 imLabels[i]->setPixmap(QPixmap::fromImage(img));
@@ -45,54 +36,61 @@ void MainWindow::runSystem(){
         }
     }
 
-    if(runCaptureCams == true){
-        // Update elapsed time
-        timer();
+    else if(ui->lectureDetailsWidget->isVisible()){
+        if(ui->lecDet_courses->currentText() == "Other"){
+            ui->newCourseLabel->show();
+            ui->new_course_textbox->show();
+        }
+        else{
+            ui->newCourseLabel->hide();
+            ui->new_course_textbox->hide();
+        }
     }
+
 }
 
+void MainWindow::Mouse_Pressed(){
+    if(corners_count < 4){
+        //corners_count += 1;
+        qDebug() << QString("X = %1, Y = %2").arg(ui->wbc_label->x).arg(ui->wbc_label->y);
+        circle(corners_Clone, Point(corners_Clone.rows/2,corners_Clone.cols/2), 32.0, Scalar( 255, 255, 0 ), 50, 8);
+        QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
+        ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+    }
+}
 
 ///////////////////////////////////////////////////////////////
 ///               GUI Manipulating Functions               ///
 /////////////////////////////////////////////////////////////
 
 void MainWindow::populateSetupWindow(){
-    //For each camea found connected to this computer
-    //Add labels to the mainwindow.ui Grid Layout
-    //Currently adds three labels per row
-    qDebug() << "Number of Cameras plugged in: " << count;
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < camCount; i++) {
         QGridLayout *const newLayout = new QGridLayout;
         setupLayouts.push_back(newLayout);
-        //Create label that will contain image
+
         QLabel *const label = new QLabel(QString("CAM %1").arg(i, 2, 10, QLatin1Char('0')));
         label->setScaledContents(true);
-        imLabels.push_back(label); //Add created label to vector
+        imLabels.push_back(label);
 
-        //Create ComboBox containing all video capture options
         QComboBox *const comboBox = new QComboBox;
-        comboBox->addItem("Blank");
         comboBox->addItem("Whiteboard");
         comboBox->addItem("VGA2USB");
         comboBox->addItem("Video");
-        optionBoxes.push_back(comboBox); //Add created box to vector
+        comboBox->addItem("Disabled");
+        optionBoxes.push_back(comboBox);
 
-        //Create Check Box for whether to reverse camera or not
-        QCheckBox *const checkBox = new QCheckBox("Check if image is reversed",this);
+        QCheckBox *const checkBox = new QCheckBox("Check this box if image is upside-down",this);
         reverseChecks.push_back(checkBox);
 
-        //Create Radio Button to confirm if camera will capture audio
-        QRadioButton *const radioButton = new QRadioButton("Select if this device will capture audio",this);
-        audioRecord.push_back(radioButton);
+        //QRadioButton *const radioButton = new QRadioButton("Should this device capture the audio",this);
+        //audioRecord.push_back(radioButton);
 
-        //Add all created widgets to the layout
         newLayout->addWidget(label,0,0);
         newLayout->addWidget(comboBox);
         newLayout->addWidget(checkBox);
-        newLayout->addWidget(radioButton);
+        //newLayout->addWidget(radioButton);
 
-        //Attach layout to setup grid
-        ui->setupCameraGrid->addLayout(newLayout,((i-1)+1) / 3, ((i-1)+1) % 3);
+        ui->setupGridLayout->addLayout(newLayout,((i-1)+1) / 3, ((i-1)+1) % 3);
 
         VideoCapture cap(i);
 
@@ -100,69 +98,19 @@ void MainWindow::populateSetupWindow(){
         cap.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
         recordingCams.push_back(cap);
     }
-    //Default to setting first camera to record audio
-    audioRecord[0]->setChecked(true);
-
-    runSetupCams = true;
-}
-
-void MainWindow::populateCaptureWindow(){
-    captureCount = 0;
-    qDebug() << "Value of Count in CaptureWindow: " << count;
-    for(int i = 0; i < count; i++){
-        qDebug() << "On Number: " << i;
-        string compare = camTypes[i].toUtf8().constData();
-        if(compare != "Video" && compare != "Blank"){
-            QGridLayout *const newLayout = new QGridLayout;
-            capLayouts.push_back(newLayout);
-
-            QLabel *imgLabel = new QLabel(QString("CAM %1").arg(i, 2, 10, QLatin1Char('0')));
-            QLabel *paolLabel = new QLabel(QString("PAOL %1").arg(i, 2, 10, QLatin1Char('0')));
-
-            imgLabel->setScaledContents(true);
-            paolLabel->setScaledContents(true);
-
-            camLabels.push_back(imgLabel);
-            paolLabels.push_back(paolLabel);
-
-            newLayout->addWidget(imgLabel,1,0);
-            newLayout->addWidget(paolLabel,2,0);
-
-            paolProcess* thread;
-            if(compare == "VGA2USB"){
-                qDebug() << "Adding USB from Camera Num:" << i;
-                thread = new VGAProcess(i, i, false, processLocation);
-            }else if(compare == "Whiteboard"){
-                qDebug() << "Adding Whiteboard from Camera Num:" << i;
-                thread = new WhiteboardProcess(i, i, false, processLocation);
-            }
-            dev.push_back(thread);
-            // Associate the processing thread with the proper views in the capture window
-            threadToUIMap[thread] = captureCount;
-
-            // Initialize the slots for updating the UI and stopping the processing threads
-            connect(thread, SIGNAL(capturedImage(Mat,paolProcess*)), this, SLOT(onImageCaptured(Mat,paolProcess*)));
-            connect(thread, SIGNAL(savedImage(Mat,paolProcess*)), this, SLOT(onImageSaved(Mat,paolProcess*)));
-            connect(this, SIGNAL(quitProcessing()), thread, SLOT(onQuitProcessing()));
-
-            ui->captureCameraGrid->addLayout(newLayout,((captureCount-1)+1) / 3, ((i-1)+1) % 3); //COPY AND MOVE UP
-            captureCount++;
-        }
-    }
 }
 
 
 ///////////////////////////////////////////////////////////////
 ///                     Utilities                          ///
 /////////////////////////////////////////////////////////////
-
-//Updates count based on how many cameras are attached to the machine
-void MainWindow::findCameras(){
+//Find the amount of cameras currently connected to the machine
+void MainWindow::countCameras(){
     int bufSize = 512;
     char *buf = new char[bufSize];
     FILE *ptr;
     std::string outFileName;
-    count = 0;
+    camCount = 0;
     int temp;
 
     //Obtain amount of cameras connected to this device
@@ -173,342 +121,64 @@ void MainWindow::findCameras(){
             outFileName = outFileName.substr(0,outFileName.find('\n'));
 
             std::stringstream(outFileName) >> temp;
-            count++;
+            camCount++;
         }
         fclose(ptr);
     }
-    fullCount = count;
+    qDebug() << "Number of Cameras plugged in: " << camCount;
 }
 
-void MainWindow::createCamDocument(){
-    string outputInfo = "";
-    for(int l = 0; l < optionBoxes.size(); l++){
-        QString text = optionBoxes[l]->currentText(); //Acquires user selected option from ComboBox
-        string device = text.toLatin1().data();       //Convert QString to string
-
-        int isFlipped = 0;
-        if(device != "Blank"){
-            if(reverseChecks[l]->isChecked() == true){
-                isFlipped = 1;
-            }
-            //String to contain converted integer
-            string s; //Camera Number
-            string i; //Reversed or not
-
-            //string stream used to convert int to string
-            stringstream out;
-            stringstream out2;
-
-            //Nothing is ever convinient.
-            out << l;
-            s = out.str();
-            out2 << isFlipped;
-            i = out2.str();
-
-            outputInfo = outputInfo + s + " " + i + " " + device + "\n";
-
-            //Adds which device is responsible for recording audio outputInfo
-            if(audioRecord[l]->isChecked()){
-                string a; //Audio Cam Num string
-                stringstream out3; //Stringstream to convert int to str
-                out3 << l;
-                a = out3.str();
-                audioCamNum = a;
-                outputInfo = outputInfo + a + " 0 " + "Audio" + "\n";
-            }
-        }
-    }
-    //outputInfo = outputInfo + ui->audioCamBox->currentText().toLatin1().data() + " Audio" + "\n";
-    const char *path = "/home/paol/paol-code/cameraSetup.txt";
-    //Creates .txt file to which outputInfo is placed in
-    //std::cout << outputInfo;
-    std::ofstream file(path);
-    file << outputInfo;
-}
-
-void MainWindow::createInfoDocument(){
-    string infoOut = "";
+//Create string information that will be stored to cameraSetup.txt
+void MainWindow::createCameraSetupTxt(){
+    cameraSetupTxt = "";
     stringstream ss;
-    int compAmount = 0;
-    int boardAmount = 0;
+    int compCount = 0;
+    int wbCount = 0;
 
     //Get time since Epoch
     time_t epoch = time(0);
     ss << epoch;
-    infoOut = "timestamp: " + ss.str() + "\n";
+    cameraSetupTxt = "timestamp: " + ss.str() + "\n";
 
     ss.str(string()); //Clear out stringstream
 
-    //Get connected Whiterboard and Computer Cameras
+    //Get connected Whiterboard cameras and Computer amounts
     for(int i = 0; i < optionBoxes.length(); i++){
         if(optionBoxes[i]->currentText() == "Whiteboard"){
-            boardAmount++;
+            wbCount++;
         }
         else if(optionBoxes[i]->currentText() == "VGA2USB"){
-            compAmount++;
+            compCount++;
         }
     }
 
-    ss << boardAmount;
+    ss << wbCount;
+    cameraSetupTxt = cameraSetupTxt + "whiteboardCount: " + ss.str() + "\n";
+    ss.str(string()); // Clear out stringstream
 
-    infoOut = infoOut + "whiteboardCount: " + ss.str() + "\n";
-
-    ss.str(string());
-    ss << compAmount;
-
-    infoOut = infoOut + "computerCount: " + ss.str() + "\n";
-    string outLocation = processLocation + "/INFO";
-    const char *path = outLocation.data();
-    //Creates .txt file to which outputInfo is placed in
-    //std::cout << outputInfo;
-    qDebug() << outLocation.data();
-    std::ofstream file(path);
-    file << infoOut;
-
+    ss << compCount;
+    cameraSetupTxt = cameraSetupTxt + "computerCount: " + ss.str() + "\n";
 }
 
-bool MainWindow::courseInformation(){
-    QString classText = ui->captureCourse->text();
-    QString yearText = ui->captureSemester->text();
-    string classIn = classText.toLatin1().data();
-    string yearIn = yearText.toLatin1().data();
-
-    //Makes sure the user has entered text in the input fields before proceeding to create folders
-    if(classIn.length() != 0 && yearIn.length() != 0){
-        //Create directory for saving processed images
-        system("mkdir -p /home/paol/recordings/readyToUpload");
-        string firstCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + yearIn;
-        system(firstCmd.data());
-
-        string secondCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + yearIn + "/" + classIn;
-        system(secondCmd.data());
-
-        string thirdCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + yearIn + "/" + classIn + "/" + "";
-        system(thirdCmd.data());
-
-        //Get time from system
-        time_t rawtime;
-        struct tm * timeinfo;
-        char buffer[80];
-
-        time (&rawtime);
-        timeinfo = localtime(&rawtime);
-        strftime(buffer,80,"%m-%d-%Y--%H-%M-%S",timeinfo);
-
-        string fourthCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + yearIn + "/" + classIn + "/" + buffer;
-        system(fourthCmd.data());
-
-        processLocation = "/home/paol/recordings/readyToUpload/" + yearIn + "/" + classIn + "/" + buffer;
-
-        string makeComputerDir = "mkdir -p " + processLocation + "/computer";
-        string makeWhiteboardDir = "mkdir -p " + processLocation + "/whiteboard";
-        string makeLogDir = "mkdir -p " + processLocation + "/logs";
-
-        system(makeComputerDir.c_str());
-        system(makeWhiteboardDir.c_str());
-        system(makeLogDir.c_str());
-
-        ui->infoWidget->setVisible(false);
-        ui->captureWidget->setVisible(true);
-        return true;
+//Fills the QComboBox on the Classroom information view with available classes
+void MainWindow::populateCourseList(){
+    ifstream inputFile("/home/paol/Desktop/PAOL-LectureCapture-GUI-MASTER/courses.txt");
+    string str;
+    while(getline(inputFile, str)){
+        qDebug() << str.data();
+        ui->lecDet_courses->addItem(str.data());
     }
-    else{
-        //If the user hasn't entered any information into the subject boxes, show them an error
-        ui->error_label->setStyleSheet("QLabel {color:red}");
-
-        //If the Course Name length greater than 0 characters
-        QString error = "";
-        if(classIn.length() == 0){
-            error = error + "You have not entered anything into the 'Subject' box \n";
-        }
-        //If the Year Length greater than 0 characters
-        if(yearIn.length() == 0){
-            error = error + "You have not entered anything into the 'Semester' box \n";
-        }
-        ui->error_label->setText(error);
-        return false;
-    }
+    ui->lecDet_courses->addItem("Other");
 }
 
-void MainWindow::configureCaptureSettings(){
-    bool videoExists = false;
-    for(int i = 0; i < count; i++){
-        //Find if there is a Video camera selected
-        if(optionBoxes[i]->currentText() == "Video" && videoExists == false){
-            videoExists = true;
-            string isChecked = "0";
-            if(reverseChecks[i]->isChecked() == true){
-                isChecked = "1";
-            }
-            string s;
-            stringstream out;
-            out << i;
-            s = out.str();
-
-            audioCamNum.erase(std::remove(audioCamNum.begin(),audioCamNum.end(),' '),audioCamNum.end());
-
-            vidCaptureString ="/home/paol/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
-                                + isChecked + " " + processLocation + "/video.mp4 &";
-
-            //recordingCams[i].release();
-            //recordingCams.remove(i);
-        }
-    }
-}
-
-void MainWindow::releaseSetupElements(){
-    runSetupCams = false;
-    for(int i = 0; i < count; i ++){
-        recordingCams[i].release();
-        delete imLabels[i];
-        camTypes.append(optionBoxes[i]->currentText());
-        delete optionBoxes[i];
-        delete reverseChecks[i];
-        delete audioRecord[i];
-    }
-    recordingCams.clear();
-    imLabels.clear();
-    optionBoxes.clear();
-    reverseChecks.clear();
-    audioRecord.clear();
-}
-
-void MainWindow::releaseCaptureElements(){
-    system("pkill ffmpeg");
-    vidCaptureString = "";
-    for(int i = 0; i < captureCount; i++){
-        delete camLabels[i];
-        delete paolLabels[i];
-        delete capLayouts[i];
-        delete dev[i];
-    }
-    camLabels.clear();
-    paolLabels.clear();
-    capLayouts.clear();
-    dev.clear();
-}
-
-void MainWindow::timer(){
-    int a = myTimer.elapsed();
-    int secondsVal = (a / 1000) % 60;
-    int minutesVal = ((a / (1000 *60)) % 60);
-    int hoursVal = ((a / (1000*60*60*60)) % 24);
-    captureSecondsElapsed = (a / 1000);
-    string minutes;
-    string hours;
-    string seconds;
-
-    if(secondsVal < 10){
-        stringstream ss;
-        ss << secondsVal;
-        seconds = "0" + ss.str();
-    }else{
-        stringstream ss;
-        ss << secondsVal;
-        seconds = ss.str();
-    }
-
-    if(minutesVal != 0){
-        stringstream mm;
-        mm << minutesVal;
-        minutes = mm.str();
-    }else{
-        minutes = "00";
-    }
-
-    if(hoursVal != 0){
-        stringstream hh;
-        hh << hoursVal;
-        hours = hh.str();
-    } else{
-        hours = "00";
-    }
-
-    string final = "Time Elapsed: " + hours + ":" + minutes + ":" + seconds;
-    ui->captureTimer->setText(QString::fromStdString(final));
-}
-
-//////////////////////////////////////////////////////////////
-///  Button Functions used to transition between windows  ///
-////////////////////////////////////////////////////////////
-
-//Refresh GUI elements based on how many cameras may have been added or removed
-void MainWindow::on_setupRefreshCameras_clicked(){
-    releaseSetupElements();
-    findCameras();
-    populateSetupWindow();
-}
-
-//Transition from Setup to Info
-void MainWindow::on_setupContinueToCapture_clicked(){
-    ui->setupWidget->setVisible(false);
-    createCamDocument();
-    ui->infoWidget->setVisible(true);
-}
-
-//Begins processing and runs FFMPEG
-void MainWindow::on_infoContinue_clicked(){
-    isVideo = courseInformation();
-    configureCaptureSettings();
-    createInfoDocument();
-    releaseSetupElements();
-    if(isVideo == true){
-        //Run FFMPEG Command, string created in courseInformation
-        if(vidCaptureString.length() > 1){
-            system(vidCaptureString.data());
-        }
-        populateCaptureWindow();
-        runCaptureCams = true;
-        // Start timer and capture threads
-        for(int i = 0; i < captureCount; i++)
-            dev[i]->start();
-        myTimer.start();
-    }
-}
-
-//Transition from Information to Setup
-void MainWindow::on_infoReturnToSetup_clicked(){
-    releaseSetupElements();
-    ui->infoWidget->setVisible(false);
-    populateSetupWindow();
-    ui->setupWidget->setVisible(true);
-}
-
-//Transition from Capture to Setup
-void MainWindow::on_captureReturnToSetup_clicked(){
-    runCaptureCams = false;
-
-    // Kill ffmpeg
-    system("q");
-
-    // Signal the threads to stop and wait for them
-    emit quitProcessing();
-    for(int i = 0; i < captureCount; i++) {
-        dev[i]->wait();
-    }
-
-    ui->captureWidget->setVisible(false);
-    releaseCaptureElements();
-    findCameras();
-    populateSetupWindow();
-    qDebug() << "Total time elapsed (in seconds): " << captureSecondsElapsed;
-    myTimer.restart();
-    ui->setupWidget->setVisible(true);
-}
-
-
-void MainWindow::on_setupUploadFiles_clicked(){
-    system("/home/paol/paol-code/scripts/upload/upload.sh");
-}
-
-
+/*
 //////////////////////////////////////////////////////////////
 ///                    Signal handling                    ///
 ////////////////////////////////////////////////////////////
 
 void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
-    if(runCaptureCams) {
+    if(runCaptureCams){
         qDebug("Send captured image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
         int displayNum = threadToUIMap[threadAddr];
         displayMat(image, *camLabels[displayNum]);
@@ -517,7 +187,7 @@ void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr){
 
 void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
-    if(runCaptureCams) {
+    if(runCaptureCams){
         qDebug("Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
         int displayNum = threadToUIMap[threadAddr];
         displayMat(image, *paolLabels[displayNum]);
@@ -544,4 +214,144 @@ void MainWindow::displayMat(const Mat& mat, QLabel &location){
     QImage img=convertMatToQImage(mat);
     //push image to display location "location"
     location.setPixmap(QPixmap::fromImage(img));
+}
+*/
+
+//////////////////////////////////////////////////////////////
+///  Button Functions used to transition between windows  ///
+////////////////////////////////////////////////////////////
+
+/// MAIN MENU BUTTONS
+void MainWindow::on_mainMenu_Full_Run_clicked(){
+    countCameras();
+    populateSetupWindow();
+    ui->mainMenuWidget->hide();
+    ui->setupMenuWidget->show();
+}
+
+void MainWindow::on_mainMenu_Setup_Cameras_clicked(){
+    continueToCapture = false;
+    on_mainMenu_Full_Run_clicked();
+}
+
+void MainWindow::on_mainMenu_Upload_Lectures_clicked(){
+
+}
+
+/// SETUP WINDOW BUTTONS
+void MainWindow::on_setupContinueButton_clicked(){
+    createCameraSetupTxt();
+    ui->setupMenuWidget->hide();
+    corners_currentCam = 0;
+    corners_count = 0;
+
+    while(optionBoxes[corners_currentCam]->currentText() != "Whiteboard" && corners_currentCam < camCount){
+        corners_currentCam += 1;
+    }
+
+    Mat frame,display;
+    recordingCams[corners_currentCam] >> frame;
+    cvtColor(frame,display,CV_BGR2RGB);
+    corners_Clone = display.clone();
+    QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
+    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+
+    ui->whiteboardCornersWidget->show();
+}
+
+void MainWindow::on_setupReturnButton_clicked(){
+    ui->setupMenuWidget->hide();
+
+    ui->mainMenuWidget->show();
+}
+
+
+/// WHITEBOARD CORNERS WINDOW BUTTONS
+void MainWindow::on_WBC_PrevWB_clicked(){
+    corners_currentCam -= 1;
+
+    if(corners_currentCam < 0){
+        corners_currentCam = camCount - 1;
+    }
+
+    while(optionBoxes[corners_currentCam]->currentText() != "Whiteboard" && corners_currentCam < camCount){
+        corners_currentCam -= 1;
+    }
+
+    Mat frame,display;
+    recordingCams[corners_currentCam] >> frame;
+    cvtColor(frame,display,CV_BGR2RGB);
+    corners_Clone = display.clone();
+    QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
+    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+    corners_count = 0;
+}
+
+void MainWindow::on_WBC_NextWB_clicked(){
+    corners_currentCam += 1;
+
+    if(corners_currentCam >= camCount){
+        corners_currentCam = 0;
+    }
+
+    while(optionBoxes[corners_currentCam]->currentText() != "Whiteboard" && corners_currentCam < camCount){
+        corners_currentCam += 1;
+    }
+
+    Mat frame,display;
+    recordingCams[corners_currentCam] >> frame;
+    cvtColor(frame,display,CV_BGR2RGB);
+    corners_Clone = display.clone();
+    QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
+    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+    corners_count = 0;
+}
+
+void MainWindow::on_WBC_Clear_clicked(){
+
+}
+
+void MainWindow::on_WBC_Return_Button_clicked(){
+    ui->whiteboardCornersWidget->hide();
+
+    ui->setupMenuWidget->show();
+}
+
+void MainWindow::on_WBC_Continue_Button_clicked(){
+    ui->whiteboardCornersWidget->hide();
+    if(continueToCapture == false){
+        ui->mainMenuWidget->show();
+        continueToCapture = true;
+    }
+    else{
+        populateCourseList();
+        ui->lectureDetailsWidget->show();
+    }
+}
+
+
+/// COURSE SELECTION BUTTONS
+void MainWindow::on_lecDet_Continue_Button_clicked(){
+    ui->lectureDetailsWidget->hide();
+    if(ui->lecDet_courses->currentText() == "Other"){
+        ofstream log("/home/paol/Desktop/PAOL-LectureCapture-GUI-MASTER/courses.txt", std::ios_base::app | std::ios_base::out);
+        string outText = ui->new_course_textbox->text().toUtf8().constData();
+        log << outText;
+    }
+
+    ui->captureLectureWidget->show();
+}
+
+void MainWindow::on_lecDet_Previous_Button_clicked(){
+    ui->lectureDetailsWidget->hide();
+
+    ui->whiteboardCornersWidget->show();
+}
+
+
+/// LECTURE CAPTURE BUTTON
+void MainWindow::on_captureLecture_Terminate_Button_clicked(){
+    ui->captureLectureWidget->hide();
+
+    ui->mainMenuWidget->show();
 }

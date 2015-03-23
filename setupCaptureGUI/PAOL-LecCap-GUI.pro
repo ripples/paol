@@ -15,25 +15,27 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainWindow.cpp \
         paolProcess.cpp \
-    uf.cpp \
-    vgaprocess.cpp \
-    whiteboardprocess.cpp \
-    PAOLProcUtils.cpp \
-    commandlinethread.cpp \
-    worker.cpp \
-    whiteboardworker.cpp \
-    vgaworker.cpp
+        uf.cpp \
+        vgaprocess.cpp \
+        whiteboardprocess.cpp \
+        PAOLProcUtils.cpp \
+        commandlinethread.cpp \
+        worker.cpp \
+        whiteboardworker.cpp \
+        vgaworker.cpp \
+        clickable_label.cpp
 
 HEADERS  += mainWindow.h \
         paolProcess.h \
-    uf.h \
-    vgaprocess.h \
-    whiteboardprocess.h \
-    PAOLProcUtils.h \
-    commandlinethread.h \
-    worker.h \
-    whiteboardworker.h \
-    vgaworker.h
+        uf.h \
+        vgaprocess.h \
+        whiteboardprocess.h \
+        PAOLProcUtils.h \
+        commandlinethread.h \
+        worker.h \
+        whiteboardworker.h \
+        vgaworker.h \
+        clickable_label.h
 
 FORMS    += mainWindow.ui
 

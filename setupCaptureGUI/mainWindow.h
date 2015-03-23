@@ -35,90 +35,76 @@
 
 using namespace std;
 using namespace cv;
+
 namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow{
+class MainWindow : public QMainWindow
+{
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+    // GENERAL VARIABLES
+    int camCount; //Amount of connected cameras
+    bool continueToCapture;
 
-    QVector <paolProcess*> dev;
-
-    QVector <VideoCapture> recordingCams;
     map<paolProcess*, int> threadToUIMap;
 
-    QVector <QLabel*> camLabels;
-    QVector <QLabel*> imLabels; //Vector containing pointers to all Labels
-    QVector <QLabel*> paolLabels;
-    QVector <QLabel*> previewLabels;
+    string cameraSetupTxt;
 
+    int corners_currentCam;
+    int corners_count;
+    QVector <Point> cornerPoints;
+    Mat corners_Clone;
+
+    // VECTORS FOR SETUP
     QVector <QLayout*> setupLayouts;
-    QVector <QLayout*> capLayouts;
-
-    QVector <QComboBox*> optionBoxes; //Vector containing pointers to all ComboBoxes
+    QVector <QLabel*> imLabels;
+    QVector <VideoCapture> recordingCams;
+    QVector <QComboBox*> optionBoxes;
     QVector <QCheckBox*> reverseChecks;
     QVector <QRadioButton*> audioRecord;
 
-    QVector <QString> camTypes;
-
-    QTime myTimer;
-
-    string processLocation; //Contains location where to store processed images
-    string audioCamNum;
-    string vidCaptureString;
-
-    int count; //Stores amount of cameras currently connected
-    int fullCount;
-    int captureCount;
-    int captureSecondsElapsed;
-
-    bool runSetupCams;
-    bool runCaptureCams;
-    bool isVideo;
-
-    bool courseInformation();
-
-    void findCameras();
+    // FUNCTIONS
+    void countCameras();
     void populateSetupWindow();
-    void populateCaptureWindow();
-    void createCamDocument();
-    void createInfoDocument();
-    void configureCaptureSettings();
-    void timer();
-
-    void releaseSetupElements();
-    void releaseCaptureElements();
-
-    QImage convertMatToQImage(const Mat& mat);
-    void displayMat(const Mat& mat, QLabel &location);
-
-signals:
-    void quitProcessing();
-
-private slots:
-    void runSystem(); //Continously runs the recording system
-    void on_infoReturnToSetup_clicked();
-
-    void on_setupRefreshCameras_clicked();
-
-    void on_setupContinueToCapture_clicked();
-
-    void on_infoContinue_clicked();
-
-    void on_captureReturnToSetup_clicked();
-
-
-    void on_setupUploadFiles_clicked();
-
-    void onImageCaptured(Mat image, paolProcess* threadAddr);
-    void onImageSaved(Mat image, paolProcess* threadAddr);
+    void populateCourseList();
+    void createCameraSetupTxt();
+    void appendToCourse();
+    //QImage convertMatToQImage(const Mat& mat);
+    //void displayMat(const Mat& mat, QLabel &location);
 
 private:
     Ui::MainWindow *ui;
+
+private slots:
+    void launch_System();
+    //void onImageCaptured(Mat image, paolProcess* threadAddr);
+    //void onImageSaved(Mat image, paolProcess* threadAddr);
+
+    /// Main Menu Button Functions
+    void on_mainMenu_Full_Run_clicked();
+    void on_mainMenu_Setup_Cameras_clicked();
+    void on_mainMenu_Upload_Lectures_clicked();
+
+    /// Setup window button functions
+    void on_setupReturnButton_clicked();
+    void on_setupContinueButton_clicked();
+
+    /// Whiteboard Corner button functions
+    void Mouse_Pressed();
+
+    void on_WBC_Return_Button_clicked();
+    void on_WBC_Continue_Button_clicked();
+    void on_WBC_PrevWB_clicked();
+    void on_WBC_Clear_clicked();
+    void on_WBC_NextWB_clicked();
+    void on_captureLecture_Terminate_Button_clicked();
+    void on_lecDet_Continue_Button_clicked();
+    void on_lecDet_Previous_Button_clicked();
 };
 
 #endif // MAINWINDOW_H
