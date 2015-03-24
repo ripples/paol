@@ -72,7 +72,8 @@ public:
     void countCameras();
     void populateSetupWindow();
     void populateCourseList();
-    void createCameraSetupTxt();
+    void createInfoFile();
+    void createCameraSetupFile();
     void appendToCourse();
     //QImage convertMatToQImage(const Mat& mat);
     //void displayMat(const Mat& mat, QLabel &location);

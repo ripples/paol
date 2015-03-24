@@ -12,11 +12,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->whiteboardCornersWidget->hide();
     ui->lectureDetailsWidget->hide();
     ui->captureLectureWidget->hide();
+    ui->wbc_label->setScaledContents(true);
+
     QTimer *qTimer=new QTimer(this);
     connect(qTimer,SIGNAL(timeout()),this,SLOT(launch_System()));
     connect(ui->wbc_label, SIGNAL(Mouse_Pressed()), this, SLOT(Mouse_Pressed()));
     qTimer->start(1);
-   }
+    }
 
 MainWindow::~MainWindow(){
     delete ui;
@@ -51,11 +53,14 @@ void MainWindow::launch_System(){
 
 void MainWindow::Mouse_Pressed(){
     if(corners_count < 4){
-        //corners_count += 1;
         qDebug() << QString("X = %1, Y = %2").arg(ui->wbc_label->x).arg(ui->wbc_label->y);
-        circle(corners_Clone, Point(corners_Clone.rows/2,corners_Clone.cols/2), 32.0, Scalar( 255, 255, 0 ), 50, 8);
+        circle(corners_Clone, Point(ui->wbc_label->x,ui->wbc_label->y), 32.0, Scalar( 255, 255, 0 ), 2, 8);
         QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
         ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+        imwrite("corners_count.jpg", corners_Clone);
+        qDebug() << "Circle drawn on image";
+        corners_count++;
+
     }
 }
 
@@ -128,8 +133,8 @@ void MainWindow::countCameras(){
     qDebug() << "Number of Cameras plugged in: " << camCount;
 }
 
-//Create string information that will be stored to cameraSetup.txt
-void MainWindow::createCameraSetupTxt(){
+//Create string that will be stored to the INFO file
+void MainWindow::createInfoFile(){
     cameraSetupTxt = "";
     stringstream ss;
     int compCount = 0;
@@ -160,6 +165,39 @@ void MainWindow::createCameraSetupTxt(){
     cameraSetupTxt = cameraSetupTxt + "computerCount: " + ss.str() + "\n";
 }
 
+void MainWindow::createCameraSetupFile(){
+    string setupInfo = "";
+
+    for( int i = 0; i < optionBoxes.size(); i++){
+        string device = optionBoxes[i]->currentText().toLatin1().data();
+        int isFlipped = 0;
+
+        if( device != "Disabled"){
+            if(reverseChecks[i]->isChecked() == true){
+                isFlipped = 1;
+            }
+
+
+            stringstream out;
+
+            string num;
+            string flipped;
+
+            out << i;
+            num = out.str();
+            out.str(string());
+
+            out << isFlipped;
+            flipped = out.str();
+
+            setupInfo = setupInfo + num + " " + flipped + " " + device + "\n";
+        }
+    }
+    const char *path = "/home/paol/paol-code/cameraSetup.txt";
+    ofstream file(path);
+    file << setupInfo;
+}
+
 //Fills the QComboBox on the Classroom information view with available classes
 void MainWindow::populateCourseList(){
     ifstream inputFile("/home/paol/Desktop/PAOL-LectureCapture-GUI-MASTER/courses.txt");
@@ -170,6 +208,8 @@ void MainWindow::populateCourseList(){
     }
     ui->lecDet_courses->addItem("Other");
 }
+
+
 
 /*
 //////////////////////////////////////////////////////////////
@@ -240,7 +280,6 @@ void MainWindow::on_mainMenu_Upload_Lectures_clicked(){
 
 /// SETUP WINDOW BUTTONS
 void MainWindow::on_setupContinueButton_clicked(){
-    createCameraSetupTxt();
     ui->setupMenuWidget->hide();
     corners_currentCam = 0;
     corners_count = 0;
@@ -253,7 +292,7 @@ void MainWindow::on_setupContinueButton_clicked(){
     recordingCams[corners_currentCam] >> frame;
     cvtColor(frame,display,CV_BGR2RGB);
     corners_Clone = display.clone();
-    QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
+    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
     ui->wbc_label->setPixmap(QPixmap::fromImage(img));
 
     ui->whiteboardCornersWidget->show();
@@ -268,6 +307,8 @@ void MainWindow::on_setupReturnButton_clicked(){
 
 /// WHITEBOARD CORNERS WINDOW BUTTONS
 void MainWindow::on_WBC_PrevWB_clicked(){
+    qDebug() << "Moving Back";
+    corners_count = 0;
     corners_currentCam -= 1;
 
     if(corners_currentCam < 0){
@@ -279,15 +320,21 @@ void MainWindow::on_WBC_PrevWB_clicked(){
     }
 
     Mat frame,display;
-    recordingCams[corners_currentCam] >> frame;
+
+    // Clear out buffer
+    for(int i = 0; i < 6; i++){
+        recordingCams[corners_currentCam] >> frame;
+    }
+
     cvtColor(frame,display,CV_BGR2RGB);
     corners_Clone = display.clone();
-    QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
+    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
     ui->wbc_label->setPixmap(QPixmap::fromImage(img));
     corners_count = 0;
 }
 
 void MainWindow::on_WBC_NextWB_clicked(){
+    qDebug() << "Moving Forward";
     corners_currentCam += 1;
 
     if(corners_currentCam >= camCount){
@@ -299,19 +346,38 @@ void MainWindow::on_WBC_NextWB_clicked(){
     }
 
     Mat frame,display;
+
+    // Clear out buffer
+    for(int i = 0; i < 6; i++){
+        recordingCams[corners_currentCam] >> frame;
+    }
+
     recordingCams[corners_currentCam] >> frame;
     cvtColor(frame,display,CV_BGR2RGB);
     corners_Clone = display.clone();
-    QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
+    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
     ui->wbc_label->setPixmap(QPixmap::fromImage(img));
     corners_count = 0;
 }
 
 void MainWindow::on_WBC_Clear_clicked(){
+    Mat frame,display;
 
+    // Clear out buffer
+    for(int i = 0; i < 6; i++){
+        recordingCams[corners_currentCam] >> frame;
+    }
+
+    recordingCams[corners_currentCam] >> frame;
+    cvtColor(frame,display,CV_BGR2RGB);
+    corners_Clone = display.clone();
+    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
+    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+    corners_count = 0;
 }
 
 void MainWindow::on_WBC_Return_Button_clicked(){
+    corners_count = 0;
     ui->whiteboardCornersWidget->hide();
 
     ui->setupMenuWidget->show();
