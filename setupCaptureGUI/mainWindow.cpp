@@ -53,14 +53,26 @@ void MainWindow::launch_System(){
 
 void MainWindow::Mouse_Pressed(){
     if(corners_count < 4){
-        qDebug() << QString("X = %1, Y = %2").arg(ui->wbc_label->x).arg(ui->wbc_label->y);
-        circle(corners_Clone, Point(ui->wbc_label->x,ui->wbc_label->y), 32.0, Scalar( 255, 255, 0 ), 2, 8);
+        double posX = (1920.0 / ui->wbc_label->width()) * ui->wbc_label->x;
+        double posY = (1080.0 / ui->wbc_label->height()) * ui->wbc_label->y;
+
+        circle(corners_Clone, Point(posX,posY), 32.0, Scalar( 255, 255, 0 ), 2, 8);
+        cornerPoints.append(Point(posX, posY));
+
         QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
         ui->wbc_label->setPixmap(QPixmap::fromImage(img));
-        imwrite("corners_count.jpg", corners_Clone);
-        qDebug() << "Circle drawn on image";
         corners_count++;
+    }
 
+    if(corners_count == 4){
+        line(corners_Clone, cornerPoints[0], cornerPoints[1], CV_RGB(0,255,0), 3, 0);
+        line(corners_Clone, cornerPoints[1], cornerPoints[2], CV_RGB(0,255,0), 3, 0);
+        line(corners_Clone, cornerPoints[2], cornerPoints[3], CV_RGB(0,255,0), 3, 0);
+        line(corners_Clone, cornerPoints[3], cornerPoints[0], CV_RGB(0,255,0), 3, 0);
+        QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
+        ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+        corners_count = 0;
+        cornerPoints.clear();
     }
 }
 
@@ -352,7 +364,7 @@ void MainWindow::on_WBC_NextWB_clicked(){
         recordingCams[corners_currentCam] >> frame;
     }
 
-    recordingCams[corners_currentCam] >> frame;
+    // Redundant. Create another function for this.
     cvtColor(frame,display,CV_BGR2RGB);
     corners_Clone = display.clone();
     QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
@@ -368,7 +380,7 @@ void MainWindow::on_WBC_Clear_clicked(){
         recordingCams[corners_currentCam] >> frame;
     }
 
-    recordingCams[corners_currentCam] >> frame;
+    // Redundant. Create another function for this.
     cvtColor(frame,display,CV_BGR2RGB);
     corners_Clone = display.clone();
     QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);

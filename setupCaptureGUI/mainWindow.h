@@ -68,6 +68,7 @@ public:
     QVector <QCheckBox*> reverseChecks;
     QVector <QRadioButton*> audioRecord;
 
+
     // FUNCTIONS
     void countCameras();
     void populateSetupWindow();
