@@ -33,15 +33,25 @@ WhiteboardWorker::WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, str
 bool WhiteboardWorker::takePicture() {
     // Set old frame
     oldFrame = currentFrame.clone();
-    // Set current frame
-    camera >> currentFrame;
+    // Set current frame (grab five times so we get actual current frame)
+    for(int i = 0; i < 5; i++)
+        camera >> currentFrame;
     // Update time associated with current frame
     time(&currentImageTime);
     // Flip the image horizontally and vertically if the camera is upside-down
     if(flipCam) {
         flip(currentFrame, currentFrame, -1);
     }
-    return currentFrame.data;
+    if(currentFrame.data) {
+        // Image capture succeeded
+        // Let listeners know that an image was captured
+        emit capturedImage(currentFrame);
+        return true;
+    }
+    else {
+        // Image capture failed
+        return false;
+    }
 }
 
 void WhiteboardWorker::processImage() {
