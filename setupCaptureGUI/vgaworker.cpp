@@ -43,6 +43,8 @@ bool VGAWorker::takePicture() {
         }
         // Release the camera so it can be used again
         camera.release();
+        // Let listeners know that an image was captured
+        emit capturedImage(currentFrame);
         // Capture was successful, so return true
         return true;
     }

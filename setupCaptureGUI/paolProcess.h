@@ -34,7 +34,7 @@ signals:
 private slots:
     void onQuitProcessing();
     void onImageSaved(const Mat& image);
-    void onImageCaptured(Mat image);
+    void onImageCaptured(const Mat& image);
 };
 
 #endif // PAOLPROCESS_H

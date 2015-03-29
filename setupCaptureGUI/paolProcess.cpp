@@ -31,6 +31,6 @@ void paolProcess::onImageSaved(const Mat &image) {
     emit savedImage(image, this);
 }
 
-void paolProcess::onImageCaptured(Mat image) {
+void paolProcess::onImageCaptured(const Mat &image) {
     emit capturedImage(image, this);
 }
