@@ -58,6 +58,7 @@ public:
     int corners_currentCam;
     int corners_count;
     QVector <Point> cornerPoints;
+    QVector <Point> extendedPoints;
     Mat corners_Clone;
 
     // VECTORS FOR SETUP
@@ -76,6 +77,7 @@ public:
     void createInfoFile();
     void createCameraSetupFile();
     void appendToCourse();
+    void growCornerLines();
     //QImage convertMatToQImage(const Mat& mat);
     //void displayMat(const Mat& mat, QLabel &location);
 
@@ -107,6 +109,7 @@ private slots:
     void on_captureLecture_Terminate_Button_clicked();
     void on_lecDet_Continue_Button_clicked();
     void on_lecDet_Previous_Button_clicked();
+    void on_WBC_Save_clicked();
 };
 
 #endif // MAINWINDOW_H

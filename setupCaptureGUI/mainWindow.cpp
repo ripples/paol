@@ -52,7 +52,7 @@ void MainWindow::launch_System(){
 }
 
 void MainWindow::Mouse_Pressed(){
-    if(corners_count < 4){
+    if(corners_count < 2){
         double posX = (1920.0 / ui->wbc_label->width()) * ui->wbc_label->x;
         double posY = (1080.0 / ui->wbc_label->height()) * ui->wbc_label->y;
 
@@ -64,11 +64,9 @@ void MainWindow::Mouse_Pressed(){
         corners_count++;
     }
 
-    if(corners_count == 4){
-        line(corners_Clone, cornerPoints[0], cornerPoints[1], CV_RGB(0,255,0), 3, 0);
-        line(corners_Clone, cornerPoints[1], cornerPoints[2], CV_RGB(0,255,0), 3, 0);
-        line(corners_Clone, cornerPoints[2], cornerPoints[3], CV_RGB(0,255,0), 3, 0);
-        line(corners_Clone, cornerPoints[3], cornerPoints[0], CV_RGB(0,255,0), 3, 0);
+    if(corners_count == 2){
+        growCornerLines();
+        //line(corners_Clone, cornerPoints[0],cornerPoints[1],CV_RGB(0,255,0),8,0);
         QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
         ui->wbc_label->setPixmap(QPixmap::fromImage(img));
         corners_count = 0;
@@ -99,13 +97,13 @@ void MainWindow::populateSetupWindow(){
         QCheckBox *const checkBox = new QCheckBox("Check this box if image is upside-down",this);
         reverseChecks.push_back(checkBox);
 
-        //QRadioButton *const radioButton = new QRadioButton("Should this device capture the audio",this);
-        //audioRecord.push_back(radioButton);
+        QRadioButton *const radioButton = new QRadioButton("Should this device capture the audio",this);
+        audioRecord.push_back(radioButton);
 
         newLayout->addWidget(label,0,0);
         newLayout->addWidget(comboBox);
         newLayout->addWidget(checkBox);
-        //newLayout->addWidget(radioButton);
+        newLayout->addWidget(radioButton);
 
         ui->setupGridLayout->addLayout(newLayout,((i-1)+1) / 3, ((i-1)+1) % 3);
 
@@ -116,7 +114,6 @@ void MainWindow::populateSetupWindow(){
         recordingCams.push_back(cap);
     }
 }
-
 
 ///////////////////////////////////////////////////////////////
 ///                     Utilities                          ///
@@ -184,11 +181,10 @@ void MainWindow::createCameraSetupFile(){
         string device = optionBoxes[i]->currentText().toLatin1().data();
         int isFlipped = 0;
 
-        if( device != "Disabled"){
+        if(device != "Disabled"){
             if(reverseChecks[i]->isChecked() == true){
                 isFlipped = 1;
             }
-
 
             stringstream out;
 
@@ -222,6 +218,18 @@ void MainWindow::populateCourseList(){
 }
 
 
+//Extends lines displayed in corner window
+void MainWindow::growCornerLines(){
+    double xSlope = cornerPoints[1].x - cornerPoints[0].x;
+    double ySlope = cornerPoints[1].y - cornerPoints[0].y;
+
+    Point p1(cornerPoints[0].x-(xSlope * 10),cornerPoints[0].y-(ySlope * 10)), q1(cornerPoints[1].x+(xSlope * 10),cornerPoints[1].y+(ySlope * 10));
+
+    line(corners_Clone, p1,q1,CV_RGB(0,255,0),8,0);
+    qDebug() << p1.x << "," << p1.y << " " << q1.x << "," << q1.y;
+    extendedPoints.append(p1);
+    extendedPoints.append(q1);
+}
 
 /*
 //////////////////////////////////////////////////////////////
@@ -319,7 +327,6 @@ void MainWindow::on_setupReturnButton_clicked(){
 
 /// WHITEBOARD CORNERS WINDOW BUTTONS
 void MainWindow::on_WBC_PrevWB_clicked(){
-    qDebug() << "Moving Back";
     corners_count = 0;
     corners_currentCam -= 1;
 
@@ -338,15 +345,17 @@ void MainWindow::on_WBC_PrevWB_clicked(){
         recordingCams[corners_currentCam] >> frame;
     }
 
+    // Redundant. Create another function for this.
     cvtColor(frame,display,CV_BGR2RGB);
     corners_Clone = display.clone();
     QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
     ui->wbc_label->setPixmap(QPixmap::fromImage(img));
     corners_count = 0;
+    cornerPoints.clear();
+    extendedPoints.clear();
 }
 
 void MainWindow::on_WBC_NextWB_clicked(){
-    qDebug() << "Moving Forward";
     corners_currentCam += 1;
 
     if(corners_currentCam >= camCount){
@@ -358,8 +367,6 @@ void MainWindow::on_WBC_NextWB_clicked(){
     }
 
     Mat frame,display;
-
-    // Clear out buffer
     for(int i = 0; i < 6; i++){
         recordingCams[corners_currentCam] >> frame;
     }
@@ -370,6 +377,8 @@ void MainWindow::on_WBC_NextWB_clicked(){
     QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
     ui->wbc_label->setPixmap(QPixmap::fromImage(img));
     corners_count = 0;
+    cornerPoints.clear();
+    extendedPoints.clear();
 }
 
 void MainWindow::on_WBC_Clear_clicked(){
@@ -386,6 +395,40 @@ void MainWindow::on_WBC_Clear_clicked(){
     QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
     ui->wbc_label->setPixmap(QPixmap::fromImage(img));
     corners_count = 0;
+    cornerPoints.clear();
+}
+
+void MainWindow::on_WBC_Save_clicked(){
+    float m1, c1, m2, c2;
+    float dx, dy;
+    float intersection_X, intersection_Y;
+    for(int i = 0; i < extendedPoints.length(); i++){
+        qDebug() << i;
+    }
+    dx = extendedPoints[1].x - extendedPoints[0].x;
+    dy = extendedPoints[1].y - extendedPoints[0].y;
+
+    m1 = dy / dx;
+
+    c1 = extendedPoints[0].y - m1 * extendedPoints[0].x;
+
+    dx = extendedPoints[3].x - extendedPoints[2].x;
+    dy = extendedPoints[3].y - extendedPoints[2].y;
+
+    m2 = dy / dx;
+
+    c2 = extendedPoints[3].y  - m2 * extendedPoints[3].x;
+
+    if( (m1 - m2) == 0)
+        qDebug() << "No Intersection between the lines\n";
+    else{
+        intersection_X = (c2 - c1) / (m1 - m2);
+        intersection_Y = m1 * intersection_X + c1;
+        qDebug() << intersection_X << " " << intersection_Y;
+        circle(corners_Clone, Point(intersection_X,intersection_Y), 32.0, Scalar( 255, 0, 0 ), 2, 8);
+        QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
+        ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+   }
 }
 
 void MainWindow::on_WBC_Return_Button_clicked(){
@@ -407,7 +450,6 @@ void MainWindow::on_WBC_Continue_Button_clicked(){
     }
 }
 
-
 /// COURSE SELECTION BUTTONS
 void MainWindow::on_lecDet_Continue_Button_clicked(){
     ui->lectureDetailsWidget->hide();
@@ -416,7 +458,6 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
         string outText = ui->new_course_textbox->text().toUtf8().constData();
         log << outText;
     }
-
     ui->captureLectureWidget->show();
 }
 
@@ -425,7 +466,6 @@ void MainWindow::on_lecDet_Previous_Button_clicked(){
 
     ui->whiteboardCornersWidget->show();
 }
-
 
 /// LECTURE CAPTURE BUTTON
 void MainWindow::on_captureLecture_Terminate_Button_clicked(){
