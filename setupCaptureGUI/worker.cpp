@@ -14,6 +14,8 @@ void Worker::writeFinishStatistics() {
 
 void Worker::workOnNextImage() {
     bool gotPicture = takePicture();
+    // Update time associated with current frame
+    time(&currentImageTime);
     if(gotPicture) {
         // Print image capture success
         printToLog("Took picture in thread %p at time %ld\n", this, currentImageTime);
@@ -21,5 +23,9 @@ void Worker::workOnNextImage() {
         capturedImageCount++;
 
         processImage();
+    }
+    else {
+        // Print image capture failure
+        printToLog("Failed to take picture in thread %p at time %ld\n", this, currentImageTime);
     }
 }

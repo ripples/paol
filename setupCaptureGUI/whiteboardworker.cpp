@@ -36,8 +36,6 @@ bool WhiteboardWorker::takePicture() {
     // Set current frame (grab five times so we get actual current frame)
     for(int i = 0; i < 5; i++)
         camera >> currentFrame;
-    // Update time associated with current frame
-    time(&currentImageTime);
     // Flip the image horizontally and vertically if the camera is upside-down
     if(flipCam) {
         flip(currentFrame, currentFrame, -1);

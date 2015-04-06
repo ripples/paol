@@ -27,7 +27,10 @@ VGAWorker::VGAWorker(int camNumIn, int compNum, bool camFlipped, string lecPath)
 }
 
 bool VGAWorker::takePicture() {
-    // Try to open the camera
+    // Reset connection with VGA2USB. Needed to handle VGA disconnections and grab
+    // complete VGA images
+    if(camera.isOpened())
+        camera.release();
     camera.open(deviceNum);
     // Get the next screen if the image feed is available
     if(camera.isOpened() && camera.get(CV_CAP_PROP_FRAME_WIDTH) != 0) {
@@ -35,14 +38,10 @@ bool VGAWorker::takePicture() {
         oldScreen = currentFrame.clone();
         // Save current screen
         camera >> currentFrame;
-        // Update time associated with current frame
-        time(&currentImageTime);
         // Flip the image horizontally and vertically if the camera is upside-down
         if(flipCam) {
             flip(currentFrame, currentFrame, -1);
         }
-        // Release the camera so it can be used again
-        camera.release();
         // Let listeners know that an image was captured
         emit capturedImage(currentFrame);
         // Capture was successful, so return true
