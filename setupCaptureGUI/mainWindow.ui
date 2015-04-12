@@ -215,7 +215,7 @@
       <item>
        <widget class="QPushButton" name="WBC_Return_Button">
         <property name="text">
-         <string>Back to home</string>
+         <string>Return to Camera Setup</string>
         </property>
        </widget>
       </item>
@@ -305,21 +305,28 @@
       <item>
        <widget class="QPushButton" name="WBC_PrevWB">
         <property name="text">
-         <string>Previous Whiteboard</string>
+         <string>Display Previous Whiteboard</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="WBC_Clear">
         <property name="text">
-         <string>Clear Lines</string>
+         <string>Clean Lines</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="WBC_Save">
+        <property name="text">
+         <string>Save Corners</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="WBC_NextWB">
         <property name="text">
-         <string>Next Whiteboard</string>
+         <string>Display Next Whiteboard</string>
         </property>
        </widget>
       </item>
@@ -604,17 +611,6 @@
       <set>Qt::AlignCenter</set>
      </property>
     </widget>
-    <widget class="QWidget" name="formLayoutWidget">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>50</y>
-       <width>1001</width>
-       <height>361</height>
-      </rect>
-     </property>
-     <layout class="QFormLayout" name="captureLectureGridLayout"/>
-    </widget>
     <widget class="QWidget" name="horizontalLayoutWidget_5">
      <property name="geometry">
       <rect>
@@ -724,6 +720,17 @@
        </widget>
       </item>
      </layout>
+    </widget>
+    <widget class="QWidget" name="gridLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>50</y>
+       <width>1001</width>
+       <height>361</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="lectureCaptureGrid"/>
     </widget>
    </widget>
   </widget>

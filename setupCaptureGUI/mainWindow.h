@@ -47,47 +47,61 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
     // GENERAL VARIABLES
     int camCount; //Amount of connected cameras
+    int whiteboards; //Amount of selected whiteboards
     bool continueToCapture;
+    string processLocation;
+    bool videoCapture;
 
     map<paolProcess*, int> threadToUIMap;
+    QVector <paolProcess*> dev;
+    QVector <QLabel*> paolLabels;
+    QVector <QLabel*> camLabels;
 
-    string cameraSetupTxt;
-
+    // WHITEBOARD CORNER VARIABLES
     int corners_currentCam;
-    int corners_count;
-    QVector <Point> cornerPoints;
-    QVector <Point> extendedPoints;
+    int clicked;
+    int tracker;
+    int captureCount;
     Mat corners_Clone;
+    QVector <Point> clickedCorners;
+    QVector <Point> intersectionPoints;
 
     // VECTORS FOR SETUP
     QVector <QLayout*> setupLayouts;
     QVector <QLabel*> imLabels;
     QVector <VideoCapture> recordingCams;
     QVector <QComboBox*> optionBoxes;
+    QVector <QLayout*> capLayouts;
     QVector <QCheckBox*> reverseChecks;
     QVector <QRadioButton*> audioRecord;
-
 
     // FUNCTIONS
     void countCameras();
     void populateSetupWindow();
     void populateCourseList();
+    void populateCaptureWindow();
     void createInfoFile();
     void createCameraSetupFile();
+    void createFileDirectory();
     void appendToCourse();
-    void growCornerLines();
-    //QImage convertMatToQImage(const Mat& mat);
-    //void displayMat(const Mat& mat, QLabel &location);
+    void place_image();
+    void createWBCornerTxt();
+    Point determineIntersection(double, double,double,double,double,double,double,double);
+    QImage convertMatToQImage(const Mat& mat);
+    void displayMat(const Mat& mat, QLabel &location);
+
+    void releaseComponents();
 
 private:
     Ui::MainWindow *ui;
 
 private slots:
     void launch_System();
-    //void onImageCaptured(Mat image, paolProcess* threadAddr);
-    //void onImageSaved(Mat image, paolProcess* threadAddr);
+    void onImageCaptured(Mat image, paolProcess* threadAddr);
+    void onImageSaved(Mat image, paolProcess* threadAddr);
 
     /// Main Menu Button Functions
     void on_mainMenu_Full_Run_clicked();

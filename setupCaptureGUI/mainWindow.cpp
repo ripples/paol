@@ -5,19 +5,19 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow){
-    ui->setupUi(this);
-    continueToCapture = true;
-    //Disable all QWidgets that should not be visible on launch (Setup, Whiteboard Edges, Capture)
-    ui->setupMenuWidget->hide();
-    ui->whiteboardCornersWidget->hide();
-    ui->lectureDetailsWidget->hide();
-    ui->captureLectureWidget->hide();
-    ui->wbc_label->setScaledContents(true);
-
-    QTimer *qTimer=new QTimer(this);
-    connect(qTimer,SIGNAL(timeout()),this,SLOT(launch_System()));
-    connect(ui->wbc_label, SIGNAL(Mouse_Pressed()), this, SLOT(Mouse_Pressed()));
-    qTimer->start(1);
+        ui->setupUi(this);
+        continueToCapture = true;
+        //Disable all QWidgets that should not be visible on launch (Setup, Whiteboard Edges, Capture)
+        ui->setupMenuWidget->hide();
+        ui->whiteboardCornersWidget->hide();
+        ui->lectureDetailsWidget->hide();
+        ui->captureLectureWidget->hide();
+        ui->wbc_label->setScaledContents(true);
+        videoCapture = false;
+        QTimer *qTimer=new QTimer(this);
+        connect(qTimer,SIGNAL(timeout()),this,SLOT(launch_System()));
+        connect(ui->wbc_label, SIGNAL(Mouse_Pressed()), this, SLOT(Mouse_Pressed()));
+        qTimer->start(1);
     }
 
 MainWindow::~MainWindow(){
@@ -48,29 +48,11 @@ void MainWindow::launch_System(){
             ui->new_course_textbox->hide();
         }
     }
-
-}
-
-void MainWindow::Mouse_Pressed(){
-    if(corners_count < 2){
-        double posX = (1920.0 / ui->wbc_label->width()) * ui->wbc_label->x;
-        double posY = (1080.0 / ui->wbc_label->height()) * ui->wbc_label->y;
-
-        circle(corners_Clone, Point(posX,posY), 32.0, Scalar( 255, 255, 0 ), 2, 8);
-        cornerPoints.append(Point(posX, posY));
-
-        QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
-        ui->wbc_label->setPixmap(QPixmap::fromImage(img));
-        corners_count++;
-    }
-
-    if(corners_count == 2){
-        growCornerLines();
-        //line(corners_Clone, cornerPoints[0],cornerPoints[1],CV_RGB(0,255,0),8,0);
-        QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
-        ui->wbc_label->setPixmap(QPixmap::fromImage(img));
-        corners_count = 0;
-        cornerPoints.clear();
+    else if(ui->captureLectureWidget->isVisible() && videoCapture == true){
+        for(int i = 0; i < dev.length(); i++){
+            dev[i]->start();
+            dev[i]->wait();
+        }
     }
 }
 
@@ -115,6 +97,52 @@ void MainWindow::populateSetupWindow(){
     }
 }
 
+void MainWindow::populateCaptureWindow(){
+    qDebug() << "Adding to Capture Windows";
+    for(int i = 0; i < optionBoxes.length(); i++){
+        qDebug() << "On Number: " << i;
+        if(optionBoxes[i]->currentText().toUtf8().data() != "Video" && optionBoxes[i]->currentText().toUtf8().data() != "Disabled"){
+
+            QGridLayout *const newLayout = new QGridLayout;
+            capLayouts.push_back(newLayout);
+
+            QLabel *imgLabel = new QLabel(QString("CAM %1").arg(i, 2, 10, QLatin1Char('0')));
+            QLabel *paolLabel = new QLabel(QString("PAOL %1").arg(i, 2, 10, QLatin1Char('0')));
+
+            imgLabel->setScaledContents(true);
+            paolLabel->setScaledContents(true);
+
+            camLabels.push_back(imgLabel);
+            paolLabels.push_back(paolLabel);
+
+            newLayout->addWidget(imgLabel,1,0);
+            newLayout->addWidget(paolLabel,2,0);
+
+            paolProcess* thread;
+            qDebug() << optionBoxes[i]->currentText();
+            if(optionBoxes[i]->currentText() == "VGA2USB"){
+                qDebug() << "Adding USB from Camera Num:" << i;
+                thread = new VGAProcess(i, i, false, processLocation);
+            }
+            else if(optionBoxes[i]->currentText() == "Whiteboard"){
+                qDebug() << "Adding Whiteboard from Camera Num:" << i;
+                thread = new WhiteboardProcess(i, i, false, processLocation);
+            }
+
+            dev.push_back(thread);
+
+            // Associate the processing thread with the proper views in the capture window
+            threadToUIMap[thread] = captureCount;
+
+            // Initialize the slots for updating the UI and stopping the processing threads
+            connect(thread, SIGNAL(capturedImage(Mat,paolProcess*)), this, SLOT(onImageCaptured(Mat,paolProcess*)));
+            connect(thread, SIGNAL(savedImage(Mat,paolProcess*)), this, SLOT(onImageSaved(Mat,paolProcess*)));
+            connect(this, SIGNAL(quitProcessing()), thread, SLOT(onQuitProcessing()));
+            ui->lectureCaptureGrid->addLayout(newLayout,((captureCount-1)+1) / whiteboards, ((i-1)+1) % whiteboards);
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////
 ///                     Utilities                          ///
 /////////////////////////////////////////////////////////////
@@ -144,7 +172,7 @@ void MainWindow::countCameras(){
 
 //Create string that will be stored to the INFO file
 void MainWindow::createInfoFile(){
-    cameraSetupTxt = "";
+    string INFOFileText = "";
     stringstream ss;
     int compCount = 0;
     int wbCount = 0;
@@ -152,7 +180,7 @@ void MainWindow::createInfoFile(){
     //Get time since Epoch
     time_t epoch = time(0);
     ss << epoch;
-    cameraSetupTxt = "timestamp: " + ss.str() + "\n";
+    INFOFileText = "timestamp: " + ss.str() + "\n";
 
     ss.str(string()); //Clear out stringstream
 
@@ -167,11 +195,19 @@ void MainWindow::createInfoFile(){
     }
 
     ss << wbCount;
-    cameraSetupTxt = cameraSetupTxt + "whiteboardCount: " + ss.str() + "\n";
+    INFOFileText = INFOFileText + "whiteboardCount: " + ss.str() + "\n";
     ss.str(string()); // Clear out stringstream
 
     ss << compCount;
-    cameraSetupTxt = cameraSetupTxt + "computerCount: " + ss.str() + "\n";
+    INFOFileText = INFOFileText + "computerCount: " + ss.str() + "\n";
+
+    string outLocation = processLocation + "/INFO";
+    const char *path = outLocation.data();
+    //Creates .txt file to which outputInfo is placed in
+    //std::cout << outputInfo;
+    qDebug() << outLocation.data();
+    std::ofstream file(path);
+    file << INFOFileText;
 }
 
 void MainWindow::createCameraSetupFile(){
@@ -208,37 +244,125 @@ void MainWindow::createCameraSetupFile(){
 
 //Fills the QComboBox on the Classroom information view with available classes
 void MainWindow::populateCourseList(){
-    ifstream inputFile("/home/paol/Desktop/PAOL-LectureCapture-GUI-MASTER/courses.txt");
+    ifstream inputFile("/home/paol/paol-code/courses.txt");
     string str;
     while(getline(inputFile, str)){
-        qDebug() << str.data();
         ui->lecDet_courses->addItem(str.data());
     }
     ui->lecDet_courses->addItem("Other");
 }
 
+void MainWindow::createWBCornerTxt(){
+    string allCoordinates = "";
+    stringstream out;
+    string filePath;
 
-//Extends lines displayed in corner window
-void MainWindow::growCornerLines(){
-    double xSlope = cornerPoints[1].x - cornerPoints[0].x;
-    double ySlope = cornerPoints[1].y - cornerPoints[0].y;
+    out << tracker;
+    filePath = "/home/paol/paol-code/wbCorners" + out.str() + ".txt";
+    out.str(string());
 
-    Point p1(cornerPoints[0].x-(xSlope * 10),cornerPoints[0].y-(ySlope * 10)), q1(cornerPoints[1].x+(xSlope * 10),cornerPoints[1].y+(ySlope * 10));
+    for(int i = 0; i < intersectionPoints.length(); i++){
+        out << intersectionPoints[i].x;
+        allCoordinates += out.str() + " ";
+        out.str(string());
+        out << intersectionPoints[i].y;
+        allCoordinates += out.str() + " ";
+        allCoordinates += "\n";
+        out.str(string());
+    }
 
-    line(corners_Clone, p1,q1,CV_RGB(0,255,0),8,0);
-    qDebug() << p1.x << "," << p1.y << " " << q1.x << "," << q1.y;
-    extendedPoints.append(p1);
-    extendedPoints.append(q1);
+    const char *path = filePath.data();
+    ofstream file(path);
+    file << allCoordinates;
 }
 
-/*
+void MainWindow::createFileDirectory(){
+    time_t theTime = time(NULL);
+    struct tm *aTime = localtime(&theTime);
+    int year = aTime->tm_year + 1900;
+    stringstream toString;
+
+    string currentYear;
+    toString << year;
+    currentYear = toString.str();
+
+    // Clear string stream
+    toString.str(string());
+
+    string courseNumber;
+    if(ui->lecDet_courses->currentText() != "Other"){
+        courseNumber = ui->lecDet_courses->currentText().toLatin1().data();
+    }
+    else{
+        courseNumber = ui->new_course_textbox->text().toLatin1().data();
+    }
+
+    system("mkdir -p /home/paol/recordings/readyToUpload");
+    string firstCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + currentYear;
+    system(firstCmd.data());
+
+    string secondCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + currentYear + "/" + courseNumber;
+    system(secondCmd.data());
+
+    string thirdCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + "";
+    system(thirdCmd.data());
+
+    char buffer[80];
+    time (&theTime);
+    aTime = localtime(&theTime);
+    strftime(buffer,80,"%m-%d-%Y--%H-%M-%S",aTime);
+
+    string fourthCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + buffer;
+    system(fourthCmd.data());
+
+    processLocation = "/home/paol/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + buffer;
+
+    string makeComputerDir = "mkdir -p " + processLocation + "/computer";
+    string makeWhiteboardDir = "mkdir -p " + processLocation + "/whiteboard";
+    string makeLogDir = "mkdir -p " + processLocation + "/logs";
+
+    system(makeComputerDir.c_str());
+    system(makeWhiteboardDir.c_str());
+    system(makeLogDir.c_str());
+}
+
+void MainWindow::releaseComponents(){
+
+    for(int i = 0; i < dev.length(); i ++){
+        delete dev[i];
+    }
+
+    for(int i = 0; i < camLabels.length(); i++){
+        delete camLabels[i];
+        delete paolLabels[i];
+        delete capLayouts[i];
+    }
+    camLabels.clear();
+    paolLabels.clear();
+    dev.clear();
+    capLayouts.clear();
+
+    for(int j = 0; j < recordingCams.length(); j++){
+        delete imLabels[j];
+        delete optionBoxes[j];
+        delete reverseChecks[j];
+        delete audioRecord[j];
+        recordingCams[j].release();
+    }
+    recordingCams.clear();
+    audioRecord.clear();
+    reverseChecks.clear();
+    optionBoxes.clear();
+    imLabels.clear();
+}
+
 //////////////////////////////////////////////////////////////
 ///                    Signal handling                    ///
 ////////////////////////////////////////////////////////////
 
 void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
-    if(runCaptureCams){
+    if(ui->captureLectureWidget->isVisible() && videoCapture == true){
         qDebug("Send captured image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
         int displayNum = threadToUIMap[threadAddr];
         displayMat(image, *camLabels[displayNum]);
@@ -247,7 +371,7 @@ void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr){
 
 void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
-    if(runCaptureCams){
+    if(ui->captureLectureWidget->isVisible() && videoCapture == true){
         qDebug("Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
         int displayNum = threadToUIMap[threadAddr];
         displayMat(image, *paolLabels[displayNum]);
@@ -275,7 +399,7 @@ void MainWindow::displayMat(const Mat& mat, QLabel &location){
     //push image to display location "location"
     location.setPixmap(QPixmap::fromImage(img));
 }
-*/
+
 
 //////////////////////////////////////////////////////////////
 ///  Button Functions used to transition between windows  ///
@@ -302,20 +426,40 @@ void MainWindow::on_mainMenu_Upload_Lectures_clicked(){
 void MainWindow::on_setupContinueButton_clicked(){
     ui->setupMenuWidget->hide();
     corners_currentCam = 0;
-    corners_count = 0;
+    clicked = 0;
+    tracker = 0;
+    whiteboards = 0;
 
-    while(optionBoxes[corners_currentCam]->currentText() != "Whiteboard" && corners_currentCam < camCount){
-        corners_currentCam += 1;
+    for(int i = 0; i < optionBoxes.length(); i++){
+        if(optionBoxes[i]->currentText() == "Whiteboard"){
+            whiteboards += 1;
+        }
     }
 
-    Mat frame,display;
-    recordingCams[corners_currentCam] >> frame;
-    cvtColor(frame,display,CV_BGR2RGB);
-    corners_Clone = display.clone();
-    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
-    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+    if(whiteboards != 0){
+        while(optionBoxes[corners_currentCam]->currentText() != "Whiteboard" && corners_currentCam < camCount){
+            corners_currentCam += 1;
+        }
 
-    ui->whiteboardCornersWidget->show();
+        Mat frame,display;
+        recordingCams[corners_currentCam] >> frame;
+        cvtColor(frame,display,CV_BGR2RGB);
+        corners_Clone = display.clone();
+        QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
+        ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+
+        ui->whiteboardCornersWidget->show();
+    }
+    else{
+        if(continueToCapture == false){
+            ui->mainMenuWidget->show();
+            continueToCapture = true;
+        }
+        else{
+            populateCourseList();
+            ui->lectureDetailsWidget->show();
+        }
+    }
 }
 
 void MainWindow::on_setupReturnButton_clicked(){
@@ -327,9 +471,16 @@ void MainWindow::on_setupReturnButton_clicked(){
 
 /// WHITEBOARD CORNERS WINDOW BUTTONS
 void MainWindow::on_WBC_PrevWB_clicked(){
-    corners_count = 0;
-    corners_currentCam -= 1;
+    intersectionPoints.clear();
+    clickedCorners.clear();
+    clicked = 0;
 
+    tracker--;
+    if(tracker < 0){
+        tracker = whiteboards - 1;
+    }
+
+    corners_currentCam -= 1;
     if(corners_currentCam < 0){
         corners_currentCam = camCount - 1;
     }
@@ -338,113 +489,162 @@ void MainWindow::on_WBC_PrevWB_clicked(){
         corners_currentCam -= 1;
     }
 
-    Mat frame,display;
-
-    // Clear out buffer
-    for(int i = 0; i < 6; i++){
-        recordingCams[corners_currentCam] >> frame;
-    }
-
-    // Redundant. Create another function for this.
-    cvtColor(frame,display,CV_BGR2RGB);
-    corners_Clone = display.clone();
-    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
-    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
-    corners_count = 0;
-    cornerPoints.clear();
-    extendedPoints.clear();
+    place_image();
 }
 
 void MainWindow::on_WBC_NextWB_clicked(){
-    corners_currentCam += 1;
+    intersectionPoints.clear();
+    clickedCorners.clear();
+    clicked = 0;
 
+    tracker++;
+    if(tracker > whiteboards - 1){
+        tracker = 0;
+    }
+
+    corners_currentCam += 1;
     if(corners_currentCam >= camCount){
         corners_currentCam = 0;
     }
 
     while(optionBoxes[corners_currentCam]->currentText() != "Whiteboard" && corners_currentCam < camCount){
         corners_currentCam += 1;
+
+        if(corners_currentCam >= camCount){
+            corners_currentCam = 0;
+        }
     }
 
-    Mat frame,display;
-    for(int i = 0; i < 6; i++){
-        recordingCams[corners_currentCam] >> frame;
-    }
-
-    // Redundant. Create another function for this.
-    cvtColor(frame,display,CV_BGR2RGB);
-    corners_Clone = display.clone();
-    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
-    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
-    corners_count = 0;
-    cornerPoints.clear();
-    extendedPoints.clear();
+    place_image();
 }
 
 void MainWindow::on_WBC_Clear_clicked(){
-    Mat frame,display;
+    clickedCorners.clear();
+    intersectionPoints.clear();
+    clicked = 0;
+    place_image();
+}
 
+void MainWindow::on_WBC_Save_clicked(){
+    if(clicked == 8){
+        place_image();
+
+        for(int i = 0; i < clickedCorners.length() - 2; i = i + 2){
+            intersectionPoints.append(
+                        determineIntersection(clickedCorners[i].x,clickedCorners[i].y,clickedCorners[i+1].x,clickedCorners[i+1].y,clickedCorners[i+2].x,
+                                  clickedCorners[i+2].y, clickedCorners[i+3].x, clickedCorners[i+3].y));
+        }
+
+        intersectionPoints.append(
+                    determineIntersection(clickedCorners[0].x,clickedCorners[0].y,clickedCorners[1].x,clickedCorners[1].y,clickedCorners[6].x,
+                              clickedCorners[6].y, clickedCorners[7].x, clickedCorners[7].y));
+
+        for(int j = 0; j < intersectionPoints.length(); j++){
+            circle(corners_Clone,intersectionPoints[j], 8, Scalar(255,0,255),8,8,0);
+        }
+        line(corners_Clone,intersectionPoints[0],intersectionPoints[1], Scalar(255,0,0), 3,8,0);
+        line(corners_Clone,intersectionPoints[1],intersectionPoints[2], Scalar(255,0,0), 3,8,0);
+        line(corners_Clone,intersectionPoints[2],intersectionPoints[3], Scalar(255,0,0), 3,8,0);
+        line(corners_Clone,intersectionPoints[3],intersectionPoints[0], Scalar(255,0,0), 3,8,0);
+
+        createWBCornerTxt();
+    }
+    clickedCorners.clear();
+    intersectionPoints.clear();
+    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
+    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+}
+
+void MainWindow::Mouse_Pressed(){
+    clicked += 1;
+    double posX = (1920.0 / ui->wbc_label->width()) * ui->wbc_label->x;
+    double posY = (1080.0 / ui->wbc_label->height()) * ui->wbc_label->y;
+    clickedCorners.append(Point(posX, posY));
+    if(clicked % 2 == 0){
+        for(int i = 0; i < clickedCorners.length(); i+=2){
+            line(corners_Clone, clickedCorners[i],clickedCorners[i+1], Scalar(0,255,255),5,8,0);
+        }
+    }
+
+    //qDebug() << "Clicked at: X " << posX << ", Y" << posY;
+    circle(corners_Clone, Point(posX,posY), 32.0, Scalar( 255, 255, 0 ), 2, 8);
+    QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
+    ui->wbc_label->setPixmap(QPixmap::fromImage(img));
+
+}
+
+void MainWindow::place_image(){
+    Mat frame,display;
     // Clear out buffer
     for(int i = 0; i < 6; i++){
         recordingCams[corners_currentCam] >> frame;
     }
 
-    // Redundant. Create another function for this.
     cvtColor(frame,display,CV_BGR2RGB);
     corners_Clone = display.clone();
     QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
     ui->wbc_label->setPixmap(QPixmap::fromImage(img));
-    corners_count = 0;
-    cornerPoints.clear();
 }
 
-void MainWindow::on_WBC_Save_clicked(){
-    float m1, c1, m2, c2;
-    float dx, dy;
-    float intersection_X, intersection_Y;
-    for(int i = 0; i < extendedPoints.length(); i++){
-        qDebug() << i;
+Point MainWindow::determineIntersection(double Ax, double Ay, double Bx, double By, double Cx, double Cy, double Dx, double Dy){
+    double  distAB, theCos, theSin, newX, ABpos ;
+
+    //  Fail if either line is undefined.
+    if (Ax==Bx && Ay==By || Cx==Dx && Cy==Dy){
+        return Point(0,0);
     }
-    dx = extendedPoints[1].x - extendedPoints[0].x;
-    dy = extendedPoints[1].y - extendedPoints[0].y;
+    //  (1) Translate the system so that point A is on the origin.
+    Bx-=Ax; By-=Ay;
+    Cx-=Ax; Cy-=Ay;
+    Dx-=Ax; Dy-=Ay;
 
-    m1 = dy / dx;
+    //  Discover the length of segment A-B.
+    distAB=sqrt(Bx*Bx+By*By);
 
-    c1 = extendedPoints[0].y - m1 * extendedPoints[0].x;
+    //  (2) Rotate the system so that point B is on the positive X axis.
+    theCos=Bx/distAB;
+    theSin=By/distAB;
+    newX=Cx*theCos+Cy*theSin;
+    Cy  =Cy*theCos-Cx*theSin; Cx=newX;
+    newX=Dx*theCos+Dy*theSin;
+    Dy  =Dy*theCos-Dx*theSin; Dx=newX;
 
-    dx = extendedPoints[3].x - extendedPoints[2].x;
-    dy = extendedPoints[3].y - extendedPoints[2].y;
+    //  Fail if the lines are parallel.
+    if (Cy==Dy){
+        Point(0,0);
+    }
 
-    m2 = dy / dx;
+    //  (3) Discover the position of the intersection point along line A-B.
+    ABpos=Dx+(Cx-Dx)*Dy/(Dy-Cy);
 
-    c2 = extendedPoints[3].y  - m2 * extendedPoints[3].x;
+    //  (4) Apply the discovered position to line A-B in the original coordinate system.
+    double X =Ax+ABpos*theCos;
+    double Y =Ay+ABpos*theSin;
 
-    if( (m1 - m2) == 0)
-        qDebug() << "No Intersection between the lines\n";
-    else{
-        intersection_X = (c2 - c1) / (m1 - m2);
-        intersection_Y = m1 * intersection_X + c1;
-        qDebug() << intersection_X << " " << intersection_Y;
-        circle(corners_Clone, Point(intersection_X,intersection_Y), 32.0, Scalar( 255, 0, 0 ), 2, 8);
-        QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
-        ui->wbc_label->setPixmap(QPixmap::fromImage(img));
-   }
+    //  Success.
+    return Point(X,Y);
 }
 
 void MainWindow::on_WBC_Return_Button_clicked(){
-    corners_count = 0;
     ui->whiteboardCornersWidget->hide();
-
+    clickedCorners.clear();
+    intersectionPoints.clear();
+    corners_currentCam = 0;
     ui->setupMenuWidget->show();
 }
 
 void MainWindow::on_WBC_Continue_Button_clicked(){
     ui->whiteboardCornersWidget->hide();
+
+    clickedCorners.clear();
+    intersectionPoints.clear();
+
     if(continueToCapture == false){
         ui->mainMenuWidget->show();
         continueToCapture = true;
     }
     else{
+        ui->lecDet_courses->clear();
         populateCourseList();
         ui->lectureDetailsWidget->show();
     }
@@ -453,23 +653,41 @@ void MainWindow::on_WBC_Continue_Button_clicked(){
 /// COURSE SELECTION BUTTONS
 void MainWindow::on_lecDet_Continue_Button_clicked(){
     ui->lectureDetailsWidget->hide();
+
     if(ui->lecDet_courses->currentText() == "Other"){
-        ofstream log("/home/paol/Desktop/PAOL-LectureCapture-GUI-MASTER/courses.txt", std::ios_base::app | std::ios_base::out);
+        ofstream log("/home/paol/paol-code/courses.txt", std::ios_base::app | std::ios_base::out);
         string outText = ui->new_course_textbox->text().toUtf8().constData();
         log << outText;
     }
+
+    createFileDirectory();
+    createCameraSetupFile();
+    createInfoFile();
+    for(int i = 0; i < recordingCams.length(); i++){
+        recordingCams[i].release();
+    }
+    recordingCams.clear();
+
+    populateCaptureWindow();
     ui->captureLectureWidget->show();
+    videoCapture = true;
 }
 
 void MainWindow::on_lecDet_Previous_Button_clicked(){
-    ui->lectureDetailsWidget->hide();
-
-    ui->whiteboardCornersWidget->show();
+    if( whiteboards != 0){
+        ui->lectureDetailsWidget->hide();
+        ui->whiteboardCornersWidget->show();
+    }
+    else{
+        ui->lectureDetailsWidget->hide();
+        ui->setupMenuWidget->show();
+    }
 }
 
 /// LECTURE CAPTURE BUTTON
 void MainWindow::on_captureLecture_Terminate_Button_clicked(){
     ui->captureLectureWidget->hide();
-
+    videoCapture = false;
+    releaseComponents();
     ui->mainMenuWidget->show();
 }
