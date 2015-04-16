@@ -722,5 +722,6 @@ void MainWindow::on_captureLecture_Terminate_Button_clicked(){
     ui->captureLectureWidget->hide();
     videoCapture = false;
     releaseComponents();
+    system("pkill ffmpeg");
     ui->mainMenuWidget->show();
 }
