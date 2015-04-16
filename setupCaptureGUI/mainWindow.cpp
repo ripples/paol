@@ -49,9 +49,9 @@ void MainWindow::launch_System(){
         }
     }
     else if(ui->captureLectureWidget->isVisible() && videoCapture == true){
-        for(int i = 0; i < dev.length(); i++){
-            dev[i]->start();
-            dev[i]->wait();
+            for(int i = 0; i < dev.length(); i++){
+                dev[i]->start();
+                dev[i]->wait();
         }
     }
 }
@@ -101,8 +101,8 @@ void MainWindow::populateCaptureWindow(){
     qDebug() << "Adding to Capture Windows";
     for(int i = 0; i < optionBoxes.length(); i++){
         qDebug() << "On Number: " << i;
-        if(optionBoxes[i]->currentText().toUtf8().data() != "Video" && optionBoxes[i]->currentText().toUtf8().data() != "Disabled"){
-
+        if( strcmp(optionBoxes[i]->currentText().toUtf8().data(), "Video") != 0 && strcmp(optionBoxes[i]->currentText().toUtf8().data(), "Disabled") != 0){
+            qDebug() << "Looking at " << optionBoxes[i]->currentText();
             QGridLayout *const newLayout = new QGridLayout;
             capLayouts.push_back(newLayout);
 
@@ -497,7 +497,8 @@ void MainWindow::on_setupContinueButton_clicked(){
 
 void MainWindow::on_setupReturnButton_clicked(){
     ui->setupMenuWidget->hide();
-
+    releaseComponents();
+    system("pkill ffmpeg");
     ui->mainMenuWidget->show();
 }
 
@@ -623,7 +624,7 @@ Point MainWindow::determineIntersection(double Ax, double Ay, double Bx, double 
     double  distAB, theCos, theSin, newX, ABpos ;
 
     //  Fail if either line is undefined.
-    if (Ax==Bx && Ay==By || Cx==Dx && Cy==Dy){
+    if ( (Ax==Bx && Ay==By) || (Cx==Dx && Cy==Dy) ){
         return Point(0,0);
     }
     //  (1) Translate the system so that point A is on the origin.
@@ -697,6 +698,7 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
     createCameraSetupFile();
     createInfoFile();
     for(int i = 0; i < recordingCams.length(); i++){
+        qDebug() << "Release Camera Number " << i;
         recordingCams[i].release();
     }
     recordingCams.clear();
