@@ -53,6 +53,7 @@ public:
     int whiteboards; //Amount of selected whiteboards
     bool continueToCapture;
     string processLocation;
+    string vidCaptureString;
     bool videoCapture;
 
     map<paolProcess*, int> threadToUIMap;
@@ -93,6 +94,7 @@ public:
     QImage convertMatToQImage(const Mat& mat);
     void displayMat(const Mat& mat, QLabel &location);
 
+    void captureVideo();
     void releaseComponents();
 
 private:

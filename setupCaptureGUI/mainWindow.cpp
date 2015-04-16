@@ -356,6 +356,39 @@ void MainWindow::releaseComponents(){
     imLabels.clear();
 }
 
+void MainWindow::captureVideo(){
+    // Find which camera has the Audio box selected
+    string audioCamNum;
+    string s;
+    stringstream out;
+    for(int h = 0; h < audioRecord.length(); h++){
+        if(audioRecord[h]->isChecked()){
+            out << h;
+            audioCamNum = out.str();
+            out.str(string());
+        }
+    }
+
+    for(int i = 0; i < optionBoxes.length(); i++){
+        //Find if there is a Video camera selected
+        if(optionBoxes[i]->currentText() == "Video"){
+            string isChecked = "0";
+
+            if(reverseChecks[i]->isChecked() == true){
+                isChecked = "1";
+            }
+
+            out << i;
+            s = out.str();
+            audioCamNum.erase(std::remove(audioCamNum.begin(),audioCamNum.end(),' '),audioCamNum.end());
+
+            vidCaptureString ="/home/paol/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
+            + isChecked + " " + processLocation + "/video.mp4 &";
+            system(vidCaptureString.data());
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////////
 ///                    Signal handling                    ///
 ////////////////////////////////////////////////////////////
@@ -667,7 +700,7 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
         recordingCams[i].release();
     }
     recordingCams.clear();
-
+    captureVideo();
     populateCaptureWindow();
     ui->captureLectureWidget->show();
     videoCapture = true;
