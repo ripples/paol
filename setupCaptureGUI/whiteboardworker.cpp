@@ -120,9 +120,9 @@ void WhiteboardWorker::processImage() {
     // Otherwise, check if the frames are basically identical (ie. stable)
     else if(numDif < .000001) {
         stableWhiteboardCount++;
-        // If the image has been stable for exactly twenty frames, the lecturer is not present, so we
+        // If the image has been stable for exactly three frames, the lecturer is not present, so we
         // can update the marker and whiteboard models without movement information
-        if(stableWhiteboardCount == 20) {
+        if(stableWhiteboardCount == 3) {
             // Save the smooth marker version of the old background image
             Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
             saveImageWithTimestamp(oldRefinedBackgroundSmooth);
