@@ -263,10 +263,10 @@ void MainWindow::createWBCornerTxt(){
 
     for(int i = 0; i < intersectionPoints.length(); i++){
         out << intersectionPoints[i].x;
-        allCoordinates += out.str() + " ";
+        allCoordinates += out.str() + ",";
         out.str(string());
         out << intersectionPoints[i].y;
-        allCoordinates += out.str() + " ";
+        allCoordinates += out.str();
         allCoordinates += "\n";
         out.str(string());
     }
@@ -721,6 +721,7 @@ void MainWindow::on_lecDet_Previous_Button_clicked(){
 
 /// LECTURE CAPTURE BUTTON
 void MainWindow::on_captureLecture_Terminate_Button_clicked(){
+    emit quitProcessing();
     ui->captureLectureWidget->hide();
     videoCapture = false;
     releaseComponents();

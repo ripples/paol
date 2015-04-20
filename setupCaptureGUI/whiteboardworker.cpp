@@ -178,6 +178,7 @@ WBCorners WhiteboardWorker::getCornersFromFile(int wbNum) {
         QString fileText = fileStream.readAll();
         // Split file text by commas and whitespace
         QStringList coordinates = fileText.split(QRegExp("\n|\r\n|\r|,"));
+        assert(coordinates.size() >= 8);
         // Set coordinates
         ret.TL = Point2f(coordinates[0].toInt(), coordinates[1].toInt());
         ret.TR = Point2f(coordinates[2].toInt(), coordinates[3].toInt());

@@ -126,6 +126,9 @@ private slots:
     void on_lecDet_Continue_Button_clicked();
     void on_lecDet_Previous_Button_clicked();
     void on_WBC_Save_clicked();
+
+signals:
+    void quitProcessing();
 };
 
 #endif // MAINWINDOW_H
