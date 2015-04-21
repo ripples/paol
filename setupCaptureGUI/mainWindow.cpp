@@ -24,6 +24,9 @@ MainWindow::~MainWindow(){
     delete ui;
 }
 
+///////////////////////////////////////////////////////////////
+///           Runner function for Capture Sys              ///
+/////////////////////////////////////////////////////////////
 
 void MainWindow::launch_System(){
     if(ui->setupMenuWidget->isVisible()){
@@ -49,10 +52,10 @@ void MainWindow::launch_System(){
         }
     }
     else if(ui->captureLectureWidget->isVisible() && videoCapture == true){
-            for(int i = 0; i < dev.length(); i++){
-                dev[i]->start();
-                dev[i]->wait();
-        }
+        for(int i = 0; i < dev.length(); i++){
+            dev[i]->start();
+            }
+      videoCapture = false;
     }
 }
 
@@ -100,7 +103,7 @@ void MainWindow::populateSetupWindow(){
 void MainWindow::populateCaptureWindow(){
     qDebug() << "Adding to Capture Windows";
     for(int i = 0; i < optionBoxes.length(); i++){
-        qDebug() << "On Number: " << i;
+        //qDebug() << "On Number: " << i;
         if( strcmp(optionBoxes[i]->currentText().toUtf8().data(), "Video") != 0 && strcmp(optionBoxes[i]->currentText().toUtf8().data(), "Disabled") != 0){
             qDebug() << "Looking at " << optionBoxes[i]->currentText();
             QGridLayout *const newLayout = new QGridLayout;
@@ -119,13 +122,13 @@ void MainWindow::populateCaptureWindow(){
             newLayout->addWidget(paolLabel,2,0);
 
             paolProcess* thread;
-            qDebug() << optionBoxes[i]->currentText();
+            //qDebug() << optionBoxes[i]->currentText();
             if(optionBoxes[i]->currentText() == "VGA2USB"){
-                qDebug() << "Adding USB from Camera Num:" << i;
+                //qDebug() << "Adding USB from Camera Num:" << i;
                 thread = new VGAProcess(i, i, false, processLocation);
             }
             else if(optionBoxes[i]->currentText() == "Whiteboard"){
-                qDebug() << "Adding Whiteboard from Camera Num:" << i;
+                //qDebug() << "Adding Whiteboard from Camera Num:" << i;
                 thread = new WhiteboardProcess(i, i, false, processLocation);
             }
 
@@ -204,8 +207,7 @@ void MainWindow::createInfoFile(){
     string outLocation = processLocation + "/INFO";
     const char *path = outLocation.data();
     //Creates .txt file to which outputInfo is placed in
-    //std::cout << outputInfo;
-    qDebug() << outLocation.data();
+    //qDebug() << outLocation.data();
     std::ofstream file(path);
     file << INFOFileText;
 }
@@ -389,6 +391,7 @@ void MainWindow::captureVideo(){
     }
 }
 
+
 //////////////////////////////////////////////////////////////
 ///                    Signal handling                    ///
 ////////////////////////////////////////////////////////////
@@ -404,6 +407,7 @@ void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr){
 
 void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
+    qDebug() << "Saving Image";
     if(ui->captureLectureWidget->isVisible() && videoCapture == true){
         qDebug("Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
         int displayNum = threadToUIMap[threadAddr];
@@ -411,11 +415,13 @@ void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr){
     }
 }
 
+
 //////////////////////////////////////////////////////////////
 ///                    Image displaying                   ///
 ////////////////////////////////////////////////////////////
 
 QImage MainWindow::convertMatToQImage(const Mat& mat){
+    qDebug() << "Converting";
     Mat display;
     //copy mask Mat to display Mat and convert from BGR to RGB format
     cvtColor(mat,display,CV_BGR2RGB);
@@ -427,6 +433,7 @@ QImage MainWindow::convertMatToQImage(const Mat& mat){
 }
 
 void MainWindow::displayMat(const Mat& mat, QLabel &location){
+    qDebug() << "Displaying";
     //call method to convert Mat to QImage
     QImage img=convertMatToQImage(mat);
     //push image to display location "location"
@@ -698,7 +705,6 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
     createCameraSetupFile();
     createInfoFile();
     for(int i = 0; i < recordingCams.length(); i++){
-        qDebug() << "Release Camera Number " << i;
         recordingCams[i].release();
     }
     recordingCams.clear();
@@ -720,8 +726,13 @@ void MainWindow::on_lecDet_Previous_Button_clicked(){
 }
 
 /// LECTURE CAPTURE BUTTON
-void MainWindow::on_captureLecture_Terminate_Button_clicked(){
+void MainWindow::on_captureLecture_Terminate_Button_clicked(){   
     emit quitProcessing();
+
+    for(int i = 0; i < dev.length(); i++){
+        dev[i]->wait();
+    }
+
     ui->captureLectureWidget->hide();
     videoCapture = false;
     releaseComponents();
