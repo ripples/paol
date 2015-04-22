@@ -105,7 +105,7 @@ void MainWindow::populateCaptureWindow(){
     for(int i = 0; i < optionBoxes.length(); i++){
         //qDebug() << "On Number: " << i;
         if( strcmp(optionBoxes[i]->currentText().toUtf8().data(), "Video") != 0 && strcmp(optionBoxes[i]->currentText().toUtf8().data(), "Disabled") != 0){
-            qDebug() << "Looking at " << optionBoxes[i]->currentText();
+            //qDebug() << "Looking at " << optionBoxes[i]->currentText();
             QGridLayout *const newLayout = new QGridLayout;
             capLayouts.push_back(newLayout);
 
@@ -135,13 +135,13 @@ void MainWindow::populateCaptureWindow(){
             dev.push_back(thread);
 
             // Associate the processing thread with the proper views in the capture window
-            threadToUIMap[thread] = captureCount;
+            threadToUIMap[thread] = i;
 
             // Initialize the slots for updating the UI and stopping the processing threads
             connect(thread, SIGNAL(capturedImage(Mat,paolProcess*)), this, SLOT(onImageCaptured(Mat,paolProcess*)));
             connect(thread, SIGNAL(savedImage(Mat,paolProcess*)), this, SLOT(onImageSaved(Mat,paolProcess*)));
             connect(this, SIGNAL(quitProcessing()), thread, SLOT(onQuitProcessing()));
-            ui->lectureCaptureGrid->addLayout(newLayout,((captureCount-1)+1) / whiteboards, ((i-1)+1) % whiteboards);
+            ui->lectureCaptureGrid->addLayout(newLayout,((captureCount-1)+1) / captureDevices, ((i-1)+1) % captureDevices);
         }
     }
 }
@@ -398,21 +398,17 @@ void MainWindow::captureVideo(){
 
 void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
-    if(ui->captureLectureWidget->isVisible() && videoCapture == true){
-        qDebug("Send captured image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
-        int displayNum = threadToUIMap[threadAddr];
-        displayMat(image, *camLabels[displayNum]);
-    }
+    qDebug("Capture: Send captured image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
+    int displayNum = threadToUIMap[threadAddr];
+    displayMat(image, *camLabels[displayNum]);
 }
 
 void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
-    qDebug() << "Saving Image";
-    if(ui->captureLectureWidget->isVisible() && videoCapture == true){
-        qDebug("Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
-        int displayNum = threadToUIMap[threadAddr];
-        displayMat(image, *paolLabels[displayNum]);
-    }
+    qDebug("Saved: Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
+    int displayNum = threadToUIMap[threadAddr];
+    qDebug() << displayNum;
+    displayMat(image, *paolLabels[displayNum]);
 }
 
 
@@ -421,7 +417,6 @@ void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr){
 ////////////////////////////////////////////////////////////
 
 QImage MainWindow::convertMatToQImage(const Mat& mat){
-    qDebug() << "Converting";
     Mat display;
     //copy mask Mat to display Mat and convert from BGR to RGB format
     cvtColor(mat,display,CV_BGR2RGB);
@@ -433,7 +428,6 @@ QImage MainWindow::convertMatToQImage(const Mat& mat){
 }
 
 void MainWindow::displayMat(const Mat& mat, QLabel &location){
-    qDebug() << "Displaying";
     //call method to convert Mat to QImage
     QImage img=convertMatToQImage(mat);
     //push image to display location "location"
@@ -469,10 +463,17 @@ void MainWindow::on_setupContinueButton_clicked(){
     clicked = 0;
     tracker = 0;
     whiteboards = 0;
+    captureDevices = 0;
 
     for(int i = 0; i < optionBoxes.length(); i++){
         if(optionBoxes[i]->currentText() == "Whiteboard"){
             whiteboards += 1;
+        }
+    }
+
+    for(int i = 0; i < optionBoxes.length(); i++){
+        if(optionBoxes[i]->currentText() == "Whiteboard" || optionBoxes[i]->currentText() == "VGA2USB"){
+            captureDevices += 1;
         }
     }
 

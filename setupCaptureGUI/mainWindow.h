@@ -51,6 +51,7 @@ public:
     // GENERAL VARIABLES
     int camCount; //Amount of connected cameras
     int whiteboards; //Amount of selected whiteboards
+    int captureDevices; // Devices that are either WBs or VGA2USB
     bool continueToCapture;
     string processLocation;
     string vidCaptureString;
