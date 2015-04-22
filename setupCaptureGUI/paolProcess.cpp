@@ -7,6 +7,7 @@ paolProcess::~paolProcess() {
 }
 
 void paolProcess::run(){
+
     thread->start();
     while(1){
         // Stop thread if keepRunning is false
