@@ -476,7 +476,7 @@ void MainWindow::on_setupContinueButton_clicked(){
             captureDevices += 1;
         }
     }
-
+    qDebug() << captureDevices;
     if(whiteboards != 0){
         while(optionBoxes[corners_currentCam]->currentText() != "Whiteboard" && corners_currentCam < camCount){
             corners_currentCam += 1;
