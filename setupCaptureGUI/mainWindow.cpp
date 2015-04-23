@@ -57,6 +57,9 @@ void MainWindow::launch_System(){
             }
       videoCapture = false;
     }
+    else if(ui->captureLectureWidget->isVisible() && videoCapture == false){
+        timer();
+    }
 }
 
 ///////////////////////////////////////////////////////////////
@@ -101,6 +104,7 @@ void MainWindow::populateSetupWindow(){
 }
 
 void MainWindow::populateCaptureWindow(){
+    int position = 0;
     qDebug() << "Adding to Capture Windows";
     for(int i = 0; i < optionBoxes.length(); i++){
         //qDebug() << "On Number: " << i;
@@ -124,24 +128,27 @@ void MainWindow::populateCaptureWindow(){
             paolProcess* thread;
             //qDebug() << optionBoxes[i]->currentText();
             if(optionBoxes[i]->currentText() == "VGA2USB"){
-                //qDebug() << "Adding USB from Camera Num:" << i;
+                qDebug() << "Adding USB from Camera Num:" << i;
                 thread = new VGAProcess(i, i, false, processLocation);
             }
             else if(optionBoxes[i]->currentText() == "Whiteboard"){
-                //qDebug() << "Adding Whiteboard from Camera Num:" << i;
+                qDebug() << "Adding Whiteboard from Camera Num:" << i;
                 thread = new WhiteboardProcess(i, i, false, processLocation);
             }
 
             dev.push_back(thread);
 
             // Associate the processing thread with the proper views in the capture window
-            threadToUIMap[thread] = i;
+            //qDebug() << "Attaching Label to thread at position " << position;
+            threadToUIMap[thread] = position;
+            position++;
 
             // Initialize the slots for updating the UI and stopping the processing threads
             connect(thread, SIGNAL(capturedImage(Mat,paolProcess*)), this, SLOT(onImageCaptured(Mat,paolProcess*)));
             connect(thread, SIGNAL(savedImage(Mat,paolProcess*)), this, SLOT(onImageSaved(Mat,paolProcess*)));
             connect(this, SIGNAL(quitProcessing()), thread, SLOT(onQuitProcessing()));
-            ui->lectureCaptureGrid->addLayout(newLayout,((captureCount-1)+1) / captureDevices, ((i-1)+1) % captureDevices);
+            //qDebug() << "Row: " << 4/captureDevices << ", Column: " << (i % captureDevices);
+            ui->lectureCaptureGrid->addLayout(newLayout, 4 / captureDevices, i);
         }
     }
 }
@@ -331,26 +338,27 @@ void MainWindow::createFileDirectory(){
 void MainWindow::releaseComponents(){
 
     for(int i = 0; i < dev.length(); i ++){
+        dev[i]->terminate();
         delete dev[i];
     }
 
-    for(int i = 0; i < camLabels.length(); i++){
-        delete camLabels[i];
-        delete paolLabels[i];
-        delete capLayouts[i];
+    for(int j = 0; j < camLabels.length(); j++){
+        delete camLabels[j];
+        delete paolLabels[j];
+        delete capLayouts[j];
     }
+
+    for(int k = 0; k < recordingCams.length(); k++){
+        delete imLabels[k];
+        delete optionBoxes[k];
+        delete reverseChecks[k];
+        delete audioRecord[k];
+    }
+
     camLabels.clear();
     paolLabels.clear();
     dev.clear();
     capLayouts.clear();
-
-    for(int j = 0; j < recordingCams.length(); j++){
-        delete imLabels[j];
-        delete optionBoxes[j];
-        delete reverseChecks[j];
-        delete audioRecord[j];
-        recordingCams[j].release();
-    }
     recordingCams.clear();
     audioRecord.clear();
     reverseChecks.clear();
@@ -387,10 +395,50 @@ void MainWindow::captureVideo(){
             vidCaptureString ="/home/paol/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
             + isChecked + " " + processLocation + "/video.mp4 &";
             system(vidCaptureString.data());
+            ui->captureLecture_Video_Status->setText("Video Status: Recording in progress");
         }
     }
 }
 
+void MainWindow::timer(){
+     int a = myTimer.elapsed();
+     int secondsVal = (a / 1000) % 60;
+     int minutesVal = ((a / (1000 *60)) % 60);
+     int hoursVal = ((a / (1000*60*60*60)) % 24);
+     captureSecondsElapsed = (a / 1000);
+     string minutes;
+     string hours;
+     string seconds;
+
+     if(secondsVal < 10){
+         stringstream ss;
+         ss << secondsVal;
+         seconds = "0" + ss.str();
+     }else{
+         stringstream ss;
+         ss << secondsVal;
+         seconds = ss.str();
+     }
+
+     if(minutesVal != 0){
+         stringstream mm;
+         mm << minutesVal;
+         minutes = mm.str();
+     }else{
+         minutes = "00";
+     }
+
+     if(hoursVal != 0){
+         stringstream hh;
+         hh << hoursVal;
+         hours = hh.str();
+     } else{
+         hours = "00";
+     }
+
+     string final = "Time Elapsed: " + hours + ":" + minutes + ":" + seconds;
+     ui->captureLecture_Timer->setText(QString::fromStdString(final));
+ }
 
 //////////////////////////////////////////////////////////////
 ///                    Signal handling                    ///
@@ -398,16 +446,16 @@ void MainWindow::captureVideo(){
 
 void MainWindow::onImageCaptured(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
-    qDebug("Capture: Send captured image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
+    //qDebug("Capture: Send captured image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
     int displayNum = threadToUIMap[threadAddr];
     displayMat(image, *camLabels[displayNum]);
 }
 
 void MainWindow::onImageSaved(Mat image, paolProcess *threadAddr){
     // Only respond to the signal if the capture GUI is running
-    qDebug("Saved: Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
+    //qDebug("Saved: Send saved image from thread %p to display %d", threadAddr, threadToUIMap[threadAddr]);
     int displayNum = threadToUIMap[threadAddr];
-    qDebug() << displayNum;
+    //qDebug() << displayNum;
     displayMat(image, *paolLabels[displayNum]);
 }
 
@@ -713,6 +761,8 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
     populateCaptureWindow();
     ui->captureLectureWidget->show();
     videoCapture = true;
+    myTimer.restart();
+    myTimer.start();
 }
 
 void MainWindow::on_lecDet_Previous_Button_clicked(){

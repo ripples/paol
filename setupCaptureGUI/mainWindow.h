@@ -52,10 +52,12 @@ public:
     int camCount; //Amount of connected cameras
     int whiteboards; //Amount of selected whiteboards
     int captureDevices; // Devices that are either WBs or VGA2USB
+    int captureSecondsElapsed;
     bool continueToCapture;
     string processLocation;
     string vidCaptureString;
     bool videoCapture;
+    QTime myTimer;
 
     map<paolProcess*, int> threadToUIMap;
     QVector <paolProcess*> dev;
@@ -97,6 +99,7 @@ public:
 
     void captureVideo();
     void releaseComponents();
+    void timer();
 
 private:
     Ui::MainWindow *ui;
