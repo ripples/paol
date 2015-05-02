@@ -338,7 +338,6 @@ void MainWindow::createFileDirectory(){
 void MainWindow::releaseComponents(){
 
     for(int i = 0; i < dev.length(); i ++){
-        dev[i]->terminate();
         delete dev[i];
     }
 
