@@ -24,6 +24,7 @@ protected:
     void processImage();
     void saveImageWithTimestamp(const Mat& image);
     void printToLog(char* format, ...);
+    void saveLastImage();
 
 public:
     VGAWorker(int camNumIn, int vgaNum, bool camFlipped, string lecturePath);

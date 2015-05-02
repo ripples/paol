@@ -105,15 +105,19 @@ void WhiteboardWorker::processImage() {
             printToLog("markerDiffs: %f\n", markerDiffs);
             // Save and update the models if the marker content changed enough
             if(markerDiffs > .008) {
-                // Save the smooth marker version of the old background image
-                Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
-                saveImageWithTimestamp(oldRefinedBackgroundSmooth);
+                // Only save the image if a meaningful has been stored
+                if(realImageIsStored) {
+                    // Save the smooth marker version of the old background image
+                    Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
+                    saveImageWithTimestamp(oldRefinedBackgroundSmooth);
+                }
                 // Update marker model
                 oldMarkerModel = currentMarkerModel.clone();
                 // Update enhanced version of background
                 Mat whiteWhiteboard = PAOLProcUtils::whitenWhiteboard(currentRectified, currentMarkerModel);
                 oldRefinedBackground = PAOLProcUtils::updateModel(
                             oldRefinedBackground, whiteWhiteboard, mvmtFullSize);
+                realImageIsStored = true;
             }
         }
     }
@@ -123,9 +127,12 @@ void WhiteboardWorker::processImage() {
         // If the image has been stable for exactly three frames, the lecturer is not present, so we
         // can update the marker and whiteboard models without movement information
         if(stableWhiteboardCount == 3) {
-            // Save the smooth marker version of the old background image
-            Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
-            saveImageWithTimestamp(oldRefinedBackgroundSmooth);
+            // Only save the image if a meaningful has been stored
+            if(realImageIsStored) {
+                // Save the smooth marker version of the old background image
+                Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
+                saveImageWithTimestamp(oldRefinedBackgroundSmooth);
+            }
 
             // Update marker model
             // Find marker candidates
@@ -139,6 +146,7 @@ void WhiteboardWorker::processImage() {
             // Update enhanced version of background
             Mat whiteWhiteboard = PAOLProcUtils::whitenWhiteboard(currentRectified, currentMarkerModel);
             oldRefinedBackground = whiteWhiteboard.clone();
+            realImageIsStored = true;
         }
     }
 }
@@ -203,4 +211,12 @@ WBCorners WhiteboardWorker::getCornersFromFile(int wbNum) {
         ret.BL = Point2f(0, 1080);
     }
     return ret;
+}
+
+void WhiteboardWorker::saveLastImage() {
+    if(realImageIsStored) {
+        // Save the smooth marker version of the old background image
+        Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
+        saveImageWithTimestamp(oldRefinedBackgroundSmooth);
+    }
 }

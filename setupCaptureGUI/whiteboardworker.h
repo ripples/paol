@@ -28,6 +28,7 @@ protected:
     void processImage();
     void saveImageWithTimestamp(const Mat& image);
     void printToLog(char* format, ...);
+    void saveLastImage();
 public:
     WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, string lecPath);
 };

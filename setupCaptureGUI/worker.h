@@ -27,15 +27,23 @@ protected:
     // Fields for general processing (mostly saving the image)
     int saveImageCount;
     time_t currentImageTime;
-    int capturedImageCount; // How many images were captured from the camera
+    // How many images were captured from the camera
+    int capturedImageCount;
+    // Flag for whether a non-empty image or model is stored. This is
+    // used to avoid saving the first stable image, which will just
+    // be a black frame.
+    bool realImageIsStored;
 
     virtual bool takePicture() = 0;
     virtual void processImage() = 0;
     virtual void saveImageWithTimestamp(const Mat& image) = 0;
     virtual void printToLog(char* format, ...) = 0;
+    virtual void saveLastImage() = 0;
 
 public:
+    Worker();
     ~Worker();
+    void finish();
     void writeFinishStatistics();
 
 private slots:

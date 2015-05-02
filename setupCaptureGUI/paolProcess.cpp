@@ -16,7 +16,7 @@ void paolProcess::run(){
             keepRunningMutex.unlock();
             thread->quit();
             thread->wait();
-            worker->writeFinishStatistics();
+            worker->finish();
             break;
         }
         keepRunningMutex.unlock();

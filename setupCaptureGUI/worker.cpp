@@ -1,10 +1,19 @@
 #include "worker.h"
 
+Worker::Worker() {
+    realImageIsStored = false;
+}
+
 Worker::~Worker() {
     if(camera.isOpened())
         camera.release();
     if(logFile != NULL)
         fclose(logFile);
+}
+
+void Worker::finish() {
+    saveLastImage();
+    writeFinishStatistics();
 }
 
 void Worker::writeFinishStatistics() {

@@ -52,22 +52,34 @@ bool VGAWorker::takePicture() {
 }
 
 void VGAWorker::processImage() {
+    // If this is the first time processing, initialize VGA processing fields and return
+    // without further processing
+    if(!oldScreen.data) {
+        oldScreen = currentFrame.clone();
+        lastStableScreen = Mat::zeros(currentFrame.size(), currentFrame.type());
+        return;
+    }
+
+    // Get difference between last and current images
     float percentDifference = PAOLProcUtils::getVGADifferences(oldScreen, currentFrame);
 
-    //if percentDifference is greater than the threshold
-    if(percentDifference>=COMP_DIFF_THRESHOLD){
-        //then if the number of identical images is greater than or equal to 3
-        if (stableScreenCount>=COMP_REPEAT_THRESHOLD){
-            // Update the last seen stable screen
-            lastStableScreen = oldScreen.clone();
-            // Save the stable screen
-            saveImageWithTimestamp(lastStableScreen);
-        }
-        stableScreenCount=0;
-    } else {
+    // If computer image has not changed significantly
+    if(percentDifference < COMP_DIFF_THRESHOLD) {
+        // Update stable screen count
         stableScreenCount++;
+        // If image has been stable for enough screens, save last stable image, then
+        // update it
+        if(stableScreenCount == COMP_REPEAT_THRESHOLD) {
+            // Only save the image if a meaningful has been stored
+            if(realImageIsStored)
+                saveImageWithTimestamp(lastStableScreen);
+            lastStableScreen = currentFrame.clone();
+            realImageIsStored = true;
+        }
     }
-//    saveImageWithTimestamp(currentFrame);
+    else {
+        stableScreenCount = 0;
+    }
 }
 
 void VGAWorker::saveImageWithTimestamp(const Mat& image) {
@@ -90,4 +102,9 @@ void VGAWorker::printToLog(char *format, ...) {
     va_start(argptr, format);
     vfprintf(logFile, format, argptr);
     va_end(argptr);
+}
+
+void VGAWorker::saveLastImage() {
+    if(realImageIsStored)
+        saveImageWithTimestamp(lastStableScreen);
 }
