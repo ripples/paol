@@ -8,6 +8,9 @@
 
 using namespace cv;
 
+// Structure for defining a set of whiteboard corners. The coordinates follow the ordering
+// for images, i.e. the x-coordinate is the horizontal axis, and the y-coordinate is the
+// vertical axis.
 typedef struct wbc WBCorners;
 struct wbc {
     Point2f TL, TR, BL, BR;

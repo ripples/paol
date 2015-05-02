@@ -165,6 +165,14 @@ void WhiteboardWorker::printToLog(char *format, ...) {
     va_end(argptr);
 }
 
+// Parses the corners from the wbCorners#.txt file, where # is the whiteboard index
+// that this worker is processing. The format should have four lines, each with the
+// comma-separated tuple that defines the corner. For example, the default corners
+// would correspond a wbCorners#.txt file with the following content:
+//      0, 0
+//      1920, 0
+//      1920, 1080
+//      0, 1080
 WBCorners WhiteboardWorker::getCornersFromFile(int wbNum) {
     WBCorners ret;
 
@@ -187,6 +195,12 @@ WBCorners WhiteboardWorker::getCornersFromFile(int wbNum) {
         // Sort the corners in case they are in the wrong order
         PAOLProcUtils::sortCorners(ret);
     }
-
+    else {
+        // Corners file was not found, so set ret to default coordinates
+        ret.TL = Point2f(0, 0);
+        ret.TR = Point2f(1920, 0);
+        ret.BR = Point2f(1920, 1080);
+        ret.BL = Point2f(0, 1080);
+    }
     return ret;
 }
