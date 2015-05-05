@@ -42,15 +42,16 @@ private:
     int whiteboardCount;
     int vgaCount;
 
-public:
-    explicit CommandLineThread(int argc, char** argv);
-    ~CommandLineThread();
-
+    // Methods called to set up files at the start of recording
     string buildLecturePath(string semester, string course, time_t startTime);
     void makeDirectories();
     void setThreadConfigs(string configLocation);
     void createThreadsFromConfigs();
     void writeInfoFile();
+
+public:
+    explicit CommandLineThread(int argc, char** argv);
+    ~CommandLineThread();
 
 signals:
     // Signal to stop FFmpeg and processing threads

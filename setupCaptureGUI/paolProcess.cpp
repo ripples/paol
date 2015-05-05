@@ -14,13 +14,13 @@ void paolProcess::run(){
         keepRunningMutex.lock();
         if(!keepRunning) {
             keepRunningMutex.unlock();
-            thread->quit();
-            thread->wait();
-            worker->finish();
             break;
         }
         keepRunningMutex.unlock();
     }
+    thread->quit();
+    thread->wait();
+    worker->finish();
 }
 
 void paolProcess::onQuitProcessing() {
