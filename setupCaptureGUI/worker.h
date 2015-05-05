@@ -13,8 +13,6 @@ class Worker : public QObject
     Q_OBJECT
 
 protected:
-    Mat currentFrame;
-
     // Webcam and associated properties
     VideoCapture camera;
     bool flipCam;
@@ -34,6 +32,8 @@ protected:
     // be a black frame.
     bool realImageIsStored;
 
+    void writeFinishStatistics();
+
     virtual bool takePicture() = 0;
     virtual void processImage() = 0;
     virtual void saveImageWithTimestamp(const Mat& image) = 0;
@@ -44,7 +44,6 @@ public:
     Worker();
     ~Worker();
     void finish();
-    void writeFinishStatistics();
 
 private slots:
     void workOnNextImage();

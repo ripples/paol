@@ -15,6 +15,7 @@ private:
     int vgaNum;
 
     // Fields for computer processing
+    Mat currentScreen;
     Mat oldScreen;
     Mat lastStableScreen;
     int stableScreenCount;

@@ -35,15 +35,15 @@ bool VGAWorker::takePicture() {
     // Get the next screen if the image feed is available
     if(camera.isOpened() && camera.get(CV_CAP_PROP_FRAME_WIDTH) != 0) {
         // Update old screen
-        oldScreen = currentFrame.clone();
+        oldScreen = currentScreen.clone();
         // Save current screen
-        camera >> currentFrame;
+        camera >> currentScreen;
         // Flip the image horizontally and vertically if the camera is upside-down
         if(flipCam) {
-            flip(currentFrame, currentFrame, -1);
+            flip(currentScreen, currentScreen, -1);
         }
         // Let listeners know that an image was captured
-        emit capturedImage(currentFrame);
+        emit capturedImage(currentScreen);
         // Capture was successful, so return true
         return true;
     }
@@ -55,13 +55,13 @@ void VGAWorker::processImage() {
     // If this is the first time processing, initialize VGA processing fields and return
     // without further processing
     if(!oldScreen.data) {
-        oldScreen = currentFrame.clone();
-        lastStableScreen = Mat::zeros(currentFrame.size(), currentFrame.type());
+        oldScreen = currentScreen.clone();
+        lastStableScreen = Mat::zeros(currentScreen.size(), currentScreen.type());
         return;
     }
 
     // Get difference between last and current images
-    float percentDifference = PAOLProcUtils::getVGADifferences(oldScreen, currentFrame);
+    float percentDifference = PAOLProcUtils::getVGADifferences(oldScreen, currentScreen);
 
     // If computer image has not changed significantly
     if(percentDifference < COMP_DIFF_THRESHOLD) {
@@ -73,7 +73,7 @@ void VGAWorker::processImage() {
             // Only save the image if a meaningful has been stored
             if(realImageIsStored)
                 saveImageWithTimestamp(lastStableScreen);
-            lastStableScreen = currentFrame.clone();
+            lastStableScreen = currentScreen.clone();
             realImageIsStored = true;
         }
     }
