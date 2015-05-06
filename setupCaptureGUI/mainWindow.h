@@ -64,6 +64,9 @@ public:
     QVector <QLabel*> paolLabels;
     QVector <QLabel*> camLabels;
 
+    // FFMPEG PROCESS VARIABLE
+    QProcess* ffmpegProcess;
+
     // WHITEBOARD CORNER VARIABLES
     int corners_currentCam;
     int clicked;

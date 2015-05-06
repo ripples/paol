@@ -18,9 +18,12 @@ MainWindow::MainWindow(QWidget *parent) :
         connect(qTimer,SIGNAL(timeout()),this,SLOT(launch_System()));
         connect(ui->wbc_label, SIGNAL(Mouse_Pressed()), this, SLOT(Mouse_Pressed()));
         qTimer->start(1);
+
+        ffmpegProcess = new QProcess(this);
     }
 
 MainWindow::~MainWindow(){
+    delete ffmpegProcess;
     delete ui;
 }
 
@@ -393,8 +396,8 @@ void MainWindow::captureVideo(){
 
             vidCaptureString ="/home/paol/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
             + isChecked + " " + processLocation + "/video.mp4 &";
-            system(vidCaptureString.data());
-            ui->captureLecture_Video_Status->setText("Video Status: Recording in progress");
+            ffmpegProcess->setStandardErrorFile(QString::fromStdString(processLocation + "/logs/ffmpeg.log"));
+            ffmpegProcess->start(vidCaptureString.c_str());
         }
     }
 }
@@ -437,6 +440,14 @@ void MainWindow::timer(){
 
      string final = "Time Elapsed: " + hours + ":" + minutes + ":" + seconds;
      ui->captureLecture_Timer->setText(QString::fromStdString(final));
+
+     // Check if FFmpeg process is running
+     if(ffmpegProcess->state() == QProcess::Running) {
+         ui->captureLecture_Video_Status->setText("Video Status: Running");
+     }
+     else {
+         ui->captureLecture_Video_Status->setText("Video Status: NOT RUNNING");
+     }
  }
 
 //////////////////////////////////////////////////////////////
@@ -553,7 +564,10 @@ void MainWindow::on_setupContinueButton_clicked(){
 void MainWindow::on_setupReturnButton_clicked(){
     ui->setupMenuWidget->hide();
     releaseComponents();
-    system("pkill ffmpeg");
+    // Stop FFmpeg
+    ffmpegProcess->write("q");
+    ffmpegProcess->closeWriteChannel();
+    ffmpegProcess->waitForFinished();
     ui->mainMenuWidget->show();
 }
 
@@ -786,6 +800,9 @@ void MainWindow::on_captureLecture_Terminate_Button_clicked(){
     ui->captureLectureWidget->hide();
     videoCapture = false;
     releaseComponents();
-    system("pkill ffmpeg");
+    // Stop FFmpeg
+    ffmpegProcess->write("q");
+    ffmpegProcess->closeWriteChannel();
+    ffmpegProcess->waitForFinished();
     ui->mainMenuWidget->show();
 }
