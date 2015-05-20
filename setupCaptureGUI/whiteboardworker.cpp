@@ -110,6 +110,7 @@ void WhiteboardWorker::processImage() {
                     // Save the smooth marker version of the old background image
                     Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
                     saveImageWithTimestamp(oldRefinedBackgroundSmooth);
+                    //saveImageWithTimestamp(currentMarkerModel);
                 }
                 // Update marker model
                 oldMarkerModel = currentMarkerModel.clone();
@@ -186,9 +187,15 @@ WBCorners WhiteboardWorker::getCornersFromFile(int wbNum) {
 
     // Try to open the file
     stringstream ss;
-    ss << "/home/paol/paol-code/wbCorners" << wbNum << ".txt";
+    int loc=QDir::currentPath().toStdString().find("/paol-code/");
+    std::string pathTemp=QDir::currentPath().toStdString();
+    std::string codePath=pathTemp.substr(0,loc)+"/paol-code/wbCorners";
+    ss << codePath.c_str() << wbNum << ".txt";
+    qDebug("complete screwup wbNum=%d",wbNum);
+    qDebug() << QString::fromStdString(ss.str());
     QFile file(QString::fromStdString(ss.str()));
     if(file.open(QFile::ReadOnly | QFile::Text)) {
+        qDebug("found corners file");
         // Corners file was opened, so get the file text
         QTextStream fileStream(&file);
         QString fileText = fileStream.readAll();

@@ -887,6 +887,7 @@ Mat PAOLProcUtils::findWhiteboardBorders(Mat& whiteboardImg) {
 //                          (see whitenWhiteboard)
 Mat PAOLProcUtils::smoothMarkerTransition(const Mat& whiteWhiteboardImage) {
     Mat blurred;
+    int temp;
     GaussianBlur(whiteWhiteboardImage, blurred, Size(5,5), .8);
     // Overlay blurred version with pixels from whiteWhiteboardImage
     for(int i = 0; i < whiteWhiteboardImage.rows; i++) {
@@ -895,9 +896,19 @@ Mat PAOLProcUtils::smoothMarkerTransition(const Mat& whiteWhiteboardImage) {
             if(whiteWhiteboardImage.at<Vec3b>(i,j)[0] != 255
                     || whiteWhiteboardImage.at<Vec3b>(i,j)[1] != 255
                     || whiteWhiteboardImage.at<Vec3b>(i,j)[2] != 255) {
-                blurred.at<Vec3b>(i, j)[0] = whiteWhiteboardImage.at<Vec3b>(i,j)[0];
-                blurred.at<Vec3b>(i, j)[1] = whiteWhiteboardImage.at<Vec3b>(i,j)[1];
-                blurred.at<Vec3b>(i, j)[2] = whiteWhiteboardImage.at<Vec3b>(i,j)[2];
+                //try to make the text not crap
+                temp=255-(whiteWhiteboardImage.at<Vec3b>(i,j)[0]-255)*2;
+                if(temp<0)
+                    temp=0;
+                blurred.at<Vec3b>(i, j)[0] = temp;
+                temp=255-(whiteWhiteboardImage.at<Vec3b>(i,j)[1]-255)*2;
+                if(temp<0)
+                    temp=0;
+                blurred.at<Vec3b>(i, j)[1] = temp;
+                temp=255-(whiteWhiteboardImage.at<Vec3b>(i,j)[2]-255)*2;
+                if(temp<0)
+                    temp=0;
+                blurred.at<Vec3b>(i, j)[2] = temp;
             }
         }
     }

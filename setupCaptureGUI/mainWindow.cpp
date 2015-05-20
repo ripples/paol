@@ -20,6 +20,12 @@ MainWindow::MainWindow(QWidget *parent) :
         qTimer->start(1);
 
         ffmpegProcess = new QProcess(this);
+        //qDebug()<< QDir::currentPath();
+        //qDebug()<< QDir::currentPath().toStdString().find("/paol-code/");
+        int loc=QDir::currentPath().toStdString().find("/paol-code/");
+        std::string pathTemp=QDir::currentPath().toStdString();
+        codePath=pathTemp.substr(0,loc);
+        //qDebug()<< QString::fromUtf8(codePath.c_str());
     }
 
 MainWindow::~MainWindow(){
@@ -34,9 +40,11 @@ MainWindow::~MainWindow(){
 void MainWindow::launch_System(){
     if(ui->setupMenuWidget->isVisible()){
         for(int i=0; i < camCount; i++){
-            Mat frame,display;
+            Mat display;
             recordingCams[i] >> frame;
             if(frame.channels() >= 3){ //If statement included in case a camera is connected, but not properly capturing
+                if(reverseChecks[i]->isChecked())
+                    flip(frame, frame, -1);
                 cvtColor(frame,display,CV_BGR2RGB);
                 QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
                 imLabels[i]->setPixmap(QPixmap::fromImage(img));
@@ -108,6 +116,8 @@ void MainWindow::populateSetupWindow(){
 
 void MainWindow::populateCaptureWindow(){
     int position = 0;
+    int vgaCount=0;
+    int wbCount=0;
     qDebug() << "Adding to Capture Windows";
     for(int i = 0; i < optionBoxes.length(); i++){
         //qDebug() << "On Number: " << i;
@@ -132,11 +142,13 @@ void MainWindow::populateCaptureWindow(){
             //qDebug() << optionBoxes[i]->currentText();
             if(optionBoxes[i]->currentText() == "VGA2USB"){
                 qDebug() << "Adding USB from Camera Num:" << i;
-                thread = new VGAProcess(i, i, false, processLocation);
+                thread = new VGAProcess(i, vgaCount, false, processLocation);
+                vgaCount++;
             }
             else if(optionBoxes[i]->currentText() == "Whiteboard"){
                 qDebug() << "Adding Whiteboard from Camera Num:" << i;
-                thread = new WhiteboardProcess(i, i, false, processLocation);
+                thread = new WhiteboardProcess(i, wbCount, false, processLocation);
+                wbCount++;
             }
 
             dev.push_back(thread);
@@ -249,14 +261,15 @@ void MainWindow::createCameraSetupFile(){
             setupInfo = setupInfo + num + " " + flipped + " " + device + "\n";
         }
     }
-    const char *path = "/home/paol/paol-code/cameraSetup.txt";
+    //qDebug() << QString::fromUtf8(codePath+"cameraSetup.txt");
+    const char *path =(codePath+"/paol-code/cameraSetup.txt").c_str();
     ofstream file(path);
     file << setupInfo;
 }
 
 //Fills the QComboBox on the Classroom information view with available classes
 void MainWindow::populateCourseList(){
-    ifstream inputFile("/home/paol/paol-code/courses.txt");
+    ifstream inputFile((codePath+"/paol-code/courses.txt").c_str());
     string str;
     while(getline(inputFile, str)){
         ui->lecDet_courses->addItem(str.data());
@@ -269,8 +282,10 @@ void MainWindow::createWBCornerTxt(){
     stringstream out;
     string filePath;
 
+    qDebug("here ");
+    qDebug() << tracker;
     out << tracker;
-    filePath = "/home/paol/paol-code/wbCorners" + out.str() + ".txt";
+    filePath = codePath+"/paol-code/wbCorners" + out.str() + ".txt";
     out.str(string());
 
     for(int i = 0; i < intersectionPoints.length(); i++){
@@ -309,14 +324,15 @@ void MainWindow::createFileDirectory(){
         courseNumber = ui->new_course_textbox->text().toLatin1().data();
     }
 
-    system("mkdir -p /home/paol/recordings/readyToUpload");
-    string firstCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + currentYear;
+    //system("mkdir -p /home/paol/recordings/readyToUpload");
+    system(("mkdir -p "+codePath+"/recordings/readyToUpload").c_str());
+    string firstCmd = "mkdir -p "+codePath+"/recordings/readyToUpload/" + currentYear;
     system(firstCmd.data());
 
-    string secondCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + currentYear + "/" + courseNumber;
+    string secondCmd = "mkdir -p "+codePath+"/recordings/readyToUpload/" + currentYear + "/" + courseNumber;
     system(secondCmd.data());
 
-    string thirdCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + "";
+    string thirdCmd = "mkdir -p "+codePath+"/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + "";
     system(thirdCmd.data());
 
     char buffer[80];
@@ -324,10 +340,10 @@ void MainWindow::createFileDirectory(){
     aTime = localtime(&theTime);
     strftime(buffer,80,"%m-%d-%Y--%H-%M-%S",aTime);
 
-    string fourthCmd = "mkdir -p /home/paol/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + buffer;
+    string fourthCmd = "mkdir -p "+codePath+"/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + buffer;
     system(fourthCmd.data());
 
-    processLocation = "/home/paol/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + buffer;
+    processLocation = codePath+"/recordings/readyToUpload/" + currentYear + "/" + courseNumber + "/" + buffer;
 
     string makeComputerDir = "mkdir -p " + processLocation + "/computer";
     string makeWhiteboardDir = "mkdir -p " + processLocation + "/whiteboard";
@@ -394,8 +410,9 @@ void MainWindow::captureVideo(){
             s = out.str();
             audioCamNum.erase(std::remove(audioCamNum.begin(),audioCamNum.end(),' '),audioCamNum.end());
 
-            vidCaptureString ="/home/paol/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
+            vidCaptureString =codePath+"/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
             + isChecked + " " + processLocation + "/video.mp4 &";
+            //qDebug("%s",vidCaptureString.c_str());
             ffmpegProcess->setStandardErrorFile(QString::fromStdString(processLocation + "/logs/ffmpeg.log"));
             ffmpegProcess->start(vidCaptureString.c_str());
         }
@@ -540,7 +557,7 @@ void MainWindow::on_setupContinueButton_clicked(){
             corners_currentCam += 1;
         }
 
-        Mat frame,display;
+        Mat display;
         recordingCams[corners_currentCam] >> frame;
         cvtColor(frame,display,CV_BGR2RGB);
         corners_Clone = display.clone();
@@ -576,6 +593,8 @@ void MainWindow::on_setupReturnButton_clicked(){
 void MainWindow::on_WBC_PrevWB_clicked(){
     intersectionPoints.clear();
     clickedCorners.clear();
+    linePoints.clear();
+    lineSlopes.clear();
     clicked = 0;
 
     tracker--;
@@ -598,6 +617,8 @@ void MainWindow::on_WBC_PrevWB_clicked(){
 void MainWindow::on_WBC_NextWB_clicked(){
     intersectionPoints.clear();
     clickedCorners.clear();
+    linePoints.clear();
+    lineSlopes.clear();
     clicked = 0;
 
     tracker++;
@@ -623,24 +644,96 @@ void MainWindow::on_WBC_NextWB_clicked(){
 
 void MainWindow::on_WBC_Clear_clicked(){
     clickedCorners.clear();
+    linePoints.clear();
+    lineSlopes.clear();
     intersectionPoints.clear();
     clicked = 0;
     place_image();
+}
+
+void MainWindow::findSlopes(){
+    double slope,difx,dify;
+    for(int i = 0; i < clickedCorners.length()-1; i = i + 2){
+        linePoints.append(Point(clickedCorners[i].x,clickedCorners[i].y));
+        linePoints.append(Point(clickedCorners[i+1].x,clickedCorners[i+1].y));
+        difx=clickedCorners[i].x-clickedCorners[i+1].x;
+        dify=clickedCorners[i].y-clickedCorners[i+1].y;
+        if(difx==0)
+            slope=1000;
+        else
+            slope=dify/difx;
+        lineSlopes.append(slope);
+    }
+}
+
+void MainWindow::findCorners(){
+    int s1a,s1b;
+    double dif,minDif;
+
+    //find similar slopes
+    s1a=0;
+    minDif=1000;
+    for (int i=1;i<lineSlopes.length();i++){
+        dif=abs(abs(lineSlopes[s1a]/lineSlopes[i])-abs(lineSlopes[i]/lineSlopes[s1a]));
+        qDebug("dif=%f val=%f",dif,lineSlopes[i]);
+        if(dif<minDif){
+            minDif=dif;
+            s1b=i;
+            qDebug("%d",i);
+        }
+    }
+    //get the similar slopes paired in storage since user may not use correct order
+    if(s1b!=1){
+        swap(lineSlopes[1],lineSlopes[s1b]);
+        swap(linePoints[2*1],linePoints[s1b*2]);
+        swap(linePoints[2*1+1],linePoints[s1b*2+1]);
+    }
+    /*qDebug("pair one %f %f",lineSlopes[0],lineSlopes[1]);
+    qDebug("pair two %f %f",lineSlopes[2],lineSlopes[3]);
+    for (int i=0;i<linePoints.length();i++){
+        qDebug("xold=%d \txnew=%d",clickedCorners[i].x ,linePoints[i].x);
+    }*/
+}
+
+void MainWindow::reorderCorners(){
+    //reorder so top two points are first
+    for(int j=0;j<2;j++){
+        for(int i=j+1;i<intersectionPoints.length();i++){
+            if(intersectionPoints[i].y<intersectionPoints[j].y)
+                swap(intersectionPoints[j],intersectionPoints[i]);
+        }
+    }
+
+    //put the points in the correct order Top Left, right, Bottom right, left
+    if(intersectionPoints[0].x>intersectionPoints[1].x)
+        swap(intersectionPoints[0],intersectionPoints[1]);
+    if(intersectionPoints[3].x>intersectionPoints[2].x)
+        swap(intersectionPoints[2],intersectionPoints[3]);
 }
 
 void MainWindow::on_WBC_Save_clicked(){
     if(clicked == 8){
         place_image();
 
-        for(int i = 0; i < clickedCorners.length() - 2; i = i + 2){
-            intersectionPoints.append(
-                        determineIntersection(clickedCorners[i].x,clickedCorners[i].y,clickedCorners[i+1].x,clickedCorners[i+1].y,clickedCorners[i+2].x,
-                                  clickedCorners[i+2].y, clickedCorners[i+3].x, clickedCorners[i+3].y));
-        }
+        findSlopes();
+        findCorners();
 
+        //find the corners based on paired corners
         intersectionPoints.append(
-                    determineIntersection(clickedCorners[0].x,clickedCorners[0].y,clickedCorners[1].x,clickedCorners[1].y,clickedCorners[6].x,
-                              clickedCorners[6].y, clickedCorners[7].x, clickedCorners[7].y));
+                    determineIntersection(linePoints[0].x,linePoints[0].y,linePoints[1].x,linePoints[1].y,linePoints[4].x,
+                              linePoints[4].y, linePoints[5].x, linePoints[5].y));
+        intersectionPoints.append(
+                    determineIntersection(linePoints[0].x,linePoints[0].y,linePoints[1].x,linePoints[1].y,linePoints[6].x,
+                              linePoints[6].y, linePoints[7].x, linePoints[7].y));
+        intersectionPoints.append(
+                    determineIntersection(linePoints[2].x,linePoints[2].y,linePoints[3].x,linePoints[3].y,linePoints[4].x,
+                              linePoints[4].y, linePoints[5].x, linePoints[5].y));
+        intersectionPoints.append(
+                    determineIntersection(linePoints[2].x,linePoints[2].y,linePoints[3].x,linePoints[3].y,linePoints[6].x,
+                              linePoints[6].y, linePoints[7].x, linePoints[7].y));
+
+        //reorder corners
+        reorderCorners();
 
         for(int j = 0; j < intersectionPoints.length(); j++){
             circle(corners_Clone,intersectionPoints[j], 8, Scalar(255,0,255),8,8,0);
@@ -653,6 +746,8 @@ void MainWindow::on_WBC_Save_clicked(){
         createWBCornerTxt();
     }
     clickedCorners.clear();
+    linePoints.clear();
+    lineSlopes.clear();
     intersectionPoints.clear();
     QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
     ui->wbc_label->setPixmap(QPixmap::fromImage(img));
@@ -660,8 +755,10 @@ void MainWindow::on_WBC_Save_clicked(){
 
 void MainWindow::Mouse_Pressed(){
     clicked += 1;
-    double posX = (1920.0 / ui->wbc_label->width()) * ui->wbc_label->x;
-    double posY = (1080.0 / ui->wbc_label->height()) * ui->wbc_label->y;
+    //double posX = (1920.0 / ui->wbc_label->width()) * ui->wbc_label->x;
+    //double posY = (1080.0 / ui->wbc_label->height()) * ui->wbc_label->y;
+    double posX = ( (double)frame.cols / ui->wbc_label->width()) * ui->wbc_label->x;
+    double posY = ( (double)frame.rows / ui->wbc_label->height()) * ui->wbc_label->y;
     clickedCorners.append(Point(posX, posY));
     if(clicked % 2 == 0){
         for(int i = 0; i < clickedCorners.length(); i+=2){
@@ -677,7 +774,7 @@ void MainWindow::Mouse_Pressed(){
 }
 
 void MainWindow::place_image(){
-    Mat frame,display;
+    Mat display;
     // Clear out buffer
     for(int i = 0; i < 6; i++){
         recordingCams[corners_currentCam] >> frame;
@@ -758,7 +855,7 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
     ui->lectureDetailsWidget->hide();
 
     if(ui->lecDet_courses->currentText() == "Other"){
-        ofstream log("/home/paol/paol-code/courses.txt", std::ios_base::app | std::ios_base::out);
+        ofstream log((codePath+"/paol-code/courses.txt").c_str(), std::ios_base::app | std::ios_base::out);
         string outText = ui->new_course_textbox->text().toUtf8().constData();
         log << outText;
     }

@@ -54,10 +54,12 @@ public:
     int captureDevices; // Devices that are either WBs or VGA2USB
     int captureSecondsElapsed;
     bool continueToCapture;
+    string codePath;
     string processLocation;
     string vidCaptureString;
     bool videoCapture;
     QTime myTimer;
+    Mat frame;
 
     map<paolProcess*, int> threadToUIMap;
     QVector <paolProcess*> dev;
@@ -75,6 +77,8 @@ public:
     Mat corners_Clone;
     QVector <Point> clickedCorners;
     QVector <Point> intersectionPoints;
+    QVector <Point> linePoints;
+    QVector <double> lineSlopes;
 
     // VECTORS FOR SETUP
     QVector <QLayout*> setupLayouts;
@@ -99,6 +103,9 @@ public:
     Point determineIntersection(double, double,double,double,double,double,double,double);
     QImage convertMatToQImage(const Mat& mat);
     void displayMat(const Mat& mat, QLabel &location);
+    void findSlopes();
+    void findCorners();
+    void reorderCorners();
 
     void captureVideo();
     void releaseComponents();
