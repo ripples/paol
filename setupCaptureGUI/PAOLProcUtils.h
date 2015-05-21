@@ -40,6 +40,7 @@ public:
     static Mat sweepDown(const Mat& orig);
     static Mat borderContentWithGreen(const Mat& content, int borderSize);
     static Mat grow(const Mat& orig, int size);
+    static Mat growGreen(const Mat& orig, int size);
     static Mat getImageContours(const Mat& orig);
     static void findAllDiffsMini(Mat& diffLocations, float& percentDiff, const Mat& oldImg, const Mat& newImg, int thresh, int size);
     static void filterNoisyDiffs(Mat& filteredDiffs, float& percentDiff, const Mat& origDiffs);
@@ -49,6 +50,7 @@ public:
     /// Methods to find the marker strokes
     static Mat binarizeAnd(const Mat& orig, int threshold);
     static Mat binarizeOr(const Mat& orig, int threshold);
+    static Mat binarize(const Mat& orig, int threshold);
     static Mat thresholdOnBlueChannel(const Mat& orig, int blueThresh, int size);
     static Mat pDrift(const Mat& orig);
     static Mat fillMarkerBorders(const Mat& markerBorders);
@@ -61,6 +63,12 @@ public:
     static Mat findMarkerStrokeCandidates(const Mat& orig);
     static Mat findMarkerStrokeLocations(const Mat& orig);
     static float findMarkerModelDiffs(const Mat& oldMarkerModel, const Mat& newMarkerModel);
+    static float findMarkerStrokeDiffs(const Mat& oldMarkerModel, const Mat& newMarkerModel);
+    static Mat findMarkerStrokeDiffs2(const Mat& oldMarkerModel, const Mat& newMarkerModel);
+
+    static Mat CLAHE(const Mat &orig);
+    static Mat darkenText(Mat &pdrift, const Mat& orig);
+    static Mat enhanceColor(const Mat &orig);
 
     /// Methods to enhance the whiteboard
     static Mat boxBlur(const Mat& orig, int size);

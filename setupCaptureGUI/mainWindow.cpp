@@ -528,7 +528,10 @@ void MainWindow::on_mainMenu_Setup_Cameras_clicked(){
 }
 
 void MainWindow::on_mainMenu_Upload_Lectures_clicked(){
-
+    string uploadScript=codePath+"/paol-code/scripts/upload/uploadAll.sh "+codePath;
+    qDebug("%s",uploadScript.c_str());
+    QProcess *runUpload=new QProcess(this);
+    runUpload->start(uploadScript.c_str());
 }
 
 /// SETUP WINDOW BUTTONS

@@ -225,6 +225,21 @@ Mat PAOLProcUtils::grow(const Mat& orig, int size) {
     return ret;
 }
 
+// Dilate the given image by the given size
+Mat PAOLProcUtils::growGreen(const Mat& orig, int size) {
+    Mat ret = orig.clone();
+    Mat element = getStructuringElement(MORPH_RECT, Size(2*size+1,2*size+1));
+    dilate(orig, ret, element);
+    for(int y = 0; y < ret.rows; y++)
+        for(int x = 0; x < ret.cols; x++)
+
+            //if the pixel is turned on
+            if(ret.at<Vec3b>(y,x)[0] == 255 && orig.at<Vec3b>(y,x)[0] == 0){
+                ret.at<Vec3b>(y,x)[1]=0;
+            }
+    return ret;
+}
+
 // Get the contours of the given image
 Mat PAOLProcUtils::getImageContours(const Mat& orig) {
     Mat contourImage = orig.clone();
@@ -408,6 +423,24 @@ Mat PAOLProcUtils::binarizeOr(const Mat& orig, int threshold) {
     return binarized;
 }
 
+Mat PAOLProcUtils::binarize(const Mat& orig, int threshold) {
+    Mat binarized = Mat::zeros(orig.size(), orig.type());
+    for(int i = 0; i < orig.rows; i++) {
+        for(int j = 0; j < orig.cols; j++) {
+            if(orig.at<Vec3b>(i,j)[0] >= threshold ) {
+                binarized.at<Vec3b>(i,j)[0] = 255;
+                binarized.at<Vec3b>(i,j)[1] = 255;
+                binarized.at<Vec3b>(i,j)[2] = 255;
+            } else {
+                binarized.at<Vec3b>(i,j)[0] = 0;
+                binarized.at<Vec3b>(i,j)[1] = 0;
+                binarized.at<Vec3b>(i,j)[2] = 0;
+            }
+        }
+    }
+    return binarized;
+}
+
 // Determine the pixels in orig where the value of the blue channel
 // is greater than the threshold. Ignores pixels on the image border
 // Arguments:
@@ -502,7 +535,7 @@ Mat PAOLProcUtils::findMarkerWithMarkerBorders(const Mat &whiteboardImage) {
     Mat temp = boxBlur(whiteboardImage, 1);
     temp = pDrift(temp);
     temp = thresholdOnBlueChannel(temp, 15, 3);
-    temp = fillMarkerBorders(temp);
+    //temp = fillMarkerBorders(temp);
     return temp;
 }
 
@@ -689,7 +722,7 @@ Mat PAOLProcUtils::findMarkerStrokeCandidates(const Mat& orig) {
 
 Mat PAOLProcUtils::findMarkerStrokeLocations(const Mat& orig) {
     Mat markerLocations = pDrift(orig);
-    return binarizeOr(markerLocations, 12);
+    return binarize(markerLocations, 12);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -963,6 +996,166 @@ float PAOLProcUtils::findMarkerModelDiffs(const Mat& oldMarkerModel, const Mat& 
         }
     }
     return count / (oldMarkerModel.rows*oldMarkerModel.cols);
+}
+
+float PAOLProcUtils::findMarkerStrokeDiffs(const Mat& oldMarkerModel, const Mat& newMarkerModel) {
+    Mat oldModel=growGreen(oldMarkerModel,6);
+    Mat newModel=growGreen(newMarkerModel,6);
+    float count = 0;
+    for(int i = 0; i < oldModel.rows; i++) {
+        for(int j = 0; j < oldModel.cols; j++) {
+            if(oldModel.at<Vec3b>(i,j)[1] != newModel.at<Vec3b>(i,j)[1])
+                if(oldModel.at<Vec3b>(i,j)[1] != newModel.at<Vec3b>(i,j)[0] &&
+                        oldModel.at<Vec3b>(i,j)[0] != newModel.at<Vec3b>(i,j)[1])
+                    count++;
+        }
+    }
+    return count / (oldModel.rows*oldModel.cols);
+}
+
+Mat PAOLProcUtils::findMarkerStrokeDiffs2(const Mat& oldMarkerModel, const Mat& newMarkerModel) {
+    Mat oldModel=growGreen(oldMarkerModel,6);
+    Mat newModel=growGreen(newMarkerModel,6);
+    Mat ret=oldMarkerModel.clone();
+    float count = 0;
+
+    for(int i = 0; i < oldModel.rows; i++) {
+        for(int j = 0; j < oldModel.cols; j++) {
+            ret.at<Vec3b>(i,j)[0]=0;
+            ret.at<Vec3b>(i,j)[1]=0;
+            ret.at<Vec3b>(i,j)[2]=0;
+            if(oldModel.at<Vec3b>(i,j)[1] != newModel.at<Vec3b>(i,j)[1]){
+                ret.at<Vec3b>(i,j)[1]=255;
+                if(oldModel.at<Vec3b>(i,j)[1] != newModel.at<Vec3b>(i,j)[0] &&
+                        oldModel.at<Vec3b>(i,j)[0] != newModel.at<Vec3b>(i,j)[1]){
+                    count++;
+                    ret.at<Vec3b>(i,j)[2]=255;
+                    ret.at<Vec3b>(i,j)[1]=0;
+                }
+            } else if(oldModel.at<Vec3b>(i,j)[0] != newModel.at<Vec3b>(i,j)[0]){
+                ret.at<Vec3b>(i,j)[0]=255;
+            }
+        }
+    }
+    return ret;
+}
+
+//function to make whiteboard readable
+Mat PAOLProcUtils::darkenText( Mat &pdrift, const Mat &orig){
+    int temp;
+    Mat tempOut;
+    Mat ret=orig.clone();
+
+    //for every pixel
+    for(int y = 0; y < orig.rows; y++)
+        for(int x = 0; x < orig.cols; x++){
+            //write edge information from blue into green channel and zero out red
+            pdrift.at<Vec3b>(y,x)[1]=pdrift.at<Vec3b>(y,x)[0];
+            if (pdrift.at<Vec3b>(y,x)[1]>20)
+                pdrift.at<Vec3b>(y,x)[1]=255;
+            pdrift.at<Vec3b>(y,x)[2]=0;
+        }
+
+    //run a morphological closure (grow then shrink)
+    //this will fill in spaces in text caused by only looking at edges
+    int dilation_type = MORPH_RECT;
+    int dilation_size = 1;
+    Mat element = getStructuringElement( dilation_type,
+                                           Size( 2*dilation_size + 1, 2*dilation_size+1 ),
+                                           Point( dilation_size, dilation_size ) );
+
+    dilate(pdrift, tempOut, element);
+    erode(tempOut, tempOut, element);
+
+    //for every pixel
+    for(int y = 0; y < orig.rows; y++)
+        for(int x = 0; x < orig.cols; x++){
+            //code to make it look pretty on the pdrift
+            if (pdrift.at<Vec3b>(y,x)[1]!=255 && tempOut.at<Vec3b>(y,x)[1]>50){
+                pdrift.at<Vec3b>(y,x)[2]=255;
+            }
+
+            //if there isn't and edge (text) in that location turn the pixel white
+            if (tempOut.at<Vec3b>(y,x)[1]<50){
+                ret.at<Vec3b>(y,x)[0]=215;
+                ret.at<Vec3b>(y,x)[1]=215;
+                ret.at<Vec3b>(y,x)[2]=215;
+            } else {
+                temp=ret.at<Vec3b>(y,x)[0];
+                temp-=40;
+                if(temp<0)
+                    temp=0;
+                ret.at<Vec3b>(y,x)[0]=temp;
+
+                temp=ret.at<Vec3b>(y,x)[1];
+                temp-=40;
+                if(temp<0)
+                    temp=0;
+                ret.at<Vec3b>(y,x)[1]=temp;
+
+                temp=ret.at<Vec3b>(y,x)[2];
+                temp-=40;
+                if(temp<0)
+                    temp=0;
+                ret.at<Vec3b>(y,x)[2]=temp;
+            }
+        }
+    return ret;
+}
+
+Mat PAOLProcUtils::CLAHE(const Mat &orig){
+    Mat lab_image;
+    cvtColor(orig, lab_image, CV_BGR2Lab);
+
+    // Extract the L channel
+    vector<cv::Mat> lab_planes(3);
+    split(lab_image, lab_planes);  // now we have the L image in lab_planes[0]
+
+    // apply the CLAHE algorithm to the L channel
+    Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+    clahe->setClipLimit(4);
+    Mat dst;
+    clahe->apply(lab_planes[0], dst);
+
+    // Merge the the color planes back into an Lab image
+    dst.copyTo(lab_planes[0]);
+    merge(lab_planes, lab_image);
+
+    // convert back to RGB
+    Mat image_clahe;
+    cvtColor(lab_image, image_clahe, CV_Lab2BGR);
+
+    return image_clahe;
+}
+
+Mat PAOLProcUtils::enhanceColor(const Mat &orig){
+    Mat ave,out;
+    int dif;
+
+    blur(orig,ave,Size(20,20));
+
+    for(int x = 0; x < orig.cols; x++)
+        for(int y = 0; y < orig.rows; y++){
+            for(int c=0;c<3;c++){
+                if(ave.at<Vec3b>(y,x)[c]>0){
+                    dif=255*orig.at<Vec3b>(y,x)[c]/ave.at<Vec3b>(y,x)[c];
+                    //if it's brighter then white turn it white
+                    if (dif>255)
+                        dif=255;
+                } else {
+                    //if the average pixel color is 0 turn it white
+                    dif=255;
+                }
+                dif=255-(255-dif)*2;
+                if (dif<0)
+                    dif=0;
+                ave.at<Vec3b>(y,x)[c]=dif;
+            }
+        }
+    GaussianBlur(ave, out, cv::Size(3, 3), 3);
+    addWeighted(ave, 1.5, out, -0.5, 0, out);
+
+    return out;
 }
 
 // Find the percentage of pixels that differ between the old and new computer images

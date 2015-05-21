@@ -27,6 +27,7 @@ protected:
     bool takePicture();
     void processImage();
     void saveImageWithTimestamp(const Mat& image);
+    void saveImageWithTimestamp(const Mat& image,string name);
     void printToLog(char* format, ...);
     void saveLastImage();
 public:
