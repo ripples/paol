@@ -259,6 +259,11 @@ void MainWindow::createCameraSetupFile(){
             flipped = out.str();
 
             setupInfo = setupInfo + num + " " + flipped + " " + device + "\n";
+
+            if(audioRecord[i]->isChecked() == true){
+                setupInfo = setupInfo + num + " 0 Audio\n";
+            }
+
         }
     }
     //qDebug() << QString::fromUtf8(codePath+"cameraSetup.txt");
@@ -843,6 +848,7 @@ void MainWindow::on_WBC_Continue_Button_clicked(){
     intersectionPoints.clear();
 
     if(continueToCapture == false){
+        createCameraSetupFile();
         ui->mainMenuWidget->show();
         continueToCapture = true;
     }
