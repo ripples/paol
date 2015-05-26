@@ -37,6 +37,8 @@ private:
     string semester;
     string course;
     time_t startTime;
+    string codePath;
+    string processLocation;
 
     // Counts for the device types
     int whiteboardCount;

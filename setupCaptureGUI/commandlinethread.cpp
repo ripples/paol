@@ -4,6 +4,11 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
     /// Make sure there were exactly four arguments given to the program
     assert(argc == 4);
 
+    //set up path to file locations
+    int loc=QDir::currentPath().toStdString().find("/paol-code/");
+    std::string pathTemp=QDir::currentPath().toStdString();
+    codePath=pathTemp.substr(0,loc);
+
     /// Set course information
     // Set start time of lecture
     time(&startTime);
@@ -17,7 +22,8 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
     assert(lecturePath != "");
 
     // Read thread configuration from setup file
-    setThreadConfigs("/home/paol/paol-code/cameraSetup.txt");
+    string tempPath=codePath+"/paol-code/cameraSetup.txt";
+    setThreadConfigs(tempPath.c_str());
 }
 
 CommandLineThread::~CommandLineThread()
@@ -77,7 +83,7 @@ string CommandLineThread::buildLecturePath(string semester, string course, time_
     localTime = localtime(&startTime);
     strftime(formatDateBuffer,80,"%m-%d-%Y--%H-%M-%S",localTime);
 
-    return "/home/paol/recordings/readyToUpload/" + semester + "/" + course + "/" + formatDateBuffer;
+    return codePath+"/recordings/readyToUpload/" + semester + "/" + course + "/" + formatDateBuffer;
 }
 
 void CommandLineThread::makeDirectories() {
@@ -189,7 +195,7 @@ void CommandLineThread::createThreadsFromConfigs() {
 
     // Set the command for running ffmpeg
     stringstream ss;
-    ss << "/home/paol/paol-code/scripts/capture/videoCapturePortable ";
+    ss << codePath << "/paol-code/scripts/capture/videoCapturePortable ";
     ss << "/dev/video" << videoDeviceNum << " hw:" << audioNum << " " << (int)flipVideo << " ";
     ss << lecturePath << "/video.mp4";
     ffmpegCommand = ss.str();
