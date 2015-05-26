@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->captureLectureWidget->hide();
         ui->wbc_label->setScaledContents(true);
         videoCapture = false;
+        position = 0;
         QTimer *qTimer=new QTimer(this);
         connect(qTimer,SIGNAL(timeout()),this,SLOT(launch_System()));
         connect(ui->wbc_label, SIGNAL(Mouse_Pressed()), this, SLOT(Mouse_Pressed()));
@@ -168,6 +169,31 @@ void MainWindow::populateCaptureWindow(){
     }
 }
 
+void MainWindow::createSetupNavigationBar(){
+    QLabel *const first = new QLabel(QString("1. Camera Setup"));
+    QLabel *const second = new QLabel(QString("2. Whiteboard Corners"));
+    QLabel *const third = new QLabel(QString("3. Lecture Details"));
+    QLabel *const fourth = new QLabel(QString("4. Lecture Capture"));
+
+    locationText.push_back(first);
+    locationText.push_back(second);
+    locationText.push_back(third);
+    locationText.push_back(fourth);
+
+
+    if(continueToCapture == true){
+        for(int i = 0; i < 4; i++){
+            ui->locationBar->addWidget(locationText[i],0,0);
+        }
+    }
+    else{
+        for(int i = 0; i < 2; i++){
+            ui->locationBar->addWidget(locationText[i],0,0);
+        }
+    }
+}
+
+
 ///////////////////////////////////////////////////////////////
 ///                     Utilities                          ///
 /////////////////////////////////////////////////////////////
@@ -176,18 +202,18 @@ void MainWindow::countCameras(){
     int bufSize = 512;
     char *buf = new char[bufSize];
     FILE *ptr;
-    std::string outFileName;
+    string outFileName;
     camCount = 0;
     int temp;
 
     //Obtain amount of cameras connected to this device
     if ((ptr = popen("ls /dev/video*", "r")) != NULL){
         while(fgets(buf, bufSize, ptr)){
-            outFileName = std::string(buf);
+            outFileName = string(buf);
             outFileName = outFileName.substr(10,outFileName.find('\n'));
             outFileName = outFileName.substr(0,outFileName.find('\n'));
 
-            std::stringstream(outFileName) >> temp;
+            stringstream(outFileName) >> temp;
             camCount++;
         }
         fclose(ptr);
@@ -359,6 +385,31 @@ void MainWindow::createFileDirectory(){
     system(makeLogDir.c_str());
 }
 
+void MainWindow::navigationBarUpdate(bool direction){
+    QFont bold;
+    QFont unbold;
+    bold.setBold(true);
+    unbold.setBold(false);
+
+    if(direction){
+        qDebug() << "Going forward";
+        qDebug() <<"Position before is: " << position;
+        locationText[position]->setFont(bold);
+
+        if(position != 0){
+            locationText[position - 1]->setFont(unbold);
+        }
+        position++;
+        qDebug() <<"Position after is: " << position;
+    }
+
+    else{
+        locationText[position-1]->setFont(unbold);
+        locationText[position-2]->setFont(bold);
+        position--;
+    }
+}
+
 void MainWindow::releaseComponents(){
 
     for(int i = 0; i < dev.length(); i ++){
@@ -378,6 +429,12 @@ void MainWindow::releaseComponents(){
         delete audioRecord[k];
     }
 
+    for(int l = 0; l < locationText.length(); l++){
+        delete locationText[l];
+    }
+
+    position = 0;
+
     camLabels.clear();
     paolLabels.clear();
     dev.clear();
@@ -387,6 +444,7 @@ void MainWindow::releaseComponents(){
     reverseChecks.clear();
     optionBoxes.clear();
     imLabels.clear();
+    locationText.clear();
 }
 
 void MainWindow::captureVideo(){
@@ -523,6 +581,8 @@ void MainWindow::displayMat(const Mat& mat, QLabel &location){
 void MainWindow::on_mainMenu_Full_Run_clicked(){
     countCameras();
     populateSetupWindow();
+    createSetupNavigationBar();
+    navigationBarUpdate(true);
     ui->mainMenuWidget->hide();
     ui->setupMenuWidget->show();
 }
@@ -533,7 +593,7 @@ void MainWindow::on_mainMenu_Setup_Cameras_clicked(){
 }
 
 void MainWindow::on_mainMenu_Upload_Lectures_clicked(){
-    string uploadScript=codePath+"/paol-code/scripts/upload/uploadAll.sh "+codePath;
+    string uploadScript=codePath+"/paol-code/scripts/upload/uploadAllPortable.sh "+codePath;
     qDebug("%s",uploadScript.c_str());
     QProcess *runUpload=new QProcess(this);
     runUpload->start(uploadScript.c_str());
@@ -560,6 +620,7 @@ void MainWindow::on_setupContinueButton_clicked(){
         }
     }
     qDebug() << captureDevices;
+    navigationBarUpdate(true);
     if(whiteboards != 0){
         while(optionBoxes[corners_currentCam]->currentText() != "Whiteboard" && corners_currentCam < camCount){
             corners_currentCam += 1;
@@ -838,6 +899,7 @@ void MainWindow::on_WBC_Return_Button_clicked(){
     clickedCorners.clear();
     intersectionPoints.clear();
     corners_currentCam = 0;
+    navigationBarUpdate(false);
     ui->setupMenuWidget->show();
 }
 
@@ -846,15 +908,16 @@ void MainWindow::on_WBC_Continue_Button_clicked(){
 
     clickedCorners.clear();
     intersectionPoints.clear();
-
     if(continueToCapture == false){
         createCameraSetupFile();
+        releaseComponents();
         ui->mainMenuWidget->show();
         continueToCapture = true;
     }
     else{
         ui->lecDet_courses->clear();
         populateCourseList();
+        navigationBarUpdate(true);
         ui->lectureDetailsWidget->show();
     }
 }
@@ -878,6 +941,7 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
     recordingCams.clear();
     captureVideo();
     populateCaptureWindow();
+    navigationBarUpdate(true);
     ui->captureLectureWidget->show();
     videoCapture = true;
     myTimer.restart();
@@ -887,10 +951,14 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
 void MainWindow::on_lecDet_Previous_Button_clicked(){
     if( whiteboards != 0){
         ui->lectureDetailsWidget->hide();
+        navigationBarUpdate(false);
         ui->whiteboardCornersWidget->show();
     }
     else{
         ui->lectureDetailsWidget->hide();
+        //Update twice to move backwards twice in nav bar
+        navigationBarUpdate(false);
+        navigationBarUpdate(false);
         ui->setupMenuWidget->show();
     }
 }

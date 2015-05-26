@@ -52,19 +52,21 @@ public:
     int camCount; //Amount of connected cameras
     int whiteboards; //Amount of selected whiteboards
     int captureDevices; // Devices that are either WBs or VGA2USB
-    int captureSecondsElapsed;
-    bool continueToCapture;
+    int captureSecondsElapsed; //
+    int position; //Position which the user is in the GUI (for nav bar)
+    bool continueToCapture; //determines how far into GUI user goes
     string codePath;
     string processLocation;
     string vidCaptureString;
-    bool videoCapture;
+    bool videoCapture; //Whether a user has selected a video or not
     QTime myTimer;
     Mat frame;
 
-    map<paolProcess*, int> threadToUIMap;
+    map<paolProcess*, int> threadToUIMap; //Ask Ryan
     QVector <paolProcess*> dev;
-    QVector <QLabel*> paolLabels;
-    QVector <QLabel*> camLabels;
+    QVector <QLabel*> paolLabels; //Contains labels for processed images in Lecture Capture
+    QVector <QLabel*> camLabels; //Contains labels for raw images in Lecture Capture
+    QVector <QLabel*> locationText; //Contains labels for nav bar
 
     // FFMPEG PROCESS VARIABLE
     QProcess* ffmpegProcess;
@@ -97,6 +99,8 @@ public:
     void createInfoFile();
     void createCameraSetupFile();
     void createFileDirectory();
+    void createSetupNavigationBar();
+    void navigationBarUpdate(bool);
     void appendToCourse();
     void place_image();
     void createWBCornerTxt();
@@ -110,6 +114,7 @@ public:
     void captureVideo();
     void releaseComponents();
     void timer();
+
 
 private:
     Ui::MainWindow *ui;
