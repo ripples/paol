@@ -180,7 +180,7 @@ void MainWindow::createSetupNavigationBar(){
     locationText.push_back(third);
     locationText.push_back(fourth);
 
-
+/*
     if(continueToCapture == true){
         for(int i = 0; i < 4; i++){
             ui->locationBar->addWidget(locationText[i],0,0);
@@ -190,7 +190,7 @@ void MainWindow::createSetupNavigationBar(){
         for(int i = 0; i < 2; i++){
             ui->locationBar->addWidget(locationText[i],0,0);
         }
-    }
+    }*/
 }
 
 
