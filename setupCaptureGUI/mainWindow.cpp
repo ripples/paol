@@ -43,9 +43,9 @@ void MainWindow::launch_System(){
         for(int i=0; i < camCount; i++){
             Mat display;
             recordingCams[i] >> frame;
+            if(reverseChecks[i]->isChecked())
+                flip(frame, frame, -1);
             if(frame.channels() >= 3){ //If statement included in case a camera is connected, but not properly capturing
-                if(reverseChecks[i]->isChecked())
-                    flip(frame, frame, -1);
                 cvtColor(frame,display,CV_BGR2RGB);
                 QImage img = QImage((const unsigned char*)(display.data),display.cols,display.rows,display.step,QImage::Format_RGB888);
                 imLabels[i]->setPixmap(QPixmap::fromImage(img));
@@ -148,7 +148,10 @@ void MainWindow::populateCaptureWindow(){
             }
             else if(optionBoxes[i]->currentText() == "Whiteboard"){
                 qDebug() << "Adding Whiteboard from Camera Num:" << i;
-                thread = new WhiteboardProcess(i, wbCount, false, processLocation);
+                if(reverseChecks[i]->isChecked())
+                    thread = new WhiteboardProcess(i, wbCount, true, processLocation);
+                else
+                    thread = new WhiteboardProcess(i, wbCount, false, processLocation);
                 wbCount++;
             }
 
@@ -628,6 +631,8 @@ void MainWindow::on_setupContinueButton_clicked(){
 
         Mat display;
         recordingCams[corners_currentCam] >> frame;
+        if(reverseChecks[corners_currentCam]->isChecked())
+            flip(frame, frame, -1);
         cvtColor(frame,display,CV_BGR2RGB);
         corners_Clone = display.clone();
         QImage img = QImage((const unsigned char*)(corners_Clone.data),corners_Clone.cols,corners_Clone.rows,corners_Clone.step,QImage::Format_RGB888);
@@ -847,6 +852,8 @@ void MainWindow::place_image(){
     // Clear out buffer
     for(int i = 0; i < 6; i++){
         recordingCams[corners_currentCam] >> frame;
+        if(reverseChecks[corners_currentCam]->isChecked())
+            flip(frame, frame, -1);
     }
 
     cvtColor(frame,display,CV_BGR2RGB);

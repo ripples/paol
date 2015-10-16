@@ -871,18 +871,29 @@ Mat PAOLProcUtils::rectifyImage(const Mat& whiteboardImg, const WBCorners& corne
     cornersInImage.push_back(corners.BR);
     cornersInImage.push_back(corners.BL);
 
+    double dWidthT=sqrt(pow(corners.TL.x-corners.TR.x,2)+pow(corners.TL.y-corners.TR.y,2));
+    int iWidthT=(int)dWidthT;
+    double dHeightL=sqrt(pow(corners.TL.x-corners.BL.x,2)+pow(corners.TL.y-corners.BL.y,2));
+    int iHeightL=(int)dHeightL;
+    double dWidthB=sqrt(pow(corners.BL.x-corners.BR.x,2)+pow(corners.BL.y-corners.BR.y,2));
+    int iWidthB=(int)dWidthB;
+    double dHeightR=sqrt(pow(corners.TR.x-corners.BR.x,2)+pow(corners.TR.y-corners.BR.y,2));
+    int iHeightR=(int)dHeightR;
+    int width=(iWidthB>width)? iWidthB : iWidthT;
+    int height=(iHeightL>iHeightR)? iHeightL : iHeightR;
+
     // Set where the whiteboard corners should end up in the image (ie. the corners of the whole image)
     vector<Point2f> finalCorners;
     finalCorners.push_back(Point2f(0, 0));
-    finalCorners.push_back(Point2f(whiteboardImg.cols, 0));
-    finalCorners.push_back(Point2f(whiteboardImg.cols, whiteboardImg.rows));
-    finalCorners.push_back(Point2f(0, whiteboardImg.rows));
+    finalCorners.push_back(Point2f(width, 0));
+    finalCorners.push_back(Point2f(width, height));
+    finalCorners.push_back(Point2f(0, height));
 
     // Get the transform matrix
     Mat transform = getPerspectiveTransform(cornersInImage, finalCorners);
     // Do the perspective correction
     Mat ret;
-    warpPerspective(whiteboardImg, ret, transform, whiteboardImg.size());
+    warpPerspective(whiteboardImg, ret, transform, Size(width,height));
     return ret;
 }
 
@@ -1269,7 +1280,7 @@ void PAOLProcUtils::sortCorners(WBCorners &corners) {
 
     // Get the two top and two bottom points
     vector<Point2f> topPoints, bottomPoints;
-    for(int i = 0; i < allCorners.size(); i++) {
+    for(unsigned int i = 0; i < allCorners.size(); i++) {
         // Put the corners above the center in topPoints, put the rest in bottomPoints
         if(allCorners[i].y < center.y)
             topPoints.push_back(allCorners[i]);

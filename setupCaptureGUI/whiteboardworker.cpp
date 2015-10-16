@@ -16,6 +16,7 @@ WhiteboardWorker::WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, str
     // Set the log file
     stringstream ss;
     ss << lecturePath << "/logs/whiteboard" << whiteboardNum << ".log";
+    qDebug("%s",ss.str().c_str());
     logFile = fopen(ss.str().c_str(), "w");
     assert(logFile != NULL);
 
@@ -53,16 +54,17 @@ bool WhiteboardWorker::takePicture() {
 }
 
 void WhiteboardWorker::processImage() {
+    Mat currentRectified = PAOLProcUtils::rectifyImage(currentFrame, corners);
+
     // If this is the first time processing, initialize WB processing fields and return
     // without further processing
     if(!oldFrame.data) {
-        oldRefinedBackground = Mat::zeros(currentFrame.size(), currentFrame.type());
-        oldMarkerModel = Mat::zeros(currentFrame.size(), currentFrame.type());
+        oldRefinedBackground = Mat::zeros(currentRectified.size(), currentRectified.type());
+        oldMarkerModel = Mat::zeros(currentRectified.size(), currentRectified.type());
         return;
     }
 
     Mat oldRectified = PAOLProcUtils::rectifyImage(oldFrame, corners);
-    Mat currentRectified = PAOLProcUtils::rectifyImage(currentFrame, corners);
 
     float numDif;
     Mat allDiffs;

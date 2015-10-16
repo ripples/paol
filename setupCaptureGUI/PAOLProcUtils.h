@@ -5,6 +5,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <stdexcept>
 #include "uf.h"
+#include <QDebug>
 
 using namespace cv;
 
