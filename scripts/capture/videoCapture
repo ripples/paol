@@ -8,11 +8,19 @@ OUT=$5
 
 #ffmpeg -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -threads 1 -t $DURATION -r 30 $OUT
 #ffmpeg -s 853x480 -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -acodec libfdk_aac -b:a 128k -vcodec libx264 -preset ultrafast -b:v 260k -flags +aic+mv4 -threads 4 -t $DURATION -r 30 $OUT
-if [ $FLIP -eq 1 ]; 
+
+if [ $FLIP -eq 1 ];
 then
-    ffmpeg -s 853x480 -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -acodec libfdk_aac -b:a 128k -vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 -pix_fmt yuv420p -flags +aic+mv4 -threads 0 -t $DURATION -r 30 -vf "hflip,vflip" $OUT
+    ffmpeg -s 853x480 -f video4linux2 -i $AUDIO -acodec libfdk_aac -i $CAMERA -f alsa -ac 2 -b:a 128k -vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 -pix_fmt yuv420p -flags +aic+mv4 -threads 0 -t $DURATION -r 30 -vf "hflip,vflip" $OUT
 else
-    ffmpeg -s 853x480 -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -acodec libfdk_aac -b:a 128k -vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 -pix_fmt yuv420p -flags +aic+mv4 -threads 0 -t $DURATION -r 30 $OUT
+    ffmpeg -s 853x480 -f video4linux2 -i $AUDIO -acodec l\ibfdk_aac -i $CAMERA -f alsa -ac 2 -b:a 128k -vcodec libx264 -preset ultrafast -b:v 260k -profile:v baselin\e -level 3.0 -pix_fmt yuv420p -flags +aic+mv4 -threads 0 -t $DURATION -r 30 $OUT
 fi
+
+#if [ $FLIP -eq 1 ]; 
+#then
+#    ffmpeg -s 853x480 -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -acodec libfdk_aac -b:a 128k -vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 -pix_fmt yuv420p -flags +aic+mv4 -threads 0 -t $DURATION -r 30 -vf "hflip,vflip" $OUT
+#else
+#    ffmpeg -s 853x480 -f video4linux2 -i $CAMERA -f alsa -ac 2 -i $AUDIO -acodec libfdk_aac -b:a 128k -vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 -pix_fmt yuv420p -flags +aic+mv4 -threads 0 -t $DURATION -r 30 $OUT
+#fi
 
 
