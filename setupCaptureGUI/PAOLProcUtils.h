@@ -1,11 +1,25 @@
 #ifndef PAOLPROCUTILS_H
 #define PAOLPROCUTILS_H
 
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+
+#include <opencv2/highgui/highgui.hpp>
+#include <QLabel>
+#include <QtCore>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
+#include <QString>
+
+#include <vector>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <stdexcept>
 #include "uf.h"
-#include <QDebug>
+#include "seglist.h"
 
 using namespace cv;
 
@@ -47,6 +61,10 @@ public:
     static void filterNoisyDiffs(Mat& filteredDiffs, float& percentDiff, const Mat& origDiffs);
     static Mat enlarge(const Mat& orig);
     static Mat expandDifferencesRegion(const Mat& differences);
+    static Mat difference(const Mat& old,const Mat& current,int threshold);
+    static Mat NCC(const Mat& old, const Mat& current, float threshold, int size);
+    static void StablePix(Mat &stableIm, const Mat& old, const Mat& current, int thresh);
+    static void updateBackground(Mat &background, const Mat& current, const Mat& stable, int time, const Mat &refined);
 
     /// Methods to find the marker strokes
     static Mat binarizeAnd(const Mat& orig, int threshold);
@@ -66,6 +84,7 @@ public:
     static float findMarkerModelDiffs(const Mat& oldMarkerModel, const Mat& newMarkerModel);
     static float findMarkerStrokeDiffs(const Mat& oldMarkerModel, const Mat& newMarkerModel);
     static Mat findMarkerStrokeDiffs2(const Mat& oldMarkerModel, const Mat& newMarkerModel);
+    static Mat getNotWhite(const Mat& whiteboard);
 
     static Mat CLAHE(const Mat &orig);
     static Mat darkenText(Mat &pdrift, const Mat& orig);
@@ -75,19 +94,44 @@ public:
     static Mat boxBlur(const Mat& orig, int size);
     static Mat getAvgWhiteboardColor(const Mat& whiteboardImg, int size);
     static Mat raiseMarkerContrast(const Mat& whiteboardImg);
+    static Mat refineImage(const Mat& current, const Mat& avg);
     static Mat whitenWhiteboard(const Mat &whiteboardImg, const Mat& markerPixels);
     static Mat rectifyImage(const Mat& whiteboardImg, const WBCorners& corners);
     static Mat findWhiteboardBorders(Mat& whiteboardImg);
     static Mat smoothMarkerTransition(const Mat& whiteWhiteboardImage);
+    static int countNoneWhite(const Mat& background);
+    static Mat erodeSize(const Mat& mask,int size);
+    static Mat erodeSizeGreen(const Mat& mask,int size);
+    static int countDifferences(const Mat& difs);
 
     /// Update the background (whiteboard) model
     static Mat updateModel(const Mat& oldModel, const Mat& newInfo, const Mat& oldInfoMask);
 
     /// Method to find differences between computer images
     static float getVGADifferences(const Mat& oldFrame, const Mat& newFrame);
+    //whiteboard difference test
+    static Mat getWhiteboardDifferences(const Mat& oldFrame, const Mat& newFrame);
+    static Mat getErodeDifferencesIm(const Mat& oldFrame, const Mat& newFrame);
+    static int getErodeDifferencesNum(const Mat& oldFrame, const Mat& newFrame);
 
     /// Method to sort whiteboard corners into TL, TR, BR, BL
     static void sortCorners(WBCorners& corners);
+
+    ///background subtraction ideas
+    static Mat surrountDifference(Mat& aveIm);
+
+    ///connected component code
+    static Mat connectedComponent(Mat& im, bool binary);
+    static Mat connectedComponentFlipEliminate(Mat& im, Mat &orig, bool binary);
+    static void colorConnected(Mat& connected, SegList *sList);
+    static int comparePix(Mat& connected, Mat &data, int x1, int y1, int x2, int y2, bool binary, int thresh, SegList *sList);
+    static bool pixSame(Mat& im,int x1,int y1,int x2,int y2,int thresh);
+    static int pixToNum(Mat& im,int x,int y);
+    static void numToPix(Mat& im,int x,int y,int num);
+    static void numToPix2(Mat& im,Mat& orig,int x,int y,int num);
+    static Mat minimalDif(Mat& im,int thresh);
+    static Mat invertToBinary(Mat &im);
+    static Mat keepWhite(Mat &im, int thresh);
 };
 
 #endif // PAOLPROCUTILS_H

@@ -23,7 +23,8 @@ SOURCES += main.cpp\
         worker.cpp \
         whiteboardworker.cpp \
         vgaworker.cpp \
-        clickable_label.cpp
+        clickable_label.cpp \
+    seglist.cpp
 
 HEADERS  += mainWindow.h \
         paolProcess.h \
@@ -35,7 +36,8 @@ HEADERS  += mainWindow.h \
         worker.h \
         whiteboardworker.h \
         vgaworker.h \
-        clickable_label.h
+        clickable_label.h \
+    seglist.h
 
 FORMS    += mainWindow.ui
 

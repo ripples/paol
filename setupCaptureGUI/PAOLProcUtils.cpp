@@ -373,6 +373,181 @@ Mat PAOLProcUtils::expandDifferencesRegion(const Mat& differences) {
     return diffHulls;
 }
 
+Mat PAOLProcUtils::difference(const Mat& old,const Mat& current,int threshold){
+    Mat out=Mat::zeros(current.size(), current.type());
+    int count;
+
+    for(int y = 0; y < current.rows; y++) {
+        for(int x = 0; x < current.cols; x++) {
+            count=0;
+            for (int c=0;c<3;c++){
+                count+=abs(old.at<Vec3b>(y,x)[c]-current.at<Vec3b>(y,x)[c]);
+            }
+            if (count>threshold){
+                for (int c=0;c<3;c++){
+                    out.at<Vec3b>(y,x)[c]=255;
+                }
+            }
+        }
+    }
+    return out;
+}
+
+Mat PAOLProcUtils::NCC(const Mat& old,const Mat& current,float threshold,int size){
+    Mat out=Mat::zeros(current.size(), current.type());
+    double c[3];
+    double N,stdev[3],stdev1[3],var[3],var1[3],Iave[3],Iave1[3],sum[3],ctotal,stdave;
+
+    for(int y = 0; y < current.rows; y+=size) {
+        for(int x = 0; x < current.cols; x+=size) {
+            for (int ch=0;ch<3;ch++){
+                c[ch]=0;
+                stdev[ch]=0;
+                stdev1[ch]=0;
+                var[ch]=0;
+                var1[ch]=0;
+                Iave[ch]=0;
+                Iave1[ch]=0;
+                sum[ch]=0;
+            }
+            N=0;
+            //calculate average
+            for(int yy=y; yy<y+size && yy<current.rows; yy++)
+                for(int xx=x; xx<x+size && xx<current.cols; xx++){
+                    N++;
+                    for(int ch=0;ch<3;ch++){
+                        Iave[ch]+=old.at<Vec3b>(yy,xx)[ch];
+                        Iave1[ch]+=current.at<Vec3b>(yy,xx)[ch];
+                    }
+                }
+            for(int ch=0;ch<3;ch++){
+                Iave[ch]/=N;
+                Iave1[ch]/=N;
+            }
+            //calculate variance
+            for(int yy=y; yy<y+size && yy<current.rows; yy++)
+                for(int xx=x; xx<x+size && xx<current.cols; xx++){
+                    for(int ch=0;ch<3;ch++){
+                        var[ch]+=((double)old.at<Vec3b>(yy,xx)[ch]-Iave[ch])*((double)old.at<Vec3b>(yy,xx)[ch]-Iave[ch]);
+                        var1[ch]+=((double)current.at<Vec3b>(yy,xx)[ch]-Iave1[ch])*((double)current.at<Vec3b>(yy,xx)[ch]-Iave1[ch]);
+                    }
+                }
+            for(int ch=0;ch<3;ch++){
+                var[ch]/=N;
+                var1[ch]/=N;
+            }
+            //calculate std deviation
+            stdave=0;
+            for(int ch=0;ch<3;ch++){
+                stdev[ch]=sqrt(var[ch]);
+                stdev1[ch]=sqrt(var1[ch]);
+                stdave+=stdev[ch]+stdev1[ch];
+            }
+            stdave/=6;
+
+            //calculate normalized cross correlation
+            for(int yy=y; yy<y+size && yy<current.rows; yy++)
+                for(int xx=x; xx<x+size && xx<current.cols; xx++){
+                    for(int ch=0;ch<3;ch++){
+                        sum[ch]+=((double)old.at<Vec3b>(yy,xx)[ch]-Iave[ch])*((double)current.at<Vec3b>(yy,xx)[ch]-Iave1[ch]);
+                    }
+                }
+            ctotal=0;
+            for(int ch=0;ch<3;ch++){
+                c[ch]=sum[ch]/(N*stdev[ch]*stdev1[ch]);
+                ctotal+=c[ch];
+            }
+            ctotal/=3;
+            if(ctotal<0)
+                ctotal=-1;
+            stdave*=10;
+            if(stdave>255)
+                stdave=255;
+            //set output
+            for(int yy=y; yy<y+size && yy<current.rows; yy++)
+                for(int xx=x; xx<x+size && xx<current.cols; xx++){
+                    //if(ctotal>=threshold){
+                        //qDebug("%f ",ctotal);
+                        out.at<Vec3b>(yy,xx)[1]=(int)(ctotal*255);
+                    //}
+                    if(stdave<20){
+                        out.at<Vec3b>(yy,xx)[0]=(int)(255);
+                    }
+                    if(stdave>30 && ctotal<threshold){
+                        out.at<Vec3b>(yy,xx)[2]=(int)(255);
+                    }
+                    //out.at<Vec3b>(yy,xx)[2]=(old.at<Vec3b>(yy,xx)[0]+old.at<Vec3b>(yy,xx)[1]+old.at<Vec3b>(yy,xx)[2])/3;
+                    //out.at<Vec3b>(yy,xx)[0]=(current.at<Vec3b>(yy,xx)[0]+current.at<Vec3b>(yy,xx)[1]+current.at<Vec3b>(yy,xx)[2])/3;
+                }
+        }
+    }
+    return out;
+}
+
+void PAOLProcUtils::StablePix(Mat& stableIm,const Mat& old, const Mat& current,int thresh){
+    for(int y = 0; y < current.rows; y++) {
+        for(int x = 0; x < current.cols; x++) {
+            if(abs(old.at<Vec3b>(y,x)[1]-current.at<Vec3b>(y,x)[1])<thresh){
+                if(stableIm.at<Vec3b>(y,x)[1]<255){
+                    stableIm.at<Vec3b>(y,x)[1]++;
+                }
+            } else {
+                stableIm.at<Vec3b>(y,x)[1]=0;
+            }
+            if(abs(old.at<Vec3b>(y,x)[0]-current.at<Vec3b>(y,x)[0])<thresh &&
+                    old.at<Vec3b>(y,x)[0]!=0 &&
+                    current.at<Vec3b>(y,x)[0]){
+                if(stableIm.at<Vec3b>(y,x)[0]<255){
+                    stableIm.at<Vec3b>(y,x)[0]++;
+                }
+            } else{
+                stableIm.at<Vec3b>(y,x)[0]=0;
+            }
+            if(old.at<Vec3b>(y,x)[2]!=0 || current.at<Vec3b>(y,x)[2]!=0){
+                stableIm.at<Vec3b>(y,x)[2]=255;
+                stableIm.at<Vec3b>(y,x)[0]=0;
+                stableIm.at<Vec3b>(y,x)[1]=0;
+
+            } else {
+                stableIm.at<Vec3b>(y,x)[2]=0;
+            }
+            //stableIm.at<Vec3b>(y,x)[2]=stableIm.at<Vec3b>(y,x)[1]*5;
+        }
+    }
+}
+
+void PAOLProcUtils::updateBackground(Mat &background, const Mat &current, const Mat &stable, int time,const Mat& refined){
+    int r,g,b,br,rg,gb;
+    int thresh2=20;
+
+    for(int y = 0; y < current.rows; y++) {
+        for(int x = 0; x < current.cols; x++) {
+            if(stable.at<Vec3b>(y,x)[1]>time){
+                for (int c=0;c<3;c++){
+                    background.at<Vec3b>(y,x)[c]=refined.at<Vec3b>(y,x)[c];
+                }
+            }
+            if(stable.at<Vec3b>(y,x)[0]>time){
+                r=current.at<Vec3b>(y,x)[2];
+                g=current.at<Vec3b>(y,x)[1];
+                b=current.at<Vec3b>(y,x)[0];
+
+                br=abs(r-b);
+                rg=abs(r-g);
+                gb=abs(g-b);
+                if(br<thresh2 &&
+                        rg<thresh2 &&
+                        gb<thresh2 &&
+                        r>30){
+                    for (int c=0;c<3;c++){
+                        background.at<Vec3b>(y,x)[c]=255;//refined.at<Vec3b>(y,x)[c];
+                    }
+                }
+            }
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////
 ///
 ///   Methods to find the marker strokes
@@ -824,7 +999,11 @@ Mat PAOLProcUtils::raiseMarkerContrast(const Mat& whiteboardImg){
                 if (whiteboardImg.at<Vec3b>(y,x)[c]>0){
                     //take the brightness of the pixel and divide it by what white is in
                     //that location (average from mask)
-                    dif=255*whiteboardImg.at<Vec3b>(y,x)[c]/avg.at<Vec3b>(y,x)[c];
+                    if(avg.at<Vec3b>(y,x)[c]!=0){
+                        dif=255*whiteboardImg.at<Vec3b>(y,x)[c]/avg.at<Vec3b>(y,x)[c];
+                    }else{
+                        dif=255;
+                    }
                     //if it's brighter then white turn it white
                     if (dif>255)
                         dif=255;
@@ -832,7 +1011,6 @@ Mat PAOLProcUtils::raiseMarkerContrast(const Mat& whiteboardImg){
                     //if the average pixel color is 0 turn it white
                     dif=255;
                 }
-
                 //double the distance each color is from white to make text darker
                 dif=255-(255-dif)*2;
                 if (dif<0)
@@ -862,7 +1040,6 @@ Mat PAOLProcUtils::whitenWhiteboard(const Mat& whiteboardImg, const Mat& markerP
     return ret;
 }
 
-// Skew the given image so the whiteboard region is rectangular
 Mat PAOLProcUtils::rectifyImage(const Mat& whiteboardImg, const WBCorners& corners){
     // Set where the whiteboard corners are in the image
     vector<Point2f> cornersInImage;
@@ -957,6 +1134,39 @@ Mat PAOLProcUtils::smoothMarkerTransition(const Mat& whiteWhiteboardImage) {
         }
     }
     return blurred;
+}
+
+int PAOLProcUtils::countNoneWhite(const Mat &background){
+    int count=0;
+
+    for(int i = 0; i < background.rows; i++) {
+        for(int j = 0; j < background.cols; j++) {
+            // If whiteWhiteboardImage is not white at this pixel, it is marker, so fill in marker color
+            if(background.at<Vec3b>(i,j)[0] != 255
+                    || background.at<Vec3b>(i,j)[1] != 255
+                    || background.at<Vec3b>(i,j)[2] != 255) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+Mat PAOLProcUtils::getNotWhite(const Mat &whiteboard){
+    Mat out = Mat::zeros(whiteboard.size(), whiteboard.type());
+
+    for(int i = 0; i < whiteboard.rows; i++) {
+        for(int j = 0; j < whiteboard.cols; j++) {
+            // If whiteWhiteboardImage is not white at this pixel, it is marker, so fill in marker color
+            if(whiteboard.at<Vec3b>(i,j)[0] != 255
+                    || whiteboard.at<Vec3b>(i,j)[1] != 255
+                    || whiteboard.at<Vec3b>(i,j)[2] != 255) {
+                out.at<Vec3b>(i,j)[0]=255;
+                out.at<Vec3b>(i,j)[1]=255;
+                out.at<Vec3b>(i,j)[2]=255;
+            }
+        }
+    }
+    return out;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1114,6 +1324,89 @@ Mat PAOLProcUtils::darkenText( Mat &pdrift, const Mat &orig){
     return ret;
 }
 
+Mat PAOLProcUtils::refineImage(const Mat &current, const Mat &avg){
+    Mat hiContrastImg = Mat::zeros(current.size(), current.type());
+    int aveBright,curBright,dif;
+    double alpha,beta,c1,c2,gu,pixOut,colorDouble;
+    alpha=4;
+    beta=500;
+
+
+    //for every pixel in the image and for every color channel
+    for(int x = 0; x < current.cols; x++)
+        for(int y = 0; y < current.rows; y++){
+            aveBright=0;
+            curBright=0;
+            for(int c=0;c<3;c++){
+                aveBright+=avg.at<Vec3b>(y,x)[c];
+                curBright+=current.at<Vec3b>(y,x)[c];
+                /*old ms like way
+                 * int dif;
+                //if the pixel is not 0 (just put in so that we don't divide by 0)
+                if (avg.at<Vec3b>(y,x)[c]>0){
+                    //take the brightness of the pixel and divide it by what white is in
+                    //that location (average from mask)
+                    dif=255*current.at<Vec3b>(y,x)[c]/avg.at<Vec3b>(y,x)[c];
+
+                    //if it's brighter then white turn it white
+                    if (dif>255)
+                        dif=255;
+                } else {
+                    //if the average pixel color is 0 set it to 0
+                    dif=0;
+                }
+                //double the distance each color is from white to make text darker
+                dif=255-(255-dif)*1;
+                if (dif<0)
+                    dif=0;
+                hiContrastImg.at<Vec3b>(y,x)[c]=dif;*/
+            }
+            if(aveBright<=curBright+9){
+                for(int c=0;c<3;c++){
+                    hiContrastImg.at<Vec3b>(y,x)[c]=255;
+                }
+            } else {
+                for(int c=0;c<3;c++){
+                    if (avg.at<Vec3b>(y,x)[c]>0){
+                        //take the brightness of the pixel and divide it by what white is in
+                        //that location (average from mask)
+                        dif=255*current.at<Vec3b>(y,x)[c]/avg.at<Vec3b>(y,x)[c];
+
+                        //if it's brighter then white turn it white
+                        if (dif>255)
+                            dif=255;
+                    } else {
+                        //if the average pixel color is 0 set it to 0
+                        dif=0;
+                    }
+                    /*sigmoid from original paper
+                    //I pray this does a signmoid
+                    //colorDouble=((double)current.at<Vec3b>(y,x)[c])/255.0;
+                    colorDouble=((double)dif)/255.0;
+                    gu=1/(1+exp(-alpha*colorDouble+beta));
+                    c1=1/(1+exp(beta));
+                    c2=1/(1+exp(-alpha+beta))-c1;
+                    pixOut=(gu-c1)/c2;
+                    pixOut*=255;
+                    hiContrastImg.at<Vec3b>(y,x)[c]=(int)pixOut;
+                    */
+                    //my attempt
+                    colorDouble=((double)dif)/255.0;
+                    gu=1/(1+exp(-alpha*(colorDouble-beta/255.0)));
+                    c1=1/(1+exp(alpha*beta/255.0));
+                    c2=1/(1+exp(-alpha+alpha*beta/255.0))-c1;
+                    pixOut=(gu-c1)/c2;
+                    pixOut*=255;
+                    hiContrastImg.at<Vec3b>(y,x)[c]=(int)pixOut;
+
+                    //hiContrastImg.at<Vec3b>(y,x)[c]=dif;
+                }
+            }
+        }
+
+    return hiContrastImg;
+}
+
 Mat PAOLProcUtils::CLAHE(const Mat &orig){
     Mat lab_image;
     cvtColor(orig, lab_image, CV_BGR2Lab);
@@ -1263,6 +1556,218 @@ float PAOLProcUtils::getVGADifferences(const Mat& oldFrame, const Mat& newFrame)
     else
         return numDiff / (oldFrame.rows*oldFrame.cols);
 }
+Mat PAOLProcUtils::getWhiteboardDifferences(const Mat &oldFrame, const Mat &newFrame)
+{
+    Mat out=newFrame.clone();
+    // If the image sizes do not match, we consider it a 100% difference
+    if(oldFrame.rows != newFrame.rows || oldFrame.cols != newFrame.cols)
+        return out;
+
+    // Process the difference between two images with the same resolution
+    bool diff;
+    float numDiff;
+    int dist;
+    bool first;
+    int cenx;
+    int ceny;
+    int total;
+    bool oldWhite,newWhite;
+    //mask is set to a blank state
+    Mat mask = Mat::zeros(oldFrame.size(), oldFrame.type());
+
+    numDiff = 0;
+    first = true;
+    //distance --
+    dist = 0;
+    //for every row
+    for (int y = 0; y < (oldFrame.rows); y++)
+    {
+        //for every column
+        for (int x = 0; x < (oldFrame.cols); x++)
+        {
+            diff = false;
+            //for each color channel
+            for(int i = 0; i < 3; i++)
+            {
+                //if the difference (for this pixel) between the the current img and the previous img is greater than the threshold, difference is noted; diff = true
+                if(abs((double)newFrame.at<Vec3b>(y,x)[i]-(double)oldFrame.at<Vec3b>(y,x)[i])>PIXEL_DIFF_THRESHOLD)
+                    diff = true;
+            }
+
+            if(diff)
+            {
+                if(oldFrame.at<Vec3b>(y,x)[0]==255 &&
+                        oldFrame.at<Vec3b>(y,x)[1]==255 &&
+                        oldFrame.at<Vec3b>(y,x)[2]==255){
+                    oldWhite=true;
+                    mask.at<Vec3b>(y,x)[2] = 255;
+                }
+                else
+                    oldWhite=false;
+                if(newFrame.at<Vec3b>(y,x)[0]==255 &&
+                        newFrame.at<Vec3b>(y,x)[1]==255 &&
+                        newFrame.at<Vec3b>(y,x)[2]==255){
+                    newWhite=true;
+                    mask.at<Vec3b>(y,x)[1] = 255;
+                }else
+                    newWhite=false;
+                if (newWhite!=oldWhite){
+                    mask.at<Vec3b>(y,x)[0] = 255;
+                    numDiff++;
+                }
+                /*
+                //std::cout<<"Second if diff"<<std::endl;
+                numDiff++;
+                //calculates total difference and modifies the mask accordingly
+                total = abs((double)newFrame.at<Vec3b>(y,x)[0]-(double)oldFrame.at<Vec3b>(y,x)[0]) +
+                        abs((double)newFrame.at<Vec3b>(y,x)[1]-(double)oldFrame.at<Vec3b>(y,x)[1]) +
+                        abs((double)newFrame.at<Vec3b>(y,x)[2]-(double)oldFrame.at<Vec3b>(y,x)[2]);
+                if(total > 512)
+                {
+                    mask.at<Vec3b>(y,x)[0] = 255;
+                }
+                if(total > 255)
+                {
+                    mask.at<Vec3b>(y,x)[1] = 255;
+                    numDiff++;
+                }
+                mask.at<Vec3b>(y,x)[2]=255;
+                //sets location of first differnce found
+                if(first)
+                {
+                    first = false;
+                    cenx = x;
+                    ceny = y;
+                }
+                //std::cout<<"Difference x: "<<x<<" cenx: "<<cenx<<" y:"<<y<<" ceny: "<<ceny<<std::endl;
+                //distance between pixels
+                dist+=sqrt(((x-cenx)*(x-cenx))+((y-ceny)*(y-ceny)));
+                */
+            }
+        }
+    }
+    out=erodeSize(mask,7);
+    numDiff=0;
+    for(int x=0;x<out.cols;x++)
+        for(int y=0;y<out.rows;y++){
+            if(out.at<Vec3b>(y,x)[0]==255){
+                numDiff++;
+            }
+        }
+    //qDebug("whitepix=%f",numDiff);
+    //std::cout<<"Difference dist: "<<dist<<std::endl;
+/*    if((dist<10000))//&&(maskBottom>0))
+        return 0;
+    else
+        return numDiff / (oldFrame.rows*oldFrame.cols);
+        */
+    return out;
+}
+
+Mat PAOLProcUtils::getErodeDifferencesIm(const Mat &oldFrame, const Mat &newFrame){
+    Mat mask = Mat::zeros(oldFrame.size(), oldFrame.type());
+    int numDiff = 0;
+
+    //for every row
+    for (int y = 0; y < (oldFrame.rows); y++)
+    {
+        //for every column
+        for (int x = 0; x < (oldFrame.cols); x++)
+        {
+            //for each color channel
+            if ((newFrame.at<Vec3b>(y,x)[2]==255 && oldFrame.at<Vec3b>(y,x)[0]!=255) ||
+                    (oldFrame.at<Vec3b>(y,x)[2]==255 && newFrame.at<Vec3b>(y,x)[0]!=255)){
+                numDiff++;
+                for(int i = 0; i < 3; i++)
+                {
+                    mask.at<Vec3b>(y,x)[i]=255;
+                }
+            }
+        }
+    }
+    return mask;
+}
+
+int PAOLProcUtils::getErodeDifferencesNum(const Mat &oldFrame, const Mat &newFrame){
+    int numDiff = 0;
+
+    //for every row
+    for (int y = 0; y < (oldFrame.rows); y++)
+    {
+        //for every column
+        for (int x = 0; x < (oldFrame.cols); x++)
+        {
+            //for each color channel
+            if ((newFrame.at<Vec3b>(y,x)[2]==255 && oldFrame.at<Vec3b>(y,x)[0]!=255) ||
+                    (oldFrame.at<Vec3b>(y,x)[2]==255 && newFrame.at<Vec3b>(y,x)[0]!=255)){
+                numDiff++;
+            }
+        }
+    }
+    return numDiff;
+}
+
+Mat PAOLProcUtils::erodeSize(const Mat &mask, int size){
+    int x,y,xx,yy,count;
+    Mat out=Mat::zeros(mask.size(), mask.type());
+
+    for ( y = 1; y < mask.rows-1; y++)
+    {
+        //for every column
+        for ( x = 1; x < mask.cols-1; x++)
+        {
+            if(mask.at<Vec3b>(y,x)[0]==255){
+                count=-1;
+                for(xx=x-1;xx<=x+1;xx++)
+                    for(yy=y-1;yy<=y+1;yy++){
+                        if(mask.at<Vec3b>(yy,xx)[0]==255)
+                            count++;
+                    }
+                if(count>=size)
+                    for(int i = 0; i < 3; i++)
+                        out.at<Vec3b>(y,x)[i]=255;
+            }
+        }
+    }
+    return out;
+}
+Mat PAOLProcUtils::erodeSizeGreen(const Mat &mask, int size){
+    int x,y,xx,yy,count;
+    Mat out=mask.clone();
+
+    for ( y = 1; y < mask.rows-1; y++)
+    {
+        //for every column
+        for ( x = 1; x < mask.cols-1; x++)
+        {
+            out.at<Vec3b>(y,x)[2]=0;
+            if(mask.at<Vec3b>(y,x)[1]==255){
+                count=-1;
+                for(xx=x-1;xx<=x+1;xx++)
+                    for(yy=y-1;yy<=y+1;yy++){
+                        if(mask.at<Vec3b>(yy,xx)[1]==255)
+                            count++;
+                    }
+                if(count>=size){
+                    out.at<Vec3b>(y,x)[2]=255;
+                    //out.at<Vec3b>(y,x)[0]=0;
+                }
+            }
+        }
+    }
+    return out;
+}
+int PAOLProcUtils::countDifferences(const Mat &difs){
+    int numDiff=0;
+    for(int x=0;x<difs.cols;x++)
+        for(int y=0;y<difs.rows;y++){
+            if(difs.at<Vec3b>(y,x)[0]==255){
+                numDiff++;
+            }
+        }
+    return numDiff;
+}
+
 
 // Sort the given whiteboard corners, assuming that corners.TL might not be the top-left corner, or corners.BR
 // might not be the bottom-left corner, etc. Implementation based on the OpenCV tutorial
@@ -1280,7 +1785,7 @@ void PAOLProcUtils::sortCorners(WBCorners &corners) {
 
     // Get the two top and two bottom points
     vector<Point2f> topPoints, bottomPoints;
-    for(unsigned int i = 0; i < allCorners.size(); i++) {
+    for(int i = 0; i < allCorners.size(); i++) {
         // Put the corners above the center in topPoints, put the rest in bottomPoints
         if(allCorners[i].y < center.y)
             topPoints.push_back(allCorners[i]);
@@ -1293,3 +1798,325 @@ void PAOLProcUtils::sortCorners(WBCorners &corners) {
     corners.BL = (bottomPoints[0].x > bottomPoints[1].x) ? bottomPoints[1] : bottomPoints[0];
     corners.BR = (bottomPoints[0].x > bottomPoints[1].x) ? bottomPoints[0] : bottomPoints[1];
 }
+
+Mat PAOLProcUtils::surrountDifference(Mat& aveIm){
+    Mat change;
+    Mat view;
+    int dif,maxDif;
+    change=Mat::zeros(aveIm.size(), aveIm.type());
+    view=Mat::zeros(aveIm.size(), aveIm.type());
+    for(int x = 1; x < aveIm.cols-1; x++)
+        for(int y = 1; y < aveIm.rows-1; y++){
+            for(int c=0;c<3;c++){
+                dif=0;
+                maxDif=0;
+                for(int xx=x-1;xx<=x+1;xx++)
+                    for(int yy=y-1;yy<=y+1;yy++){
+                        dif=abs(aveIm.at<Vec3b>(y,x)[c]-aveIm.at<Vec3b>(yy,xx)[c]);
+                        if(dif>maxDif)
+                            maxDif=dif;
+                    }
+                change.at<Vec3b>(y,x)[c]=maxDif;
+            }
+
+        }
+    for(int x = 1; x < aveIm.cols-1; x++)
+        for(int y = 1; y < aveIm.rows-1; y++){
+            dif=0;
+            for(int c=0;c<3;c++){
+                dif+=change.at<Vec3b>(y,x)[c];
+            }
+            if(dif>5){
+                view.at<Vec3b>(y,x)[2]=255;
+            }
+            if(dif>30){
+                view.at<Vec3b>(y,x)[1]=255;
+            }
+            if(dif>50){
+                view.at<Vec3b>(y,x)[0]=255;
+            }
+        }
+    //temporary to invert the image
+    for(int x = 0; x < aveIm.cols; x++)
+        for(int y = 0; y < aveIm.rows; y++){
+            if(view.at<Vec3b>(y,x)[2]==0){
+                view.at<Vec3b>(y,x)[2]=255;
+                view.at<Vec3b>(y,x)[1]=255;
+                view.at<Vec3b>(y,x)[0]=255;
+            } else {
+                view.at<Vec3b>(y,x)[2]=0;
+                view.at<Vec3b>(y,x)[1]=0;
+                view.at<Vec3b>(y,x)[0]=0;
+            }
+        }
+
+    return view;
+}
+
+Mat PAOLProcUtils::connectedComponent(Mat& im, bool binary){
+    int up,left;
+    int x,y;
+    Mat out;
+    SegList *sList=new SegList();
+
+
+    out=Mat::zeros(im.size(),im.type());
+//add code to only check if it is basically white
+    for(x=0;x<im.cols;x++)
+        for(y=0;y<im.rows;y++){
+            if ((binary &&
+                    (im.at<Vec3b>(y,x)[0]!=0 ||
+                     im.at<Vec3b>(y,x)[1]!=0 ||
+                     im.at<Vec3b>(y,x)[2]!=0)) ||
+            (!binary)){
+
+                left=comparePix(out,im,x,y,x-1,y,binary,1,sList);
+                up=comparePix(out,im,x,y,x,y-1,binary,1,sList);
+
+                if (left!=0 and up!=0){
+                    numToPix(out,x,y,sList->merge(left,up));
+                } else if (left!=0){
+                    numToPix(out,x,y,sList->find(left));
+                } else if (up!=0){
+                    numToPix(out,x,y,sList->find(up));
+                } else {
+                    numToPix(out,x,y,sList->newPoint());
+                }
+            } else {
+                out.at<Vec3b>(y,x)[0]=0;
+                out.at<Vec3b>(y,x)[1]=0;
+                out.at<Vec3b>(y,x)[2]=0;
+            }
+        }
+
+    //sList->print();
+    sList->update();
+
+    for(x=0;x<out.cols;x++)
+        for(y=0;y<out.rows;y++){
+            numToPix(out,x,y,sList->getValue(pixToNum(out,x,y)));
+        }
+
+    qDebug("countOut=%d",sList->getCount());
+
+
+    ////my test code
+    //sList->zero();
+    for(x=0;x<out.cols;x++)
+        for(y=0;y<out.rows;y++){
+           sList->addCount(pixToNum(out,x,y),im,x,y);
+        }
+    sList->removeSmallRegions(100);
+    sList->removeNoneWhite(10);
+    for(x=0;x<out.cols;x++)
+        for(y=0;y<out.rows;y++){
+            numToPix(out,x,y,sList->getValue(pixToNum(out,x,y)));
+        }
+    ////ends here
+
+
+    colorConnected(out,sList);
+    sList->~SegList();
+    return out;
+}
+
+Mat PAOLProcUtils::connectedComponentFlipEliminate(Mat& im,Mat& orig, bool binary){
+    int up,left;
+    int x,y;
+    Mat out;
+    SegList *sList=new SegList();
+
+
+    out=Mat::zeros(im.size(),im.type());
+
+    for(x=0;x<im.cols;x++)
+        for(y=0;y<im.rows;y++){
+            if ((binary &&
+                    (im.at<Vec3b>(y,x)[0]!=0 ||
+                     im.at<Vec3b>(y,x)[1]!=0 ||
+                     im.at<Vec3b>(y,x)[2]!=0)) ||
+            (!binary)){
+
+                left=comparePix(out,im,x,y,x-1,y,binary,1,sList);
+                up=comparePix(out,im,x,y,x,y-1,binary,1,sList);
+
+                if (left!=0 and up!=0){
+                    numToPix(out,x,y,sList->merge(left,up));
+                } else if (left!=0){
+                    numToPix(out,x,y,sList->find(left));
+                } else if (up!=0){
+                    numToPix(out,x,y,sList->find(up));
+                } else {
+                    numToPix(out,x,y,sList->newPoint());
+                }
+            } else {
+                out.at<Vec3b>(y,x)[0]=0;
+                out.at<Vec3b>(y,x)[1]=0;
+                out.at<Vec3b>(y,x)[2]=0;
+            }
+        }
+
+    //sList->print();
+    sList->update();
+
+    for(x=0;x<out.cols;x++)
+        for(y=0;y<out.rows;y++){
+            numToPix(out,x,y,sList->getValue(pixToNum(out,x,y)));
+        }
+
+    qDebug("countOut=%d",sList->getCount());
+
+
+    ////my test code
+    //sList->zero();
+    for(x=0;x<out.cols;x++){
+        y=out.rows-2;
+        sList->removeColor(pixToNum(out,x,y));
+    }
+
+    for(x=0;x<out.cols;x++)
+        for(y=0;y<out.rows;y++){
+            numToPix2(out,orig,x,y,sList->getValue(pixToNum(out,x,y)));
+        }
+    ////ends here
+
+
+    sList->~SegList();
+    return out;
+}
+
+int PAOLProcUtils::comparePix(Mat& connected,Mat& data, int x1, int y1, int x2, int y2, bool binary, int thresh, SegList* sList){
+    if (x2>=0 && y2>=0){
+        if (binary){
+            return sList->find(pixToNum(connected,x2,y2));
+        } else {
+            if (pixSame(data,x1,y1,x2,y2,thresh)){
+                return sList->find(pixToNum(connected,x2,y2));
+            }else
+                return 0;
+        }
+    } else {
+        return 0;
+    }
+}
+
+bool PAOLProcUtils::pixSame(Mat& im, int x1, int y1, int x2, int y2, int thresh){
+    int dif=0;
+
+    for (int c=0;c<3;c++)
+        dif+=abs(im.at<Vec3b>(y1,x1)[c]-im.at<Vec3b>(y2,x2)[c]);
+
+    if (dif<=thresh)
+        return true;
+    else
+        return false;
+}
+
+int PAOLProcUtils::pixToNum(Mat& im,int x, int y){
+    int out;
+
+    out=im.at<Vec3b>(y,x)[0];
+    out+=256*im.at<Vec3b>(y,x)[1];
+    out+=256*256*im.at<Vec3b>(y,x)[2];
+
+    return out;
+}
+
+void PAOLProcUtils::numToPix(Mat& im,int x, int y, int num){
+    int zero,one,two;
+
+    zero=num%256;
+    one=(num/256)%256;
+    two=(num/256)/256;
+    im.at<Vec3b>(y,x)[0]=zero;
+    im.at<Vec3b>(y,x)[1]=one;
+    im.at<Vec3b>(y,x)[2]=two;
+}
+void PAOLProcUtils::numToPix2(Mat &im, Mat &orig, int x, int y, int num){
+    if(num==-1){
+        for(int c=0;c<3;c++)
+            im.at<Vec3b>(y,x)[c]=0;
+    } else {
+        for(int c=0;c<3;c++)
+            im.at<Vec3b>(y,x)[c]=orig.at<Vec3b>(y,x)[c];
+    }
+}
+
+void PAOLProcUtils::colorConnected(Mat& connected,SegList* sList){
+    int x,y,temp;
+    int scale=256*256*256/sList->getCount();
+
+    for(x=0;x<connected.cols;x++)
+        for(y=0;y<connected.rows;y++){
+            temp=pixToNum(connected,x,y)*scale;
+            numToPix(connected,x,y,temp);
+        }
+}
+
+Mat PAOLProcUtils::minimalDif(Mat& im,int thresh){
+    int dif,dif2;
+    Mat out;
+    out=Mat::zeros(im.size(),im.type());
+
+    for(int x=0;x<im.cols-1;x++)
+        for(int y=0;y<im.rows-1;y++){
+            dif=0;
+            dif2=0;
+            for (int c=0;c<3;c++)
+                dif+=abs(im.at<Vec3b>(y,x)[c]-im.at<Vec3b>(y+1,x)[c]);
+            for (int c=0;c<3;c++)
+                dif2+=abs(im.at<Vec3b>(y,x)[c]-im.at<Vec3b>(y,x+1)[c]);
+
+            if(dif>thresh || dif2>thresh){
+                out.at<Vec3b>(y,x)[0]=255;
+                out.at<Vec3b>(y,x)[1]=255;
+                out.at<Vec3b>(y,x)[2]=255;
+            }
+        }
+    return out;
+}
+
+Mat PAOLProcUtils::invertToBinary(Mat &im){
+    int dif;
+    Mat out=Mat::zeros(im.size(),im.type());
+
+    for(int x=0;x<im.cols;x++)
+        for(int y=0;y<im.rows;y++){
+            dif=0;
+            for (int c=0;c<3;c++)
+                dif+=im.at<Vec3b>(y,x)[c];
+            if(dif==0)
+                for (int c=0;c<3;c++)
+                    out.at<Vec3b>(y,x)[c]=255;
+        }
+    return out;
+}
+
+Mat PAOLProcUtils::keepWhite(Mat &im,int thresh){
+    int rg,gb,br;
+    int r,g,b;
+    Mat out=im.clone();
+
+    for(int x=0;x<im.cols;x++)
+        for(int y=0;y<im.rows;y++){
+            r=im.at<Vec3b>(y,x)[2];
+            g=im.at<Vec3b>(y,x)[1];
+            b=im.at<Vec3b>(y,x)[0];
+
+            br=abs(r-b);
+            rg=abs(r-g);
+            gb=abs(g-b);
+            if(br>thresh ||
+                    rg>thresh ||
+                    gb>thresh ||
+                    r<30){
+                for (int c=0;c<3;c++){
+                    out.at<Vec3b>(y,x)[c]=0;
+                }
+            }
+        }
+    return out;
+}
+
+
+
