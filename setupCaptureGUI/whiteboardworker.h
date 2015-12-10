@@ -12,7 +12,28 @@ private:
 
     // Fields for whiteboard processing
     Mat currentFrame;
-    Mat oldFrame;
+    Mat currentRectified;
+    Mat oldRectified;
+    Mat blured;
+    Mat normalizedCrossCorrelation;
+    Mat oldNormalizedCrossCorrelation;
+    Mat stablePixels;
+    Mat refinedCurrentFrame;
+    Mat currentWhiteboard;
+    Mat oldWhiteboard;
+    Mat notWhiteboard;
+    Mat notWhiteboardGrown;
+    Mat notWhiteboardEroded;
+    Mat oldNotWhiteboardEroded;
+    Mat notWhiteboardDifference;
+
+    Mat lastSaved;
+
+    bool changedBoard;
+    int consecutiveStableCount;
+    int currentDifference;
+
+
     Mat oldMarkerModel;
     Mat oldRefinedBackground; // What the whiteboard from the oldFrame looks like
     int stableWhiteboardCount;
@@ -26,6 +47,7 @@ private:
 protected:
     bool takePicture();
     void processImage();
+    void processImageOld();
     void saveImageWithTimestamp(const Mat& image);
     void saveImageWithTimestamp(const Mat& image,string name);
     void printToLog(char* format, ...);

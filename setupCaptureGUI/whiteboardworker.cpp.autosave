@@ -138,6 +138,7 @@ void WhiteboardWorker::processImage() {
                 consecutiveStableCount=0;
             }
             if(consecutiveStableCount>=5 && changedBoard){
+                changedBoard=false
                 saveImageWithTimestamp(currentWhiteboard);
             }
         }
