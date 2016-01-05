@@ -1328,8 +1328,7 @@ Mat PAOLProcUtils::refineImage(const Mat &current, const Mat &avg){
     Mat hiContrastImg = Mat::zeros(current.size(), current.type());
     int aveBright,curBright,dif;
     double alpha,beta,c1,c2,gu,pixOut,colorDouble;
-    alpha=4;
-    beta=500;
+    alpha=3;
 
 
     //for every pixel in the image and for every color channel
@@ -1340,32 +1339,24 @@ Mat PAOLProcUtils::refineImage(const Mat &current, const Mat &avg){
             for(int c=0;c<3;c++){
                 aveBright+=avg.at<Vec3b>(y,x)[c];
                 curBright+=current.at<Vec3b>(y,x)[c];
-                /*old ms like way
-                 * int dif;
-                //if the pixel is not 0 (just put in so that we don't divide by 0)
-                if (avg.at<Vec3b>(y,x)[c]>0){
-                    //take the brightness of the pixel and divide it by what white is in
-                    //that location (average from mask)
-                    dif=255*current.at<Vec3b>(y,x)[c]/avg.at<Vec3b>(y,x)[c];
-
-                    //if it's brighter then white turn it white
-                    if (dif>255)
-                        dif=255;
-                } else {
-                    //if the average pixel color is 0 set it to 0
-                    dif=0;
-                }
-                //double the distance each color is from white to make text darker
-                dif=255-(255-dif)*1;
-                if (dif<0)
-                    dif=0;
-                hiContrastImg.at<Vec3b>(y,x)[c]=dif;*/
             }
-            if(aveBright<=curBright+9){
+            aveBright/=3;
+            curBright/=3;
+            if(aveBright<=curBright+3){
                 for(int c=0;c<3;c++){
                     hiContrastImg.at<Vec3b>(y,x)[c]=255;
                 }
             } else {
+                curBright=0;
+                for(int c=0;c<3;c++){
+                    if (avg.at<Vec3b>(y,x)[c]>0){
+                        //take the brightness of the pixel and divide it by what white is in
+                        //that location (average from mask)
+                        curBright+=255*current.at<Vec3b>(y,x)[c]/avg.at<Vec3b>(y,x)[c];
+                    }
+                }
+                curBright/=3;
+
                 for(int c=0;c<3;c++){
                     if (avg.at<Vec3b>(y,x)[c]>0){
                         //take the brightness of the pixel and divide it by what white is in
@@ -1379,27 +1370,15 @@ Mat PAOLProcUtils::refineImage(const Mat &current, const Mat &avg){
                         //if the average pixel color is 0 set it to 0
                         dif=0;
                     }
-                    /*sigmoid from original paper
-                    //I pray this does a signmoid
-                    //colorDouble=((double)current.at<Vec3b>(y,x)[c])/255.0;
-                    colorDouble=((double)dif)/255.0;
-                    gu=1/(1+exp(-alpha*colorDouble+beta));
-                    c1=1/(1+exp(beta));
-                    c2=1/(1+exp(-alpha+beta))-c1;
-                    pixOut=(gu-c1)/c2;
-                    pixOut*=255;
-                    hiContrastImg.at<Vec3b>(y,x)[c]=(int)pixOut;
-                    */
-                    //my attempt
-                    colorDouble=((double)dif)/255.0;
-                    gu=1/(1+exp(-alpha*(colorDouble-beta/255.0)));
-                    c1=1/(1+exp(alpha*beta/255.0));
-                    c2=1/(1+exp(-alpha+alpha*beta/255.0))-c1;
-                    pixOut=(gu-c1)/c2;
-                    pixOut*=255;
-                    hiContrastImg.at<Vec3b>(y,x)[c]=(int)pixOut;
 
-                    //hiContrastImg.at<Vec3b>(y,x)[c]=dif;
+                    beta=alpha*2*(curBright);
+                    colorDouble=((double)dif)/255.0;
+                    gu=1/(1+exp(-alpha*colorDouble+beta/255.0));
+                    c1=1/(1+exp(beta/255.0));
+                    c2=1/(1+exp(-alpha+beta/255.0))-c1;
+                    pixOut=(gu-c1)/c2;
+                    pixOut*=255;
+                    hiContrastImg.at<Vec3b>(y,x)[c]=(int)pixOut;
                 }
             }
         }
