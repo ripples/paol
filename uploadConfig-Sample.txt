@@ -1,0 +1,3 @@
+user: paol
+host: paolpresent.ithaca.edu
+rmt_upload: /home/paol/media/uploaded
