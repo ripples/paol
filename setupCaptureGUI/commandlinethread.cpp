@@ -54,6 +54,7 @@ void CommandLineThread::run() {
 
     // Start capturing from PAOL threads and FFmpeg
     ffmpegProcess->start(ffmpegCommand.c_str());
+    sleep(5);
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->start();
     }
@@ -195,11 +196,19 @@ void CommandLineThread::createThreadsFromConfigs() {
 
     // Set the command for running ffmpeg
     stringstream ss;
-    ss << codePath << "/paol-code/scripts/capture/videoCapturePortable ";
+    ss << codePath << "/paol-code/scripts/capture/videoCapture ";
     ss << "/dev/video" << videoDeviceNum << " hw:" << audioNum << " " << (int)flipVideo << " ";
-    ss << lecturePath << "/video.mp4 &";
+    ss << lectureDuration << " " << lecturePath << "/video.mp4 ";
     ffmpegCommand = ss.str();
     assert(ffmpegCommand != "");
+    /*old that kept failing
+    stringstream ss;
+    ss << codePath << "/paol-code/scripts/capture/videoCapturePortable ";
+    ss << "/dev/video" << videoDeviceNum << " hw:" << audioNum << " " << (int)flipVideo << " ";
+    ss << lecturePath << "/video.mp4 ";
+    ffmpegCommand = ss.str();
+    assert(ffmpegCommand != "");
+    */
 }
 
 void CommandLineThread::writeInfoFile() {
