@@ -53,11 +53,13 @@ void CommandLineThread::run() {
     }
 
     // Start capturing from PAOL threads and FFmpeg
-    ffmpegProcess->start(ffmpegCommand.c_str());
-    sleep(5);
+    //ffmpegProcess->start(ffmpegCommand.c_str());//tried moving this after cameras start since video working while cameras failing
+    //sleep(5);
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->start();
     }
+    sleep(5);
+    ffmpegProcess->start(ffmpegCommand.c_str());
 
     // Wait for the duration of the lecture, then signal threads to finish
     sleep(lectureDuration);
