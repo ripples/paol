@@ -476,9 +476,25 @@ void MainWindow::captureVideo(){
             s = out.str();
             audioCamNum.erase(std::remove(audioCamNum.begin(),audioCamNum.end(),' '),audioCamNum.end());
 
+            /* old way of calling ffmpeg from script
             vidCaptureString =codePath+"/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
             + isChecked + " " + processLocation + "/video.mp4 &";
-            //qDebug("%s",vidCaptureString.c_str());
+            */
+            //call ffmpeg directly
+            if(reverseChecks[i]->isChecked()==1){
+                //if camera is upside down then flip video in capture
+                vidCaptureString = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+s+
+                        " -f alsa -ac 2 -i hw:"+audioCamNum+" -acodec libfdk_aac -b:a 128k "+
+                        "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
+                        "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 -vf \"hflip,vflip\" video.mp4 ";
+            } else {
+                //set normal capture for right side up video
+                vidCaptureString = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+s+
+                        " -f alsa -ac 2 -i hw:"+audioCamNum+" -acodec libfdk_aac -b:a 128k "+
+                        "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
+                        "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";
+            }
+            qDebug("--------------%s",vidCaptureString.c_str());
             ffmpegProcess->setStandardErrorFile(QString::fromStdString(processLocation + "/logs/ffmpeg.log"));
             ffmpegProcess->start(vidCaptureString.c_str());
         }

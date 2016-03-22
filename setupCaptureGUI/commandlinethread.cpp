@@ -53,19 +53,19 @@ void CommandLineThread::run() {
     }
 
     // Start capturing from PAOL threads and FFmpeg
-    //ffmpegProcess->start(ffmpegCommand.c_str());//tried moving this after cameras start since video working while cameras failing
-    //sleep(5);
+    ffmpegProcess->start(ffmpegCommand.c_str());//tried moving this after cameras start since video working while cameras failing
+    sleep(5);
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->start();
     }
-    sleep(5);
-    ffmpegProcess->start(ffmpegCommand.c_str());
+;
 
     // Wait for the duration of the lecture, then signal threads to finish
     sleep(lectureDuration);
     emit stopCapture();
     // Stop FFmpeg
     ffmpegProcess->write("q");
+    sleep(3);
     ffmpegProcess->closeWriteChannel();
 
     // Wait for FFmpeg and processing threads to finish
@@ -160,6 +160,8 @@ void CommandLineThread::createThreadsFromConfigs() {
     int videoDeviceNum = -1;
     bool flipVideo;
     int audioNum = -1;
+    stringstream videoDeviceNumStr,audioNumStr;
+
 
     // Go through the thread configurations, creating the paolProcesses
     // and setting the FFmpeg process parameters along the way
@@ -196,12 +198,32 @@ void CommandLineThread::createThreadsFromConfigs() {
     string ffmpegLogPath = lecturePath + "/logs/ffmpeg.log";
     ffmpegProcess->setStandardErrorFile(QString::fromStdString(ffmpegLogPath));
 
+    videoDeviceNumStr << videoDeviceNum;
+    audioNumStr << audioNum;
+    //new method of calling ffmpeg directly from the code without a script
+    if(flipVideo){
+        //if camera is upside down then flip video in capture
+        ffmpegCommand = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+videoDeviceNumStr.str()+
+                " -f alsa -ac 2 -i hw:"+audioNumStr.str()+" -acodec libfdk_aac -b:a 128k "+
+                "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
+                "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 -vf \"hflip,vflip\" video.mp4 ";
+    } else {
+        //set normal capture for right side up video
+        ffmpegCommand = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+videoDeviceNumStr.str()+
+                " -f alsa -ac 2 -i hw:"+audioNumStr.str()+" -acodec libfdk_aac -b:a 128k "+
+                "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
+                "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";
+    }
+
+    /*old setup for running ffmpeg using script
     // Set the command for running ffmpeg
     stringstream ss;
     ss << codePath << "/paol-code/scripts/capture/videoCapture ";
     ss << "/dev/video" << videoDeviceNum << " hw:" << audioNum << " " << (int)flipVideo << " ";
     ss << lectureDuration << " " << lecturePath << "/video.mp4 ";
     ffmpegCommand = ss.str();
+    */
+
     assert(ffmpegCommand != "");
     /*old that kept failing
     stringstream ss;
