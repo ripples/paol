@@ -480,19 +480,34 @@ void MainWindow::captureVideo(){
             vidCaptureString =codePath+"/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
             + isChecked + " " + processLocation + "/video.mp4 &";
             */
+
             //call ffmpeg directly
             if(reverseChecks[i]->isChecked()==1){
                 //if camera is upside down then flip video in capture
-                vidCaptureString = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+s+
-                        " -f alsa -ac 2 -i hw:"+audioCamNum+" -acodec libfdk_aac -b:a 128k "+
-                        "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
-                        "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 -vf \"hflip,vflip\" video.mp4 ";
+                vidCaptureString = "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
+                        " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
+                        " ! queue ! xvimagesink sync=false \\"+
+                        " myvid. ! queue ! mux.video_0 \\"+
+                        " alsasrc device=plughw:"+audioCamNum+" ! audio/x-raw,rate=44100,channels=1,depth=24 ! audioconvert "+
+                        " ! lamemp3enc ! queue ! mux.audio_0 \\"+
+                        " avimux name=mux ! filesink location="+processLocation+"/video.mp4";
             } else {
                 //set normal capture for right side up video
-                vidCaptureString = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+s+
+                vidCaptureString =  "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
+                        " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! tee name=myvid \\"+
+                        " ! queue ! decodebin ! xvimagesink sync=false \\"+
+                        " myvid. ! queue ! mux.video_0 \\"+
+                        " alsasrc device=plughw:"+audioCamNum+" ! audio/x-raw,rate=44100,channels=1,depth=24 ! audioconvert "+
+                        " ! lamemp3enc ! queue ! mux.audio_0 \\"+
+                        " avimux name=mux ! filesink location="+processLocation+"/video.mp4";
+
+
+                //ORIGINAL CODE <<<<<<<<<<<<<<<<<<<<<<<<<
+                /*vidCaptureString = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+s+
                         " -f alsa -ac 2 -i hw:"+audioCamNum+" -acodec libfdk_aac -b:a 128k "+
                         "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
-                        "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";
+                        "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";*/
+                //ORIGINAL CODE <<<<<<<<<<<<<<<<<<<<<<<<
             }
             qDebug("--------------%s",vidCaptureString.c_str());
             ffmpegProcess->setStandardErrorFile(QString::fromStdString(processLocation + "/logs/ffmpeg.log"));
@@ -672,7 +687,8 @@ void MainWindow::on_setupReturnButton_clicked(){
     ui->setupMenuWidget->hide();
     releaseComponents();
     // Stop FFmpeg
-    ffmpegProcess->write("q");
+    //ffmpegProcess->write("q");
+    //system("ps -ef | awk '/[g]st-launch-1.0/{print $2}' | xargs kill -INT");
     ffmpegProcess->closeWriteChannel();
     ffmpegProcess->waitForFinished();
     ui->mainMenuWidget->show();
@@ -952,7 +968,7 @@ void MainWindow::on_lecDet_Continue_Button_clicked(){
     if(ui->lecDet_courses->currentText() == "Other"){
         ofstream log((codePath+"/paol-code/courses.txt").c_str(), std::ios_base::app | std::ios_base::out);
         string outText = ui->new_course_textbox->text().toUtf8().constData();
-        log << outText;
+        log << outText << endl; //"<< endl" to jump line
     }
 
     createFileDirectory();
@@ -998,7 +1014,8 @@ void MainWindow::on_captureLecture_Terminate_Button_clicked(){
     videoCapture = false;
     releaseComponents();
     // Stop FFmpeg
-    ffmpegProcess->write("q");
+    //ffmpegProcess->write("q");
+    system("ps -ef | awk '/[g]st-launch-1.0/{print $2}' | xargs kill -INT");
     ffmpegProcess->closeWriteChannel();
     ffmpegProcess->waitForFinished();
     ui->mainMenuWidget->show();

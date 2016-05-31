@@ -28,6 +28,7 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
 
 CommandLineThread::~CommandLineThread()
 {
+
     delete ffmpegProcess;
     // Release the memory used the by the processing threads
     for(unsigned int i = 0; i < procThreads.size(); i++) {
@@ -64,7 +65,9 @@ void CommandLineThread::run() {
     sleep(lectureDuration);
     emit stopCapture();
     // Stop FFmpeg
-    ffmpegProcess->write("q");
+    //ffmpegProcess->write("q");
+    //Kill gst process through system - send SIGINT
+    system("ps -ef | awk '/[g]st-launch-1.0/{print $2}' | xargs kill -INT");
     sleep(3);
     ffmpegProcess->closeWriteChannel();
 
@@ -162,7 +165,6 @@ void CommandLineThread::createThreadsFromConfigs() {
     int audioNum = -1;
     stringstream videoDeviceNumStr,audioNumStr;
 
-
     // Go through the thread configurations, creating the paolProcesses
     // and setting the FFmpeg process parameters along the way
     for(unsigned int i = 0; i < threadConfigs.size(); i++) {
@@ -203,16 +205,33 @@ void CommandLineThread::createThreadsFromConfigs() {
     //new method of calling ffmpeg directly from the code without a script
     if(flipVideo){
         //if camera is upside down then flip video in capture
-        ffmpegCommand = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+videoDeviceNumStr.str()+
-                " -f alsa -ac 2 -i hw:"+audioNumStr.str()+" -acodec libfdk_aac -b:a 128k "+
-                "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
-                "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 -vf \"hflip,vflip\" video.mp4 ";
+        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr.str()+
+                " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
+                " ! queue ! xvimagesink sync=false \\"+
+                " myvid. ! queue ! mux.video_0 \\"+
+                " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=1,depth=24 ! audioconvert "+
+                " ! lamemp3enc ! queue ! mux.audio_0 \\"+
+                " avimux name=mux ! filesink location="+lecturePath+"/video.mp4";
     } else {
         //set normal capture for right side up video
-        ffmpegCommand = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+videoDeviceNumStr.str()+
+
+        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr.str()+
+                " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! tee name=myvid \\"+
+                " ! queue ! decodebin ! xvimagesink sync=false \\"+
+                " myvid. ! queue ! mux.video_0 \\"+
+                " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=1,depth=24 ! audioconvert "+
+                " ! lamemp3enc ! queue ! mux.audio_0 \\"+
+                " avimux name=mux ! filesink location="+lecturePath+"/video.mp4";
+
+        //ORIGINAL CODE - TESTING
+
+        /*ffmpegCommand = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+videoDeviceNumStr.str()+
                 " -f alsa -ac 2 -i hw:"+audioNumStr.str()+" -acodec libfdk_aac -b:a 128k "+
                 "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
-                "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";
+                "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";*/
+
+        //ORIGINAL CODE - TESTING
+
     }
 
     /*old setup for running ffmpeg using script
