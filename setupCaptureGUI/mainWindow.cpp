@@ -781,6 +781,8 @@ void MainWindow::findSlopes(){
             slope=1000;
         else
             slope=dify/difx;
+        if(slope==0)
+            slope=.0001;
         lineSlopes.append(slope);
     }
 }
@@ -807,11 +809,12 @@ void MainWindow::findCorners(){
         swap(linePoints[2*1],linePoints[s1b*2]);
         swap(linePoints[2*1+1],linePoints[s1b*2+1]);
     }
-    /*qDebug("pair one %f %f",lineSlopes[0],lineSlopes[1]);
+    //put me in to see what's happening
+    qDebug("pair one %f %f",lineSlopes[0],lineSlopes[1]);
     qDebug("pair two %f %f",lineSlopes[2],lineSlopes[3]);
     for (int i=0;i<linePoints.length();i++){
         qDebug("xold=%d \txnew=%d",clickedCorners[i].x ,linePoints[i].x);
-    }*/
+    }
 }
 
 void MainWindow::reorderCorners(){
