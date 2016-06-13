@@ -209,7 +209,7 @@ void CommandLineThread::createThreadsFromConfigs() {
                 " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
                 " ! queue ! xvimagesink sync=false \\"+
                 " myvid. ! queue ! mux.video_0 \\"+
-                " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=1,depth=24 ! audioconvert "+
+                " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
                 " ! lamemp3enc ! queue ! mux.audio_0 \\"+
                 " avimux name=mux ! filesink location="+lecturePath+"/video.mp4";
     } else {
@@ -219,7 +219,7 @@ void CommandLineThread::createThreadsFromConfigs() {
                 " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! tee name=myvid \\"+
                 " ! queue ! decodebin ! xvimagesink sync=false \\"+
                 " myvid. ! queue ! mux.video_0 \\"+
-                " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=1,depth=24 ! audioconvert "+
+                " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
                 " ! lamemp3enc ! queue ! mux.audio_0 \\"+
                 " avimux name=mux ! filesink location="+lecturePath+"/video.mp4";
 

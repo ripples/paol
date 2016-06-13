@@ -488,7 +488,7 @@ void MainWindow::captureVideo(){
                         " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
                         " ! queue ! xvimagesink sync=false \\"+
                         " myvid. ! queue ! mux.video_0 \\"+
-                        " alsasrc device=plughw:"+audioCamNum+" ! audio/x-raw,rate=44100,channels=1,depth=24 ! audioconvert "+
+                        " alsasrc device=plughw:"+audioCamNum+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
                         " ! lamemp3enc ! queue ! mux.audio_0 \\"+
                         " avimux name=mux ! filesink location="+processLocation+"/video.mp4";
             } else {
@@ -497,7 +497,7 @@ void MainWindow::captureVideo(){
                         " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! tee name=myvid \\"+
                         " ! queue ! decodebin ! xvimagesink sync=false \\"+
                         " myvid. ! queue ! mux.video_0 \\"+
-                        " alsasrc device=plughw:"+audioCamNum+" ! audio/x-raw,rate=44100,channels=1,depth=24 ! audioconvert "+
+                        " alsasrc device=plughw:"+audioCamNum+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
                         " ! lamemp3enc ! queue ! mux.audio_0 \\"+
                         " avimux name=mux ! filesink location="+processLocation+"/video.mp4";
 
@@ -631,6 +631,19 @@ void MainWindow::on_mainMenu_Upload_Lectures_clicked(){
     qDebug("%s",uploadScript.c_str());
     QProcess *runUpload=new QProcess(this);
     runUpload->start(uploadScript.c_str());
+
+    //Check if upload is still running
+    //This way the GUI freezes
+    qDebug() << "Uploading files. GUI blocked. Please wait.";
+    runUpload->waitForFinished(-1);
+
+    if(runUpload->exitCode() !=0){
+        qDebug() << "Error";
+    }
+    else{
+        qDebug() << "Upload is Done";
+    }
+
 }
 
 /// SETUP WINDOW BUTTONS
@@ -997,7 +1010,7 @@ void MainWindow::on_lecDet_Previous_Button_clicked(){
         ui->lectureDetailsWidget->hide();
         //Update twice to move backwards twice in nav bar
         navigationBarUpdate(false);
-        navigationBarUpdate(false);
+        navigationBarUpdate(false); //necessary?
         ui->setupMenuWidget->show();
     }
 }
@@ -1005,6 +1018,8 @@ void MainWindow::on_lecDet_Previous_Button_clicked(){
 /// LECTURE CAPTURE BUTTON
 void MainWindow::on_captureLecture_Terminate_Button_clicked(){   
     emit quitProcessing();
+    //Kill gst process through system - send SIGINT
+    system("ps -ef | awk '/[g]st-launch-1.0/{print $2}' | xargs kill -INT");
 
     for(int i = 0; i < dev.length(); i++){
         dev[i]->wait();
@@ -1015,7 +1030,7 @@ void MainWindow::on_captureLecture_Terminate_Button_clicked(){
     releaseComponents();
     // Stop FFmpeg
     //ffmpegProcess->write("q");
-    system("ps -ef | awk '/[g]st-launch-1.0/{print $2}' | xargs kill -INT");
+    //system("ps -ef | awk '/[g]st-launch-1.0/{print $2}' | xargs kill -INT"); //Moved after quitProcessing for better audio/video sync
     ffmpegProcess->closeWriteChannel();
     ffmpegProcess->waitForFinished();
     ui->mainMenuWidget->show();
