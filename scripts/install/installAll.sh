@@ -22,3 +22,6 @@ sudo apt-get install -y maven2
 
 #install rule to change permissions on vga2usb
 /home/paol/paol-code/scripts/install/vga2usbPermission.sh
+
+#install and run calendar parser (assumes calendar will have same name as computer)
+/home/paol/paol-code/scripts/install/installCalendarParser.sh
