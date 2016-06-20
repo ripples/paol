@@ -1710,6 +1710,8 @@ Mat PAOLProcUtils::erodeSize(const Mat &mask, int size){
     }
     return out;
 }
+
+//erode any pixel that is not surrounded by SIZE pixels that are also highlighted
 Mat PAOLProcUtils::erodeSizeGreen(const Mat &mask, int size){
     int x,y,xx,yy,count;
     Mat out=mask.clone();

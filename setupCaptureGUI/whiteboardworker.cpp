@@ -86,7 +86,7 @@ void WhiteboardWorker::processImage() {
 
     //if the program has run long enough to have data in all images
     if (oldNormalizedCrossCorrelation.data){
-        //initialize stable image to zeros
+        //initialize stable image to zeros if it does not exist
         if(!stablePixels.data)
             stablePixels=Mat::zeros(currentRectified.size(),currentRectified.type());
 
@@ -103,7 +103,7 @@ void WhiteboardWorker::processImage() {
 
         oldWhiteboard=refinedCurrentFrame.clone();
 ;
-        //if the program has run enough for these to exist
+        //if the program has run enough for these images to exist
         if(notWhiteboardEroded.data){
             oldNotWhiteboardEroded=notWhiteboardEroded.clone();
         }
@@ -111,14 +111,23 @@ void WhiteboardWorker::processImage() {
         //update whiteboard in stable locations
         PAOLProcUtils::updateBackground(currentWhiteboard,currentRectified,stablePixels,framesToBeStable,refinedCurrentFrame);
 
+        //identify areas that are not whiteboard
         notWhiteboard=PAOLProcUtils::getNotWhite(currentWhiteboard);
+
+        //these next two steps work together to fill in holes
+        //grow the areas that are not whiteboard
         notWhiteboardGrown=PAOLProcUtils::growGreen(notWhiteboard,2);
+        //erode the areas that are not whiteboard and at the edges just grown
         notWhiteboardEroded=PAOLProcUtils::erodeSizeGreen(notWhiteboardGrown,7);
 
+        //if multiple images that have identified areas of text exist
         if(oldNotWhiteboardEroded.data){
+            //find the differences in text regions
             notWhiteboardDifference=PAOLProcUtils::getErodeDifferencesIm(oldNotWhiteboardEroded,notWhiteboardEroded);
+            //erode those difference areas to try to remove noise
             notWhiteboardDifference=PAOLProcUtils::erodeSize(notWhiteboardDifference,4);
 
+            //count the number of differences still present
             currentDifference=PAOLProcUtils::countDifferences(notWhiteboardDifference);
             if(changedBoard){
                 printToLog("currentDifferences: %d stable: %d changedBoard=true\n", currentDifference,consecutiveStableCount);
@@ -128,223 +137,27 @@ void WhiteboardWorker::processImage() {
                 qDebug("currentDifferences: %d stable: %d changedBoard=false\n", currentDifference,consecutiveStableCount);
             }
 
+            //if the number of differences is greater then 20 (a large change) reset the stable count and say that there is a change
             if(currentDifference>20){
                 changedBoard=true;
-                consecutiveStableCount=0;
+                consecutiveStableCount=0;//probably not necessary with the next if statement.
             }
+
+            //if they are identical then say they are stable else reset the stable counter
             if(currentDifference==0){
                 consecutiveStableCount++;
             }else{
                 consecutiveStableCount=0;
             }
+
+            //if stable (more then 5 the same) and a change occurs then save
             if(consecutiveStableCount>=5 && changedBoard){
                 saveImageWithTimestamp(currentWhiteboard);
             }
         }
     }
 }
-/*
-void WhiteboardWorker::processImageOld() {
-    Mat currentRectified = PAOLProcUtils::rectifyImage(currentFrame, corners);
 
-    // If this is the first time processing, initialize WB processing fields and return
-    // without further processing
-    if(!oldFrame.data) {
-        oldRefinedBackground = Mat::zeros(currentRectified.size(), currentRectified.type());
-        oldMarkerModel = Mat::zeros(currentRectified.size(), currentRectified.type());
-        return;
-    }
-
-    Mat oldRectified = PAOLProcUtils::rectifyImage(oldFrame, corners);
-
-    float numDif;
-    Mat allDiffs;
-    PAOLProcUtils::findAllDiffsMini(allDiffs, numDif, oldRectified, currentRectified, 40, 1);
-
-    // If there is a large enough difference, reset the stable whiteboard image count and do further processing
-    if(numDif > .03) {
-        // Reset stable whiteboard image count
-        stableWhiteboardCount = 0;
-        // Find true differences (ie. difference pixels with enough differences surrounding them)
-        float refinedNumDif;
-        Mat filteredDiffs;
-        PAOLProcUtils::filterNoisyDiffs(filteredDiffs, refinedNumDif, allDiffs);
-
-        // Find if there are enough true differences to update the current marker and whiteboard models
-        // (ie. professor movement or lighting change detected)
-        if(refinedNumDif > .04) {
-            // Identify where the motion (ie. the professor) is
-            Mat movement = PAOLProcUtils::expandDifferencesRegion(filteredDiffs);
-            // Rescale movement info to full size
-            Mat mvmtFullSize = PAOLProcUtils::enlarge(movement);
-
-            // Find marker candidates
-            Mat markerCandidates = PAOLProcUtils::findMarkerStrokeCandidates(currentRectified);
-            // Find marker locations
-            Mat markerLocations = PAOLProcUtils::findMarkerStrokeLocations(currentRectified);
-            // Keep marker candidates intersecting with marker locations
-            Mat currentMarkerWithProf = PAOLProcUtils::filterConnectedComponents(markerCandidates, markerLocations);
-
-            // Use the movement information to erase the professor
-            Mat currentMarkerModel = PAOLProcUtils::updateModel(
-                        oldMarkerModel, currentMarkerWithProf, mvmtFullSize);
-
-
-            // Find how much the current marker model differs from the stored one
-            float markerDiffs = PAOLProcUtils::findMarkerStrokeDiffs(oldMarkerModel, currentMarkerModel);
-            * test code to check out where the differences are occuring visually
-            Mat strokeCheck=PAOLProcUtils::findMarkerStrokeDiffs2(oldMarkerModel, currentMarkerModel);
-            saveImageWithTimestamp(strokeCheck,"strokecheck");
-            *
-            printToLog("numDif: %f\n", numDif);
-            printToLog("refinedNumDif: %f\n", refinedNumDif);
-            printToLog("markerDiffs: %f\n", markerDiffs);
-            // Save and update the models if the marker content changed enough
-            if(markerDiffs > .002) {
-                // Only save the image if a meaningful has been stored
-                if(realImageIsStored) {
-                    //Mat oldRefinedBackgroundRectified = PAOLProcUtils::rectifyImage(oldRefinedBackground,corners);
-                    saveImageWithTimestamp(oldRefinedBackground);
-                }
-                // Update marker model
-                oldMarkerModel = currentMarkerModel.clone();
-                // Update enhanced version of background
-                Mat enhancedImage = PAOLProcUtils::enhanceColor(currentRectified);
-                Mat enhancedImageDarkSharp = PAOLProcUtils::darkenText(currentMarkerModel,enhancedImage);
-                oldRefinedBackground = PAOLProcUtils::updateModel(
-                            oldRefinedBackground, enhancedImageDarkSharp, mvmtFullSize);
-                realImageIsStored = true;
-            }
-        }
-    }
-    // Otherwise, check if the frames are basically identical (ie. stable)
-    else if(numDif < .000001) {
-        stableWhiteboardCount++;
-        // If the image has been stable for exactly three frames, the lecturer is not present, so we
-        // can update the marker and whiteboard models without movement information
-        if(stableWhiteboardCount == 3) {
-            // Only save the image if a meaningful has been stored
-            if(realImageIsStored) {
-                //Mat oldRefinedBackgroundRectified = PAOLProcUtils::rectifyImage(oldRefinedBackground,corners);
-                saveImageWithTimestamp(oldRefinedBackground);
-            }
-
-            // Update marker mode
-            // Find marker candidates
-            Mat markerCandidates = PAOLProcUtils::findMarkerStrokeCandidates(currentRectified);
-            // Find marker locations
-            Mat markerLocations = PAOLProcUtils::findMarkerStrokeLocations(currentRectified);
-            // Use the movement information to erase the professor
-            Mat currentMarkerModel = PAOLProcUtils::filterConnectedComponents(markerCandidates, markerLocations);
-
-            // Update enhanced version of background
-            Mat enhancedImage = PAOLProcUtils::enhanceColor(currentRectified);
-            Mat enhancedImageDarkSharp = PAOLProcUtils::darkenText(currentMarkerModel,enhancedImage);
-            oldRefinedBackground = enhancedImageDarkSharp.clone();
-            realImageIsStored = true;
-        }
-    }
-
-    *Ryan's method
-     *
-    // Get rectified versions of old and current frames
-    Mat oldRectified = oldFrame.clone();//PAOLProcUtils::rectifyImage(oldFrame, corners);
-    Mat currentRectified = currentFrame.clone();//PAOLProcUtils::rectifyImage(currentFrame, corners);
-
-    //compare picture to previous picture and store differences in allDiffs
-    float numDif;
-    Mat allDiffs;
-    PAOLProcUtils::findAllDiffsMini(allDiffs, numDif, oldRectified, currentRectified, 40, 1);
-
-    // If there is a large enough difference, reset the stable whiteboard image count and do further processing
-    if(numDif > .03) {
-        // Reset stable whiteboard image count
-        stableWhiteboardCount = 0;
-        // Find true differences (ie. difference pixels with enough differences surrounding them)
-        float refinedNumDif;
-        Mat filteredDiffs;
-        PAOLProcUtils::filterNoisyDiffs(filteredDiffs, refinedNumDif, allDiffs);
-
-        // Find if there are enough true differences to update the current marker and whiteboard models
-        // (ie. professor movement or lighting change detected)
-        if(refinedNumDif > .04) {
-            // Identify where the motion (ie. the professor) is
-            Mat movement = PAOLProcUtils::expandDifferencesRegion(filteredDiffs);
-            // Rescale movement info to full size
-            Mat mvmtFullSize = PAOLProcUtils::enlarge(movement);
-
-            // Find marker candidates
-            Mat markerCandidates = PAOLProcUtils::findMarkerStrokeCandidates(currentRectified);
-            // Find marker locations
-            Mat markerLocations = PAOLProcUtils::findMarkerStrokeLocations(currentRectified);
-            // Keep marker candidates intersecting with marker locations
-            Mat currentMarkerWithProf = PAOLProcUtils::filterConnectedComponents(markerCandidates, markerLocations);
-
-            // Use the movement information to erase the professor
-            Mat currentMarkerModel = PAOLProcUtils::updateModel(
-                        oldMarkerModel, currentMarkerWithProf, mvmtFullSize);
-            Mat currentMarkerModelGrown = PAOLProcUtils::grow(currentMarkerModel,3);
-            // Find how much the current marker model differs from the stored one
-            float markerDiffs = PAOLProcUtils::findMarkerModelDiffs(oldMarkerModel, currentMarkerModel);
-            printToLog("numDif: %f\n", numDif);
-            printToLog("refinedNumDif: %f\n", refinedNumDif);
-            printToLog("markerDiffs: %f\n", markerDiffs);
-            // Save and update the models if the marker content changed enough
-            if(markerDiffs > .008) {
-                // Only save the image if a meaningful has been stored
-                if(realImageIsStored) {
-                    Mat enhancedImage = PAOLProcUtils::enhanceColor(oldRectified);
-                    //Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
-                    Mat oldRefinedBackgroundSmooth = PAOLProcUtils::darkenText(currentMarkerModel,enhancedImage);
-                    //Mat oldRefinedBackgroundSmooth = PAOLProcUtils::CLAHE(oldRectified);
-                    Mat oldRefinedBackgroundSmooth2 = PAOLProcUtils::rectifyImage(oldRefinedBackgroundSmooth,corners);
-                    //Mat oldRefinedBackgroundSmooth2 = PAOLProcUtils::findMarkerWithMarkerBorders(oldRectified);
-                    //Mat oldRefinedBackgroundSmooth2 = PAOLProcUtils::CLAHE(oldRectified);
-                    //Mat oldRefinedBackgroundSmooth = PAOLProcUtils::darkenText(pdrift,oldRefinedBackgroundSmooth2);
-                    //Mat enhancedImage = PAOLProcUtils::enhanceColor(oldRectified);
-                    saveImageWithTimestamp(oldRefinedBackgroundSmooth2);
-                    //saveImageWithTimestamp(oldRectified);
-                    //saveImageWithTimestamp(pdrift);
-                }
-                // Update marker model
-                oldMarkerModel = currentMarkerModel.clone();
-                // Update enhanced version of background
-                Mat whiteWhiteboard = PAOLProcUtils::whitenWhiteboard(currentRectified, currentMarkerModelGrown);
-                oldRefinedBackground = PAOLProcUtils::updateModel(
-                            oldRefinedBackground, whiteWhiteboard, mvmtFullSize);
-                realImageIsStored = true;
-            }
-        }
-    }
-    // Otherwise, check if the frames are basically identical (ie. stable)
-    else if(numDif < .000001) {
-        stableWhiteboardCount++;
-        // If the image has been stable for exactly three frames, the lecturer is not present, so we
-        // can update the marker and whiteboard models without movement information
-        if(stableWhiteboardCount == 3) {
-            // Only save the image if a meaningful has been stored
-            if(realImageIsStored) {
-                // Save the smooth marker version of the old background image
-                Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
-                saveImageWithTimestamp(oldRefinedBackgroundSmooth);
-            }
-
-            // Update marker model
-            // Find marker candidates
-            Mat markerCandidates = PAOLProcUtils::findMarkerStrokeCandidates(currentRectified);
-            // Find marker locations
-            Mat markerLocations = PAOLProcUtils::findMarkerStrokeLocations(currentRectified);
-            // Keep marker candidates intersecting with marker locations
-            Mat currentMarkerModel = PAOLProcUtils::filterConnectedComponents(markerCandidates, markerLocations);
-
-            oldMarkerModel = currentMarkerModel.clone();
-            // Update enhanced version of background
-            Mat whiteWhiteboard = PAOLProcUtils::whitenWhiteboard(currentRectified, currentMarkerModel);
-            oldRefinedBackground = whiteWhiteboard.clone();
-            realImageIsStored = true;
-        }
-    }*
-}*/
 
 void WhiteboardWorker::saveImageWithTimestamp(const Mat& image) {
     // Construct the path to save the image
