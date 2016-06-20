@@ -82,8 +82,9 @@ public class CalendarParser {
   
   private static String semester = "default";
   
-  // How many seconds before lecture to start capture
-  private static final long buffer = 300;
+  // How many seconds before and after lecture to start and end capture
+  private static final long bufferStart = 30;
+  private static final long bufferEnd = 120;
   
   // How many days to look ahead
   private static final int scanPeriod = 3;
@@ -216,7 +217,7 @@ public class CalendarParser {
 	long eStartLong = e.getStart().getDateTime().getValue();
 	long eEndLong = e.getEnd().getDateTime().getValue();
 	long duration = (eEndLong - eStartLong)/1000;
-	Date sDate = new Date(eStartLong - buffer*1000);
+	Date sDate = new Date(eStartLong - bufferStart*1000);
 	String courseTitle = e.getSummary();
 	// Replace all spaces with underscores
 	courseTitle = courseTitle.replace(" ", "_");
@@ -229,7 +230,7 @@ public class CalendarParser {
 		courseListNumEnd = colonIdx;
 	}
 	String course = courseTitle.substring(0, courseListNumEnd);
-	return cronLine(captureProgram, sDate.getMinutes(), sDate.getHours(), sDate.getDate(), sDate.getMonth(), sDate.getYear(), sem, course, duration+2*buffer);
+	return cronLine(captureProgram, sDate.getMinutes(), sDate.getHours(), sDate.getDate(), sDate.getMonth(), sDate.getYear(), sem, course, duration+bufferStart+bufferEnd);
   }
   
   // m h  dom mon dow year   command
