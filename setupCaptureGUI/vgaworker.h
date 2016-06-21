@@ -20,6 +20,8 @@ private:
     Mat lastStableScreen;
     int stableScreenCount;
 
+    time_t stableTime;
+
 protected:
     bool takePicture();
     void processImage();

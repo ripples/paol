@@ -22,6 +22,9 @@ VGAWorker::VGAWorker(int camNumIn, int compNum, bool camFlipped, string lecPath)
     capturedImageCount = 0;
     stableScreenCount = 0;
 
+    //set time for initial computer image to be displayed
+    stableTime=currentImageTime;
+
     // Print the association between this process and the output
     printToLog("VGA %d: %p\n", vgaNum, this);
 }
@@ -67,25 +70,26 @@ void VGAWorker::processImage() {
     if(percentDifference < COMP_DIFF_THRESHOLD) {
         // Update stable screen count
         stableScreenCount++;
-        // If image has been stable for enough screens, save last stable image, then
-        // update it
-        if(stableScreenCount == COMP_REPEAT_THRESHOLD) {
-            // Only save the image if a meaningful has been stored
-            if(realImageIsStored)
-                saveImageWithTimestamp(lastStableScreen);
-            lastStableScreen = currentScreen.clone();
-            realImageIsStored = true;
-        }
+        //copy the current image to the last stable image location
+        lastStableScreen = currentScreen.clone();
     }
     else {
+        // If there has been a change and the number of images stable before the change
+        // were enough, save the last stable image
+        if(stableScreenCount >= COMP_REPEAT_THRESHOLD) {
+            saveImageWithTimestamp(lastStableScreen);
+            realImageIsStored = true;
+        }
+
         stableScreenCount = 0;
+        stableTime=currentImageTime;
     }
 }
 
 void VGAWorker::saveImageWithTimestamp(const Mat& image) {
     // Construct the path to save the image
     stringstream ss;
-    ss << lecturePath << "/computer/computer" << currentImageTime << "-" << vgaNum << ".png";
+    ss << lecturePath << "/computer/computer" << stableTime << "-" << vgaNum << ".png";
     imwrite(ss.str(), image);
 
     // Print image save success
@@ -105,6 +109,6 @@ void VGAWorker::printToLog(char *format, ...) {
 }
 
 void VGAWorker::saveLastImage() {
-    if(realImageIsStored)
+    if(stableScreenCount>0)
         saveImageWithTimestamp(lastStableScreen);
 }
