@@ -201,14 +201,21 @@ void CommandLineThread::createThreadsFromConfigs() {
     ffmpegProcess->setStandardErrorFile(QString::fromStdString(ffmpegLogPath));
 
     videoDeviceNumStr << videoDeviceNum;
-    audioNumStr << audioNum;
+    if(audioNum != 0){
+        audioNumStr << audioNum;
+    } else {
+        //If the audio is set to 0, change it to standard 1 to capture audio card 1
+        audioNum = 1;
+        audioNumStr << audioNum;
+    }
+
     //new method of calling ffmpeg directly from the code without a script
     if(flipVideo){
         //if camera is upside down then flip video in capture
         ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr.str()+
-                " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
+                " \\ ! video/x-h264,width=800, height=448, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
                 " ! queue ! xvimagesink sync=false \\"+
-                " myvid. ! queue ! mux.video_0 \\"+
+                " myvid. ! mux.video_0 \\"+
                 " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
                 " ! lamemp3enc ! queue ! mux.audio_0 \\"+
                 " avimux name=mux ! filesink location="+lecturePath+"/video.mp4";
@@ -216,7 +223,7 @@ void CommandLineThread::createThreadsFromConfigs() {
         //set normal capture for right side up video
 
         ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr.str()+
-                " \\ ! video/x-h264,width=1280, height=720, framerate=24/1 ! tee name=myvid \\"+
+                " \\ ! video/x-h264,width=800, height=448, framerate=24/1 ! tee name=myvid \\"+
                 " ! queue ! decodebin ! xvimagesink sync=false \\"+
                 " myvid. ! queue ! mux.video_0 \\"+
                 " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
