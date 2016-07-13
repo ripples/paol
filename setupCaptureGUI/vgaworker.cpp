@@ -89,7 +89,7 @@ void VGAWorker::processImage() {
 void VGAWorker::saveImageWithTimestamp(const Mat& image) {
     // Construct the path to save the image
     stringstream ss;
-    ss << lecturePath << "/computer/computer" << stableTime << "-" << vgaNum << ".png";
+    ss << lecturePath << "/computer/computer" << "-" << vgaNum << "-" << stableTime << ".png";
     imwrite(ss.str(), image);
 
     // Print image save success

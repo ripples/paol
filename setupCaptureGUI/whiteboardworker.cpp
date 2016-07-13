@@ -162,7 +162,7 @@ void WhiteboardWorker::processImage() {
 void WhiteboardWorker::saveImageWithTimestamp(const Mat& image) {
     // Construct the path to save the image
     stringstream ss;
-    ss << lecturePath << "/whiteboard/whiteBoard" << currentImageTime << "-" << whiteboardNum << ".png";
+    ss << lecturePath << "/whiteboard/whiteBoard" << "-" << whiteboardNum << "-" << currentImageTime << ".png";
     imwrite(ss.str(), image);
 
     // Print image save success
@@ -177,7 +177,7 @@ void WhiteboardWorker::saveImageWithTimestamp(const Mat& image) {
 void WhiteboardWorker::saveImageWithTimestamp(const Mat& image,string name) {
     // Construct the path to save the image
     stringstream ss;
-    ss << lecturePath << "/whiteboard/whiteBoard" << name << currentImageTime << "-" << whiteboardNum << ".png";
+    ss << lecturePath << "/whiteboard/whiteBoard" << name << "-" << whiteboardNum << "-" << currentImageTime << ".png";
     imwrite(ss.str(), image);
 
     // Print image save success
