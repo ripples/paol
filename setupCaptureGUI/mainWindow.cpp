@@ -455,12 +455,33 @@ void MainWindow::captureVideo(){
     string audioCamNum;
     string s;
     stringstream out;
+    int bufSize = 512;
+    char *buf = new char[bufSize];
+    FILE *ptr;
+    string outFileName;
+    string audioSet;
+
     for(int h = 0; h < audioRecord.length(); h++){
         if(audioRecord[h]->isChecked()){
             out << h;
-            audioCamNum = out.str();
-            out.str(string());
         }
+    }
+
+    //Set pulsesrc Audio for video record
+    if(out.str() == "" || out.str() == "0"){
+        //If there's no audio box selected, use the first C920 camera as default
+        audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+    } else {
+        //If there's an audio box selected, use its C920 camera
+        audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str()+".analog";
+    }
+
+    if ((ptr = popen(audioSet.c_str(), "r")) != NULL){
+        while(fgets(buf, bufSize, ptr)){
+            outFileName += buf;
+            audioCamNum = outFileName;
+        }
+        fclose(ptr);
     }
 
     for(int i = 0; i < optionBoxes.length(); i++){
@@ -472,8 +493,10 @@ void MainWindow::captureVideo(){
                 isChecked = "1";
             }
 
+            out.str(string());
             out << i;
             s = out.str();
+
             audioCamNum.erase(std::remove(audioCamNum.begin(),audioCamNum.end(),' '),audioCamNum.end());
 
             /* old way of calling ffmpeg from script
@@ -485,21 +508,19 @@ void MainWindow::captureVideo(){
             if(reverseChecks[i]->isChecked()==1){
                 //if camera is upside down then flip video in capture
                 vidCaptureString = "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
-                        " \\ ! video/x-h264,width=800, height=448, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
-                        " ! queue ! xvimagesink sync=false \\"+
-                        " myvid. ! mux.video_0 \\"+
-                        " alsasrc device=plughw:"+audioCamNum+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
-                        " ! lamemp3enc ! queue ! mux.audio_0 \\"+
-                        " avimux name=mux ! filesink location="+processLocation+"/video.mp4";
+                        " \\ ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid \\"+
+                        " myvid. ! queue ! x264enc ! mux.video_0 \\"+
+                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
+                        " ! voaacenc ! aacparse ! queue ! mux.audio_0 \\"+
+                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
             } else {
                 //set normal capture for right side up video
                 vidCaptureString =  "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
-                        " \\ ! video/x-h264,width=800, height=448, framerate=24/1 ! tee name=myvid \\"+
-                        " ! queue ! decodebin ! xvimagesink sync=false \\"+
+                        " \\ ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid \\"+
                         " myvid. ! queue ! mux.video_0 \\"+
-                        " alsasrc device=plughw:"+audioCamNum+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
-                        " ! lamemp3enc ! queue ! mux.audio_0 \\"+
-                        " avimux name=mux ! filesink location="+processLocation+"/video.mp4";
+                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
+                        " ! voaacenc ! aacparse ! queue ! mux.audio_0 \\"+
+                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
 
 
                 //ORIGINAL CODE <<<<<<<<<<<<<<<<<<<<<<<<<

@@ -12,6 +12,7 @@ do
 	do
 	    echo $lecture
 	    echo "$lecturePath/$semester/$course/$lecture"
+	    $codePath/paol-code/scripts/upload/compressVideo.sh "$lecturePath/$semester/$course/$lecture"
 	    $codePath/paol-code/scripts/upload/createThumbnails.sh "$lecturePath/$semester/$course/$lecture"
 	    $codePath/paol-code/scripts/upload/uploadPortable.sh "$lecturePath/$semester/$course/$lecture" $codePath
 		echo

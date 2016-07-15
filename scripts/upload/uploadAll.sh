@@ -8,6 +8,7 @@ do
 	for lecture in $(ls /home/paol/recordings/readyToUpload/$semester/$course)
 	do
 	    echo $lecture
+	    /home/paol/paol-code/scripts/upload/compressVideo.sh "/home/paol/recordings/readyToUpload/$semester/$course/$lecture"
 	    /home/paol/paol-code/scripts/upload/createThumbnails.sh "/home/paol/recordings/readyToUpload/$semester/$course/$lecture"
 	    /home/paol/paol-code/scripts/upload/upload.sh "/home/paol/recordings/readyToUpload/$semester/$course/$lecture"
 		echo

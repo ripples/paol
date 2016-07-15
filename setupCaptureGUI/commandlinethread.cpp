@@ -163,7 +163,13 @@ void CommandLineThread::createThreadsFromConfigs() {
     int videoDeviceNum = -1;
     bool flipVideo;
     int audioNum = -1;
-    stringstream videoDeviceNumStr,audioNumStr;
+    int bufSize = 512;
+    char *buf = new char[bufSize];
+    FILE *ptr;
+    string outFileName;
+    string audioSet;
+    string videoDeviceNumStr,audioNumStr;
+    stringstream out;
 
     // Go through the thread configurations, creating the paolProcesses
     // and setting the FFmpeg process parameters along the way
@@ -200,41 +206,55 @@ void CommandLineThread::createThreadsFromConfigs() {
     string ffmpegLogPath = lecturePath + "/logs/ffmpeg.log";
     ffmpegProcess->setStandardErrorFile(QString::fromStdString(ffmpegLogPath));
 
-    videoDeviceNumStr << videoDeviceNum;
-    if(audioNum != 0){
-        audioNumStr << audioNum;
+    //Set video number
+    out << videoDeviceNum;
+    videoDeviceNumStr = out.str();
+    out.str(string());
+
+    //Set audio number
+    out << audioNum;
+
+    //Set pulsesrc Audio for video record
+    if(out.str() == "0"){
+        //If the audio is assigned to C920 camera /dev/video0
+        audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
     } else {
-        //If the audio is set to 0, change it to standard 1 to capture audio card 1
-        audioNum = 1;
-        audioNumStr << audioNum;
+        //If the audio is assigned to any other C920 camera
+        audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str()+".analog";
+    }
+
+    if ((ptr = popen(audioSet.c_str(), "r")) != NULL){
+        while(fgets(buf, bufSize, ptr)){
+            outFileName += buf;
+            audioNumStr = outFileName;
+        }
+        fclose(ptr);
     }
 
     //new method of calling ffmpeg directly from the code without a script
     if(flipVideo){
         //if camera is upside down then flip video in capture
-        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr.str()+
-                " \\ ! video/x-h264,width=800, height=448, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
-                " ! queue ! xvimagesink sync=false \\"+
-                " myvid. ! mux.video_0 \\"+
-                " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
-                " ! lamemp3enc ! queue ! mux.audio_0 \\"+
-                " avimux name=mux ! filesink location="+lecturePath+"/video.mp4";
+        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
+                " \\ ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid \\"+
+                " myvid. ! queue ! x264enc ! mux.video_0 \\"+
+                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
+                " ! voaacenc ! aacparse ! queue ! mux.audio_0 \\"+
+                " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
     } else {
         //set normal capture for right side up video
 
-        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr.str()+
-                " \\ ! video/x-h264,width=800, height=448, framerate=24/1 ! tee name=myvid \\"+
-                " ! queue ! decodebin ! xvimagesink sync=false \\"+
+        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
+                " \\ ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid \\"+
                 " myvid. ! queue ! mux.video_0 \\"+
-                " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
-                " ! lamemp3enc ! queue ! mux.audio_0 \\"+
-                " avimux name=mux ! filesink location="+lecturePath+"/video.mp4";
+                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
+                " ! voaacenc ! aacparse ! queue ! mux.audio_0 \\"+
+                " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
 
         //ORIGINAL CODE - TESTING
 
         /*ffmpegCommand = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+videoDeviceNumStr.str()+
                 " -f alsa -ac 2 -i hw:"+audioNumStr.str()+" -acodec libfdk_aac -b:a 128k "+
-                "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
+                "-vcodec libx264 -preset ultrafast -b:v 260k clear-profile:v baseline -level 3.0 "+
                 "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";*/
 
         //ORIGINAL CODE - TESTING

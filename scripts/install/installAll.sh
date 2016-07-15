@@ -20,6 +20,15 @@ sudo apt-get install -y maven2
 #install ffmpeg
 /home/paol/paol-code/scripts/install/ffmpegInstall.sh &
 
+#install gstreamer
+/home/paol/paol-code/scrpits/install/gstreamerInstall.sh &
+
+#install notifications
+/home/paol/paol-code/scrpits/install/notificationInstall.sh
+
+#install imagemagick
+sudo apt-get install imagemagick
+
 #install rule to change permissions on vga2usb
 /home/paol/paol-code/scripts/install/vga2usbPermission.sh
 
