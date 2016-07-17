@@ -10,6 +10,8 @@ private:
     // Field to keep track of which whiteboard device is being used
     int whiteboardNum;
 
+    string USB;
+
     // Fields for whiteboard processing
     Mat currentFrame;
     Mat currentRectified;
@@ -53,7 +55,7 @@ protected:
     void printToLog(char* format, ...);
     void saveLastImage();
 public:
-    WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, string lecPath);
+    WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecPath);
 };
 
 #endif // WHITEBOARDWORKER_H

@@ -1,4 +1,5 @@
 #include "commandlinethread.h"
+#include <iostream>
 
 CommandLineThread::CommandLineThread(int argc, char **argv) {
     /// Make sure there were exactly four arguments given to the program
@@ -23,7 +24,10 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
 
     // Read thread configuration from setup file
     string tempPath=codePath+"/paol-code/cameraSetup.txt";
-    setThreadConfigs(tempPath.c_str());
+    createUSBSetupFile(tempPath.c_str());
+    string tempPath2=codePath+"/paol-code/USBSetup.txt";
+
+    setThreadConfigs(tempPath2.c_str(), tempPath.c_str());
 }
 
 CommandLineThread::~CommandLineThread()
@@ -106,7 +110,7 @@ void CommandLineThread::makeDirectories() {
     system(makeLogDir.c_str());
 }
 
-void CommandLineThread::setThreadConfigs(string configLocation) {
+void CommandLineThread::setThreadConfigs(string configLocation, string deviceLocation) {
     // Reset the thread configurations array
     threadConfigs.clear();
 
@@ -115,35 +119,53 @@ void CommandLineThread::setThreadConfigs(string configLocation) {
     QFile configFile(locAsQStr);
     assert(configFile.open(QIODevice::ReadOnly));
 
+    QString locDevice = QString::fromStdString(deviceLocation);
+    QFile configFile2(locDevice);
+    assert(configFile2.open(QIODevice::ReadOnly));
+
     // Initialize counts for how many whiteboards and VGA feeds there are
     whiteboardCount = 0;
     vgaCount = 0;
 
     // Read lines from the config file
     QTextStream in(&configFile);
-    while(!in.atEnd()) {
+    QTextStream in2(&configFile2);
+
+    while(!in.atEnd() && !in2.atEnd()) {
         QString line = in.readLine();
+        QString line2 = in2.readLine();
 
         // Only parse non-empty lines
-        if(line.length() > 0) {
+
+        if(line.length() > 0 && line2.length() > 0) {
+
             // Initialize fields to scan into
+            char deviceUSB[100];
             int deviceNum;
             int flipCam;
             char type[16];
-            int scanRes = sscanf(line.toStdString().data(), "%d %d %s", &deviceNum, &flipCam, type);
+
+            int scanRes = sscanf(line.toStdString().data(), "%s %d %s", deviceUSB, &flipCam, type);
+            //read in the extra device information
+            int scanRes2 = sscanf(line2.toStdString().data(), "%d %d %s", &deviceNum, &flipCam, type);
+
 
             // Make sure exactly three items were found on the current line
             assert(scanRes == 3);
 
             // Set thread configuration struct for the current line
             ProcThreadConfig p;
+            p.deviceUSB = string(deviceUSB);
             p.deviceNum = deviceNum;
             p.flipCam = flipCam;
             p.type = string(type);
+
+
             if(p.type == "Whiteboard") {
                 p.typeNum = whiteboardCount;
                 whiteboardCount++;
             }
+
             else if(p.type == "VGA2USB") {
                 p.typeNum = vgaCount;
                 vgaCount++;
@@ -152,18 +174,20 @@ void CommandLineThread::setThreadConfigs(string configLocation) {
             // Add the configuration struct to the set of configs
             threadConfigs.push_back(p);
         }
+
     }
 
     // Make sure at least one configuration was created
     assert(threadConfigs.size() > 0);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////
 void CommandLineThread::createThreadsFromConfigs() {
     // Set parameters for creating the FFmpeg process
     int videoDeviceNum = -1;
     bool flipVideo;
     int audioNum = -1;
-    stringstream videoDeviceNumStr,audioNumStr;
+    stringstream videoDeviceNumStr, audioNumStr;
 
     // Go through the thread configurations, creating the paolProcesses
     // and setting the FFmpeg process parameters along the way
@@ -171,7 +195,7 @@ void CommandLineThread::createThreadsFromConfigs() {
         ProcThreadConfig c = threadConfigs[i];
         // Switch based on the configuration type
         if(c.type == "Whiteboard") {
-            paolProcess* proc = new WhiteboardProcess(c.deviceNum, c.typeNum, c.flipCam, lecturePath);
+            paolProcess* proc = new WhiteboardProcess(c.deviceUSB, c.deviceNum, c.typeNum, c.flipCam, lecturePath);
             procThreads.push_back(proc);
         }
         else if(c.type == "VGA2USB") {
@@ -192,6 +216,7 @@ void CommandLineThread::createThreadsFromConfigs() {
     }
 
     // Make sure the video and audio device numbers were set by the configs
+
     assert(videoDeviceNum != -1 && audioNum != -1);
 
     // Initialize the QProcess for FFmpeg
@@ -201,6 +226,7 @@ void CommandLineThread::createThreadsFromConfigs() {
     ffmpegProcess->setStandardErrorFile(QString::fromStdString(ffmpegLogPath));
 
     videoDeviceNumStr << videoDeviceNum;
+
     if(audioNum != 0){
         audioNumStr << audioNum;
     } else {
@@ -209,9 +235,9 @@ void CommandLineThread::createThreadsFromConfigs() {
         audioNumStr << audioNum;
     }
 
-    //new method of calling ffmpeg directly from the code without a script
     if(flipVideo){
         //if camera is upside down then flip video in capture
+
         ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr.str()+
                 " \\ ! video/x-h264,width=800, height=448, framerate=24/1 ! decodebin ! videoflip method=2 ! queue ! tee name=myvid \\"+
                 " ! queue ! xvimagesink sync=false \\"+
@@ -229,36 +255,78 @@ void CommandLineThread::createThreadsFromConfigs() {
                 " alsasrc device=plughw:"+audioNumStr.str()+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
                 " ! lamemp3enc ! queue ! mux.audio_0 \\"+
                 " avimux name=mux ! filesink location="+lecturePath+"/video.mp4";
-
-        //ORIGINAL CODE - TESTING
-
-        /*ffmpegCommand = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+videoDeviceNumStr.str()+
-                " -f alsa -ac 2 -i hw:"+audioNumStr.str()+" -acodec libfdk_aac -b:a 128k "+
-                "-vcodec libx264 -preset ultrafast -b:v 260k -profile:v baseline -level 3.0 "+
-                "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";*/
-
-        //ORIGINAL CODE - TESTING
-
     }
 
-    /*old setup for running ffmpeg using script
-    // Set the command for running ffmpeg
-    stringstream ss;
-    ss << codePath << "/paol-code/scripts/capture/videoCapture ";
-    ss << "/dev/video" << videoDeviceNum << " hw:" << audioNum << " " << (int)flipVideo << " ";
-    ss << lectureDuration << " " << lecturePath << "/video.mp4 ";
-    ffmpegCommand = ss.str();
-    */
+    assert(ffmpegCommand != "");
+}
+void CommandLineThread::createUSBSetupFile(string cameraFile){
+    //vector for video and USB
+    vector< vector<string> >usbVideo;
+    vector<string>temp;
 
-    assert(ffmpegCommand != "");
-    /*old that kept failing
-    stringstream ss;
-    ss << codePath << "/paol-code/scripts/capture/videoCapturePortable ";
-    ss << "/dev/video" << videoDeviceNum << " hw:" << audioNum << " " << (int)flipVideo << " ";
-    ss << lecturePath << "/video.mp4 ";
-    ffmpegCommand = ss.str();
-    assert(ffmpegCommand != "");
-    */
+    //file to read from terminal
+    FILE *ptr;
+    int bufSize = 512;
+    char *buf = new char[bufSize];
+    string setupInfo = "";
+    std::string outFileName;
+    ptr = popen("v4l2-ctl --list-devices", "r");
+    int level = 0;
+    QString locAsQStr = QString::fromStdString(cameraFile);
+    QFile configFile(locAsQStr);
+    assert(configFile.open(QIODevice::ReadOnly));
+    QTextStream in(&configFile);
+    //loop through the usb and videos and add them to the 2d vector
+     while(fgets(buf, bufSize, ptr)){
+         if(level == 0){
+             outFileName = std::string(buf);
+             std::size_t found = outFileName.find("usb");
+             int found3 = outFileName.length() - found;
+             std::string substring = outFileName.substr(found, (found3 - 3));
+             temp.push_back(substring);
+             level++;
+         }
+         else if(level == 1){
+             outFileName = std::string(buf);
+             std::size_t found = outFileName.find("o");
+             std::string substring = outFileName.substr(found + 1, 1);
+             temp.push_back(substring);
+             usbVideo.push_back(temp);
+             level++;
+         }
+         else if(level == 2){
+            temp.clear();
+            level = 0;
+         }
+      }
+     //loop through the setup file to compare values to USB vector
+     while (!in.atEnd()){
+         QString line = in.readLine();
+         int deviceNum;
+         int flipCam;
+         char type[16];
+         sscanf(line.toStdString().data(), "%d %d %s", &deviceNum, &flipCam, type);
+         //device num
+         std::string myDevice;
+         std::stringstream out;
+         out << deviceNum;
+         myDevice = out.str();
+         //flipped
+         std::string myFlip;
+         std::stringstream pout;
+         pout << flipCam;
+         myFlip = pout.str();
+         std::cout << usbVideo.size() << endl;
+         for(int j = 0; j<usbVideo.size(); j++){
+            if(((usbVideo[j][1]).compare(myDevice)) == 0){
+                setupInfo = setupInfo + usbVideo[j][0] + " " + myFlip + " " + type + "\n";
+            }
+         }
+    }
+    //create USB setup file
+     const char *path =(codePath+"/paol-code/USBSetup.txt").c_str();
+     ofstream file(path);
+     file << setupInfo;
 }
 
 void CommandLineThread::writeInfoFile() {

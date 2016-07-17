@@ -1,6 +1,6 @@
 #include "whiteboardworker.h"
 
-WhiteboardWorker::WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, string lecPath)
+WhiteboardWorker::WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecPath)
 {
     // Initialize webcam and associated variables
     camera = VideoCapture(camNumIn);
@@ -9,13 +9,14 @@ WhiteboardWorker::WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, str
     flipCam = camFlipped;
     deviceNum = camNumIn;
     whiteboardNum = wbNum;
+    USB = deviceUSB;
 
     // Set lecture path
     lecturePath = lecPath;
 
     // Set the log file
     stringstream ss;
-    ss << lecturePath << "/logs/whiteboard" << whiteboardNum << ".log";
+    ss << lecturePath << "/logs/whiteboard" << USB << ".log";
     qDebug("%s",ss.str().c_str());
     logFile = fopen(ss.str().c_str(), "w");
     assert(logFile != NULL);
@@ -162,7 +163,7 @@ void WhiteboardWorker::processImage() {
 void WhiteboardWorker::saveImageWithTimestamp(const Mat& image) {
     // Construct the path to save the image
     stringstream ss;
-    ss << lecturePath << "/whiteboard/whiteBoard" << "-" << whiteboardNum << "-" << currentImageTime << ".png";
+    ss << lecturePath << "/whiteboard/whiteBoard" << "-" << USB << "-" << currentImageTime << ".png";
     imwrite(ss.str(), image);
 
     // Print image save success
@@ -177,7 +178,7 @@ void WhiteboardWorker::saveImageWithTimestamp(const Mat& image) {
 void WhiteboardWorker::saveImageWithTimestamp(const Mat& image,string name) {
     // Construct the path to save the image
     stringstream ss;
-    ss << lecturePath << "/whiteboard/whiteBoard" << name << "-" << whiteboardNum << "-" << currentImageTime << ".png";
+    ss << lecturePath << "/whiteboard/whiteBoard" << name << "-" << USB << "-" << currentImageTime << ".png";
     imwrite(ss.str(), image);
 
     // Print image save success

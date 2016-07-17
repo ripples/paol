@@ -1,6 +1,8 @@
 #ifndef COMMANDLINETHREAD_H
 #define COMMANDLINETHREAD_H
 
+#include <QApplication>
+#include <linux/videodev.h>
 #include <QFile>
 #include <QTextStream>
 #include <string>
@@ -11,11 +13,16 @@
 #include "paolProcess.h"
 #include "vgaprocess.h"
 #include "whiteboardprocess.h"
+#include <stdlib.h>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
 
 using namespace std;
 
 typedef struct ptc ProcThreadConfig;
 struct ptc {
+    string deviceUSB;
     int deviceNum;
     string type;
     int typeNum;
@@ -47,8 +54,9 @@ private:
     // Methods called to set up files at the start of recording
     string buildLecturePath(string semester, string course, time_t startTime);
     void makeDirectories();
-    void setThreadConfigs(string configLocation);
+    void setThreadConfigs(string configLocation, string deviceLocation);
     void createThreadsFromConfigs();
+    void createUSBSetupFile(string cameraFile);
     void writeInfoFile();
 
 public:

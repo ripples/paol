@@ -27,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
         std::string pathTemp=QDir::currentPath().toStdString();
         codePath=pathTemp.substr(0,loc);
         //qDebug()<< QString::fromUtf8(codePath.c_str());
+         videoUSB();
     }
 
 MainWindow::~MainWindow(){
@@ -223,6 +224,38 @@ void MainWindow::countCameras(){
     }
     qDebug() << "Number of Cameras plugged in: " << camCount;
 }
+void MainWindow::videoUSB(){
+    FILE *ptr;
+    int bufSize = 512;
+    char *buf = new char[bufSize];
+    std::string outFileName;
+    ptr = popen("v4l2-ctl --list-devices", "r");
+    int level = 0;
+    vector<string>temp;
+    //loop through the terminal command to store the USB/video values in vector field
+     while(fgets(buf, bufSize, ptr)){
+         if(level == 0){
+             outFileName = std::string(buf);
+             std::size_t found = outFileName.find("usb");
+             int found3 = outFileName.length() - found;
+             std::string substring = outFileName.substr(found, (found3 - 3));
+             temp.push_back(substring);
+             level++;
+         }
+         else if(level == 1){
+             outFileName = std::string(buf);
+             std::size_t found = outFileName.find("o");
+             std::string substring = outFileName.substr(found + 1, 1);
+             temp.push_back(substring);
+             usbVideo.push_back(temp);
+             level++;
+         }
+         else if(level == 2){
+            level = 0;
+            temp.clear();
+         }
+      }
+}
 
 //Create string that will be stored to the INFO file
 void MainWindow::createInfoFile(){
@@ -315,10 +348,20 @@ void MainWindow::createWBCornerTxt(){
     string allCoordinates = "";
     stringstream out;
     string filePath;
+    string cornerLocation;
+    std::string myCompare;
+    std::stringstream output;
+    output << corners_currentCam;
+    myCompare = output.str();
 
-    qDebug("here ");
-    qDebug() << tracker;
-    out << tracker;
+    //make wb corners correspond to USB instead of Wb number
+    for(int i=0; i<usbVideo.size(); i++){
+        if(usbVideo[i][1].compare(myCompare) == 0){
+            cornerLocation = usbVideo[i][0];
+             break;
+        }
+    }
+    out << cornerLocation;
     filePath = codePath+"/paol-code/wbCorners" + out.str() + ".txt";
     out.str(string());
 
