@@ -222,6 +222,7 @@ Mat PAOLProcUtils::grow(const Mat& orig, int size) {
     Mat ret = orig.clone();
     Mat element = getStructuringElement(MORPH_RECT, Size(2*size+1,2*size+1));
     dilate(orig, ret, element);
+    element.release();
     return ret;
 }
 
@@ -237,6 +238,7 @@ Mat PAOLProcUtils::growGreen(const Mat& orig, int size) {
             if(ret.at<Vec3b>(y,x)[0] == 255 && orig.at<Vec3b>(y,x)[0] == 0){
                 ret.at<Vec3b>(y,x)[1]=0;
             }
+    element.release();
     return ret;
 }
 
@@ -285,7 +287,9 @@ Mat PAOLProcUtils::getImageContours(const Mat& orig) {
           if(count>0)
               contourImage.at<Vec3b>(y,x)[1]=255;
       }
-
+    src_gray.release();
+    drawing.release();
+    canny_output.release();
     return contourImage;
 }
 
@@ -370,6 +374,7 @@ Mat PAOLProcUtils::expandDifferencesRegion(const Mat& differences) {
     diffHulls = sweepDown(diffHulls);
     diffHulls = binarizeAnd(diffHulls, 255);
 
+    grownDiffs.release();
     return diffHulls;
 }
 
@@ -700,6 +705,7 @@ Mat PAOLProcUtils::fillMarkerBorders(const Mat& markerBorders) {
     Mat filledMarker;
     dilate(markerBorders, filledMarker, element);
     erode(filledMarker, filledMarker, element);
+    element.release();
     return filledMarker;
 }
 
@@ -1018,6 +1024,7 @@ Mat PAOLProcUtils::raiseMarkerContrast(const Mat& whiteboardImg){
                 hiContrastImg.at<Vec3b>(y,x)[c]=dif;
             }
         }
+    avg.release();
     return hiContrastImg;
 }
 
@@ -1071,6 +1078,7 @@ Mat PAOLProcUtils::rectifyImage(const Mat& whiteboardImg, const WBCorners& corne
     // Do the perspective correction
     Mat ret;
     warpPerspective(whiteboardImg, ret, transform, Size(width,height));
+    transform.release();
     return ret;
 }
 
@@ -1099,6 +1107,7 @@ Mat PAOLProcUtils::findWhiteboardBorders(Mat& whiteboardImg) {
         pt2.y = cvRound(y0 - 2000*(a));
         line( ret, pt1, pt2, Scalar(0,0,255), 3, CV_AA);
     }
+    cannyEdges.release();
     return ret;
 }
 
@@ -1231,6 +1240,7 @@ float PAOLProcUtils::findMarkerStrokeDiffs(const Mat& oldMarkerModel, const Mat&
                     count++;
         }
     }
+    newModel.release();
     return count / (oldModel.rows*oldModel.cols);
 }
 
@@ -1258,6 +1268,8 @@ Mat PAOLProcUtils::findMarkerStrokeDiffs2(const Mat& oldMarkerModel, const Mat& 
             }
         }
     }
+    oldModel.release();
+    newModel.release();
     return ret;
 }
 
@@ -1321,6 +1333,8 @@ Mat PAOLProcUtils::darkenText( Mat &pdrift, const Mat &orig){
                 ret.at<Vec3b>(y,x)[2]=temp;
             }
         }
+    tempOut.release();
+    element.release();
     return ret;
 }
 
@@ -1408,6 +1422,8 @@ Mat PAOLProcUtils::CLAHE(const Mat &orig){
     Mat image_clahe;
     cvtColor(lab_image, image_clahe, CV_Lab2BGR);
 
+    lab_image.release();
+    dst.release();
     return image_clahe;
 }
 
@@ -1438,6 +1454,7 @@ Mat PAOLProcUtils::enhanceColor(const Mat &orig){
     GaussianBlur(ave, out, cv::Size(3, 3), 3);
     addWeighted(ave, 1.5, out, -0.5, 0, out);
 
+    ave.release();
     return out;
 }
 
@@ -1529,6 +1546,8 @@ float PAOLProcUtils::getVGADifferences(const Mat& oldFrame, const Mat& newFrame)
             }
         }
     }
+
+    mask.release();
     //std::cout<<"Difference dist: "<<dist<<std::endl;
     if((dist<10000))//&&(maskBottom>0))
         return 0;
@@ -1640,6 +1659,7 @@ Mat PAOLProcUtils::getWhiteboardDifferences(const Mat &oldFrame, const Mat &newF
     else
         return numDiff / (oldFrame.rows*oldFrame.cols);
         */
+    mask.release();
     return out;
 }
 
@@ -1831,6 +1851,7 @@ Mat PAOLProcUtils::surrountDifference(Mat& aveIm){
             }
         }
 
+    change.release();
     return view;
 }
 
