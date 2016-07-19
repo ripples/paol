@@ -127,16 +127,18 @@ void CommandLineThread::setThreadConfigs(string configLocation) {
         // Only parse non-empty lines
         if(line.length() > 0) {
             // Initialize fields to scan into
+            char deviceUSB[100];
             int deviceNum;
             int flipCam;
             char type[16];
-            int scanRes = sscanf(line.toStdString().data(), "%d %d %s", &deviceNum, &flipCam, type);
+            int scanRes = sscanf(line.toStdString().data(), "%s %d %d %s", deviceUSB, &deviceNum, &flipCam, type);
 
             // Make sure exactly three items were found on the current line
-            assert(scanRes == 3);
+            assert(scanRes == 4);
 
             // Set thread configuration struct for the current line
             ProcThreadConfig p;
+            p.deviceUSB = string(deviceUSB);
             p.deviceNum = deviceNum;
             p.flipCam = flipCam;
             p.type = string(type);
@@ -177,7 +179,7 @@ void CommandLineThread::createThreadsFromConfigs() {
         ProcThreadConfig c = threadConfigs[i];
         // Switch based on the configuration type
         if(c.type == "Whiteboard") {
-            paolProcess* proc = new WhiteboardProcess(c.deviceNum, c.typeNum, c.flipCam, lecturePath);
+            paolProcess* proc = new WhiteboardProcess(c.deviceUSB, c.deviceNum, c.typeNum, c.flipCam, lecturePath);
             procThreads.push_back(proc);
         }
         else if(c.type == "VGA2USB") {

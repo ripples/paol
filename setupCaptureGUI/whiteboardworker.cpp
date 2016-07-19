@@ -1,6 +1,6 @@
 #include "whiteboardworker.h"
 
-WhiteboardWorker::WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, string lecPath)
+WhiteboardWorker::WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecPath)
 {
     // Initialize webcam and associated variables
     camera = VideoCapture(camNumIn);
@@ -9,6 +9,7 @@ WhiteboardWorker::WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, str
     flipCam = camFlipped;
     deviceNum = camNumIn;
     whiteboardNum = wbNum;
+    USB = deviceUSB;
 
     // Set lecture path
     lecturePath = lecPath;
@@ -25,7 +26,7 @@ WhiteboardWorker::WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, str
     saveImageCount = 0;
     capturedImageCount = 0;
 
-    corners = getCornersFromFile(wbNum);
+    corners = getCornersFromFile(deviceUSB);
 
     // Print the association between this process and the output
     printToLog("WB %d: %p\n", whiteboardNum, this);
@@ -204,7 +205,7 @@ void WhiteboardWorker::printToLog(char *format, ...) {
 //      1920, 0
 //      1920, 1080
 //      0, 1080
-WBCorners WhiteboardWorker::getCornersFromFile(int wbNum) {
+WBCorners WhiteboardWorker::getCornersFromFile(string deviceUSB) {
     WBCorners ret;
 
     // Try to open the file
@@ -212,7 +213,7 @@ WBCorners WhiteboardWorker::getCornersFromFile(int wbNum) {
     int loc=QDir::currentPath().toStdString().find("/paol-code/");
     std::string pathTemp=QDir::currentPath().toStdString();
     std::string codePath=pathTemp.substr(0,loc)+"/paol-code/wbCorners";
-    ss << codePath.c_str() << wbNum << ".txt";
+    ss << codePath.c_str() << deviceUSB << ".txt";
     //qDebug("complete screwup wbNum=%d",wbNum);
     //qDebug() << QString::fromStdString(ss.str());
     QFile file(QString::fromStdString(ss.str()));

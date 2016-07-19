@@ -1,6 +1,7 @@
 #ifndef COMMANDLINETHREAD_H
 #define COMMANDLINETHREAD_H
 
+#include <QApplication>
 #include <QFile>
 #include <QTextStream>
 #include <string>
@@ -11,11 +12,16 @@
 #include "paolProcess.h"
 #include "vgaprocess.h"
 #include "whiteboardprocess.h"
+#include <stdlib.h>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
 
 using namespace std;
 
 typedef struct ptc ProcThreadConfig;
 struct ptc {
+    string deviceUSB;
     int deviceNum;
     string type;
     int typeNum;

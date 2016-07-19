@@ -49,6 +49,7 @@ public:
     ~MainWindow();
 
     // GENERAL VARIABLES
+    vector< vector<string> >usbVideo; //vector to store USB video info
     int camCount; //Amount of connected cameras
     int whiteboards; //Amount of selected whiteboards
     int captureDevices; // Devices that are either WBs or VGA2USB
@@ -110,7 +111,7 @@ public:
     void findSlopes();
     void findCorners();
     void reorderCorners();
-
+    void videoUSB();
     void captureVideo();
     void releaseComponents();
     void timer();

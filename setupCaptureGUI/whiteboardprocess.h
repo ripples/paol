@@ -7,7 +7,7 @@
 class WhiteboardProcess : public paolProcess
 {
 public:
-    WhiteboardProcess(int camNumIn, int wbNum, bool camFlipped, string lecturePath);
+    WhiteboardProcess(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecturePath);
 };
 
 #endif // WHITEBOARDPROCESS_H
