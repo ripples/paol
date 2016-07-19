@@ -27,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
         std::string pathTemp=QDir::currentPath().toStdString();
         codePath=pathTemp.substr(0,loc);
         //qDebug()<< QString::fromUtf8(codePath.c_str());
+        videoUSB();
     }
 
 MainWindow::~MainWindow(){
@@ -149,9 +150,9 @@ void MainWindow::populateCaptureWindow(){
             else if(optionBoxes[i]->currentText() == "Whiteboard"){
                 qDebug() << "Adding Whiteboard from Camera Num:" << i;
                 if(reverseChecks[i]->isChecked())
-                    thread = new WhiteboardProcess(i, wbCount, true, processLocation);
+                    thread = new WhiteboardProcess(usbVideo[i][0], i, wbCount, true, processLocation);
                 else
-                    thread = new WhiteboardProcess(i, wbCount, false, processLocation);
+                    thread = new WhiteboardProcess(usbVideo[i][0], i, wbCount, true, processLocation);
                 wbCount++;
             }
 
@@ -224,6 +225,39 @@ void MainWindow::countCameras(){
     qDebug() << "Number of Cameras plugged in: " << camCount;
 }
 
+void MainWindow::videoUSB(){
+    FILE *ptr;
+    int bufSize = 512;
+    char *buf = new char[bufSize];
+    std::string outFileName;
+    ptr = popen("v4l2-ctl --list-devices", "r");
+    int level = 0;
+    vector<string>temp;
+    //loop through the terminal command to store the USB/video values in vector field
+     while(fgets(buf, bufSize, ptr)){
+         if(level == 0){
+             outFileName = std::string(buf);
+             std::size_t found = outFileName.find("usb");
+             int found3 = outFileName.length() - found;
+             std::string substring = outFileName.substr(found, (found3 - 3));
+             temp.push_back(substring);
+             level++;
+         }
+         else if(level == 1){
+             outFileName = std::string(buf);
+             std::size_t found = outFileName.find("o");
+             std::string substring = outFileName.substr(found + 1, 1);
+             temp.push_back(substring);
+             usbVideo.push_back(temp);
+             level++;
+         }
+         else if(level == 2){
+            level = 0;
+            temp.clear();
+         }
+      }
+}
+
 //Create string that will be stored to the INFO file
 void MainWindow::createInfoFile(){
     string INFOFileText = "";
@@ -278,6 +312,7 @@ void MainWindow::createCameraSetupFile(){
             stringstream out;
 
             string num;
+            string USB;
             string flipped;
 
             out << i;
@@ -287,10 +322,16 @@ void MainWindow::createCameraSetupFile(){
             out << isFlipped;
             flipped = out.str();
 
-            setupInfo = setupInfo + num + " " + flipped + " " + device + "\n";
+            for(int i=0; i<usbVideo.size(); i++){
+                if(usbVideo[i][1].compare(num) == 0){
+                     USB = usbVideo[i][0];
+                     break;
+                }
+            }
+            setupInfo = setupInfo + USB + " " + num + " " + flipped + " " + device + "\n";
 
             if(audioRecord[i]->isChecked() == true){
-                setupInfo = setupInfo + num + " 0 Audio\n";
+                 setupInfo = setupInfo + USB + " " + num + " 0 Audio\n";
             }
 
         }
@@ -316,9 +357,21 @@ void MainWindow::createWBCornerTxt(){
     stringstream out;
     string filePath;
 
-    qDebug("here ");
-    qDebug() << tracker;
-    out << tracker;
+    string cornerLocation;
+    std::string myCompare;
+    std::stringstream output;
+    output << corners_currentCam;
+    myCompare = output.str();
+
+    //make wb corners correspond to USB instead of Wb number
+    for(int i=0; i<usbVideo.size(); i++){
+        if(usbVideo[i][1].compare(myCompare) == 0){
+             cornerLocation = usbVideo[i][0];
+             break;
+        }
+    }
+    out << cornerLocation;
+
     filePath = codePath+"/paol-code/wbCorners" + out.str() + ".txt";
     out.str(string());
 

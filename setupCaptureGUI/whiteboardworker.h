@@ -9,6 +9,7 @@ class WhiteboardWorker : public Worker {
 private:
     // Field to keep track of which whiteboard device is being used
     int whiteboardNum;
+    string USB;
 
     // Fields for whiteboard processing
     Mat currentFrame;
@@ -42,7 +43,7 @@ private:
     WBCorners corners;
 
     // Set the corners from a file
-    static WBCorners getCornersFromFile(int wbNum);
+    static WBCorners getCornersFromFile(string deviceUSB);
 
 protected:
     bool takePicture();
@@ -53,7 +54,7 @@ protected:
     void printToLog(char* format, ...);
     void saveLastImage();
 public:
-    WhiteboardWorker(int camNumIn, int wbNum, bool camFlipped, string lecPath);
+    WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecPath);
 };
 
 #endif // WHITEBOARDWORKER_H
