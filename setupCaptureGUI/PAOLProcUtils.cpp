@@ -1063,7 +1063,7 @@ Mat PAOLProcUtils::rectifyImage(const Mat& whiteboardImg, const WBCorners& corne
     int iWidthB=(int)dWidthB;
     double dHeightR=sqrt(pow(corners.TR.x-corners.BR.x,2)+pow(corners.TR.y-corners.BR.y,2));
     int iHeightR=(int)dHeightR;
-    int width=(iWidthB>width)? iWidthB : iWidthT;
+    int width=(iWidthB>iWidthT)? iWidthB : iWidthT;
     int height=(iHeightL>iHeightR)? iHeightL : iHeightR;
 
     // Set where the whiteboard corners should end up in the image (ie. the corners of the whole image)

@@ -27,6 +27,7 @@ private:
     Mat notWhiteboardEroded;
     Mat oldNotWhiteboardEroded;
     Mat notWhiteboardDifference;
+    Mat notWhiteboardDifference2;
 
     Mat lastSaved;
 

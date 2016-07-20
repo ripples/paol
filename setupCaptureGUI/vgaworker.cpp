@@ -38,6 +38,8 @@ bool VGAWorker::takePicture() {
     // Get the next screen if the image feed is available
     if(camera.isOpened() && camera.get(CV_CAP_PROP_FRAME_WIDTH) != 0) {
         // Update old screen
+        if(oldScreen.data)
+            oldScreen.release();
         oldScreen = currentScreen.clone();
         // Save current screen
         camera >> currentScreen;
@@ -59,6 +61,8 @@ void VGAWorker::processImage() {
     // without further processing
     if(!oldScreen.data) {
         oldScreen = currentScreen.clone();
+        if(lastStableScreen.data)
+            lastStableScreen.release();
         lastStableScreen = Mat::zeros(currentScreen.size(), currentScreen.type());
         return;
     }
@@ -71,6 +75,8 @@ void VGAWorker::processImage() {
         // Update stable screen count
         stableScreenCount++;
         //copy the current image to the last stable image location
+        if(lastStableScreen.data)
+            lastStableScreen.release();
         lastStableScreen = currentScreen.clone();
     }
     else {

@@ -40,8 +40,11 @@ bool WhiteboardWorker::takePicture() {
     //oldRefined = currentFrame.clone();
 
     // Set current frame (grab five times so we get actual current frame)
-    for(int i = 0; i < 5; i++)
+    for(int i = 0; i < 5; i++){
+        if(currentFrame.data)
+            currentFrame.release();
         camera >> currentFrame;
+    }
     // Flip the image horizontally and vertically if the camera is upside-down
     if(flipCam) {
         flip(currentFrame, currentFrame, -1);
@@ -49,6 +52,8 @@ bool WhiteboardWorker::takePicture() {
     if(currentFrame.data) {
         // Image capture succeeded
         // Let listeners know that an image was captured
+        if(currentRectified.data)
+            currentRectified.release();
         currentRectified = PAOLProcUtils::rectifyImage(currentFrame, corners);
         emit capturedImage(currentRectified);
         return true;
@@ -68,20 +73,28 @@ void WhiteboardWorker::processImage() {
     //Mat currentRectified = PAOLProcUtils::rectifyImage(currentFrame, corners);
 
     //get ground truth for whiteboard by bluring image
+    if(blured.data)
+        blured.release();
     blur(currentRectified,blured,Size(10,10));
 
     //If more then one picture has been taken create normalized cross correlation image between frames
     if(oldRectified.data){
         //save the old normalized cross correlation image if it exists
         if(normalizedCrossCorrelation.data){
+            if(oldNormalizedCrossCorrelation.data)
+                oldNormalizedCrossCorrelation.release();
             oldNormalizedCrossCorrelation=normalizedCrossCorrelation.clone();
         }
         //run normlized cross correlation
+        if(normalizedCrossCorrelation.data)
+            normalizedCrossCorrelation.release();
         normalizedCrossCorrelation=PAOLProcUtils::NCC(oldRectified,currentRectified,correlation,nccWindowSize);
     }
 
     //create old image late enough so that ncc doesn't run till second pass
     if(currentRectified.data){
+        if(oldRectified.data)
+            oldRectified.release();
         oldRectified=currentRectified.clone();
     }
 
@@ -95,6 +108,8 @@ void WhiteboardWorker::processImage() {
         PAOLProcUtils::StablePix(stablePixels,oldNormalizedCrossCorrelation,normalizedCrossCorrelation,26);
 
         //enhance text and whiten whiteboard
+        if(refinedCurrentFrame.data)
+            refinedCurrentFrame.release();
         refinedCurrentFrame=PAOLProcUtils::refineImage(currentRectified,blured);
 
         //intialize images
@@ -102,10 +117,14 @@ void WhiteboardWorker::processImage() {
             currentWhiteboard=refinedCurrentFrame.clone();
         }
 
+        if(oldWhiteboard.data)
+            oldWhiteboard.release();
         oldWhiteboard=refinedCurrentFrame.clone();
 ;
         //if the program has run enough for these images to exist
         if(notWhiteboardEroded.data){
+            if(oldNotWhiteboardEroded.data)
+                oldNotWhiteboardEroded.release();
             oldNotWhiteboardEroded=notWhiteboardEroded.clone();
         }
 
@@ -113,23 +132,33 @@ void WhiteboardWorker::processImage() {
         PAOLProcUtils::updateBackground(currentWhiteboard,currentRectified,stablePixels,framesToBeStable,refinedCurrentFrame);
 
         //identify areas that are not whiteboard
+        if(notWhiteboard.data)
+            notWhiteboard.release();
         notWhiteboard=PAOLProcUtils::getNotWhite(currentWhiteboard);
 
         //these next two steps work together to fill in holes
         //grow the areas that are not whiteboard
+        if(notWhiteboardGrown.data)
+            notWhiteboardGrown.release();
         notWhiteboardGrown=PAOLProcUtils::growGreen(notWhiteboard,2);
         //erode the areas that are not whiteboard and at the edges just grown
+        if(notWhiteboardEroded.data)
+            notWhiteboardEroded.release();
         notWhiteboardEroded=PAOLProcUtils::erodeSizeGreen(notWhiteboardGrown,7);
 
         //if multiple images that have identified areas of text exist
         if(oldNotWhiteboardEroded.data){
             //find the differences in text regions
+            if(notWhiteboardDifference.data)
+                notWhiteboardDifference.release();
             notWhiteboardDifference=PAOLProcUtils::getErodeDifferencesIm(oldNotWhiteboardEroded,notWhiteboardEroded);
             //erode those difference areas to try to remove noise
-            notWhiteboardDifference=PAOLProcUtils::erodeSize(notWhiteboardDifference,4);
+            if(notWhiteboardDifference2.data)
+                notWhiteboardDifference2.release();
+            notWhiteboardDifference2=PAOLProcUtils::erodeSize(notWhiteboardDifference,4);
 
             //count the number of differences still present
-            currentDifference=PAOLProcUtils::countDifferences(notWhiteboardDifference);
+            currentDifference=PAOLProcUtils::countDifferences(notWhiteboardDifference2);
             if(changedBoard){
                 printToLog("currentDifferences: %d stable: %d changedBoard=true\n", currentDifference,consecutiveStableCount);
                 qDebug("currentDifferences: %d stable: %d changedBoard=true\n", currentDifference,consecutiveStableCount);
@@ -232,6 +261,7 @@ WBCorners WhiteboardWorker::getCornersFromFile(string deviceUSB) {
         ret.BL = Point2f(coordinates[6].toInt(), coordinates[7].toInt());
         // Sort the corners in case they are in the wrong order
         PAOLProcUtils::sortCorners(ret);
+        file.close();
     }
     else {
         // Corners file was not found, so set ret to default coordinates
