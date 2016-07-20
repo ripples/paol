@@ -1,7 +1,9 @@
 #include "whiteboardworker.h"
 
-WhiteboardWorker::WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecPath)
+WhiteboardWorker::WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecPath, bool guiRunning)
 {
+    runningGUI=guiRunning;
+
     // Initialize webcam and associated variables
     camera = VideoCapture(camNumIn);
     camera.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
@@ -55,7 +57,8 @@ bool WhiteboardWorker::takePicture() {
         if(currentRectified.data)
             currentRectified.release();
         currentRectified = PAOLProcUtils::rectifyImage(currentFrame, corners);
-        emit capturedImage(currentRectified);
+        if(runningGUI)
+            emit capturedImage(currentRectified);
         return true;
     }
     else {

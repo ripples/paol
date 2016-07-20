@@ -179,11 +179,11 @@ void CommandLineThread::createThreadsFromConfigs() {
         ProcThreadConfig c = threadConfigs[i];
         // Switch based on the configuration type
         if(c.type == "Whiteboard") {
-            paolProcess* proc = new WhiteboardProcess(c.deviceUSB, c.deviceNum, c.typeNum, c.flipCam, lecturePath);
+            paolProcess* proc = new WhiteboardProcess(c.deviceUSB, c.deviceNum, c.typeNum, c.flipCam, lecturePath,false);
             procThreads.push_back(proc);
         }
         else if(c.type == "VGA2USB") {
-            paolProcess* proc = new VGAProcess(c.deviceNum, c.typeNum, c.flipCam, lecturePath);
+            paolProcess* proc = new VGAProcess(c.deviceNum, c.typeNum, c.flipCam, lecturePath,false);
             procThreads.push_back(proc);
         }
         else if(c.type == "Video") {

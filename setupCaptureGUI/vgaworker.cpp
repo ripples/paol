@@ -1,7 +1,9 @@
 #include "vgaworker.h"
 
-VGAWorker::VGAWorker(int camNumIn, int compNum, bool camFlipped, string lecPath)
+VGAWorker::VGAWorker(int camNumIn, int compNum, bool camFlipped, string lecPath, bool guiRunning)
 {
+    runningGUI=guiRunning;
+
     // Initialize webcam and associated variables
     camera = VideoCapture(camNumIn);
     flipCam = camFlipped;
@@ -48,7 +50,8 @@ bool VGAWorker::takePicture() {
             flip(currentScreen, currentScreen, -1);
         }
         // Let listeners know that an image was captured
-        emit capturedImage(currentScreen);
+        if(runningGUI)
+            emit capturedImage(currentScreen);
         // Capture was successful, so return true
         return true;
     }

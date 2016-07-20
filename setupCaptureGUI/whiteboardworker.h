@@ -55,7 +55,7 @@ protected:
     void printToLog(char* format, ...);
     void saveLastImage();
 public:
-    WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecPath);
+    WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bool camFlipped, string lecPath, bool guiRunning);
 };
 
 #endif // WHITEBOARDWORKER_H

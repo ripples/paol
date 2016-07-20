@@ -30,7 +30,7 @@ protected:
     void saveLastImage();
 
 public:
-    VGAWorker(int camNumIn, int vgaNum, bool camFlipped, string lecturePath);
+    VGAWorker(int camNumIn, int vgaNum, bool camFlipped, string lecturePath, bool guiRunning);
 };
 
 #endif // VGAWORKER_H

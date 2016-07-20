@@ -144,15 +144,15 @@ void MainWindow::populateCaptureWindow(){
             //qDebug() << optionBoxes[i]->currentText();
             if(optionBoxes[i]->currentText() == "VGA2USB"){
                 qDebug() << "Adding USB from Camera Num:" << i;
-                thread = new VGAProcess(i, vgaCount, false, processLocation);
+                thread = new VGAProcess(i, vgaCount, false, processLocation,true);
                 vgaCount++;
             }
             else if(optionBoxes[i]->currentText() == "Whiteboard"){
                 qDebug() << "Adding Whiteboard from Camera Num:" << i;
                 if(reverseChecks[i]->isChecked())
-                    thread = new WhiteboardProcess(usbVideo[i][0], i, wbCount, true, processLocation);
+                    thread = new WhiteboardProcess(usbVideo[i][0], i, wbCount, true, processLocation,true);
                 else
-                    thread = new WhiteboardProcess(usbVideo[i][0], i, wbCount, true, processLocation);
+                    thread = new WhiteboardProcess(usbVideo[i][0], i, wbCount, true, processLocation,true);
                 wbCount++;
             }
 

@@ -17,6 +17,7 @@ protected:
     VideoCapture camera;
     bool flipCam;
     int deviceNum;
+    bool runningGUI;
 
     // Field to store where the lecture is
     string lecturePath;
