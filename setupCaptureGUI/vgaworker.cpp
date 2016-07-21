@@ -25,6 +25,7 @@ VGAWorker::VGAWorker(int camNumIn, int compNum, bool camFlipped, string lecPath,
     stableScreenCount = 0;
 
     //set time for initial computer image to be displayed
+    time(&currentImageTime);
     stableTime=currentImageTime;
 
     // Print the association between this process and the output

@@ -31,6 +31,9 @@ private:
 
     Mat lastSaved;
 
+    Mat lastStableWhiteboard;
+    time_t stableTime;
+
     bool changedBoard;
     int consecutiveStableCount;
     int currentDifference;

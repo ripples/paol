@@ -35,6 +35,10 @@ WhiteboardWorker::WhiteboardWorker(string deviceUSB, int camNumIn, int wbNum, bo
 
     consecutiveStableCount=10;
     changedBoard=true;
+
+    //set time for initial computer image to be displayed
+    time(&currentImageTime);
+    stableTime=currentImageTime;
 }
 
 bool WhiteboardWorker::takePicture() {
@@ -170,22 +174,22 @@ void WhiteboardWorker::processImage() {
                 qDebug("currentDifferences: %d stable: %d changedBoard=false\n", currentDifference,consecutiveStableCount);
             }
 
-            //if the number of differences is greater then 20 (a large change) reset the stable count and say that there is a change
-            if(currentDifference>20){
-                changedBoard=true;
-                consecutiveStableCount=0;//probably not necessary with the next if statement.
+            //if stable (more then 5 the same) and a difference greater then 20 (a large change) save and reset stable counter
+            if(currentDifference>20 && consecutiveStableCount>=5){
+                saveImageWithTimestamp(lastStableWhiteboard);
+                consecutiveStableCount=0;
+
+                stableTime=currentImageTime;
             }
 
             //if they are identical then say they are stable else reset the stable counter
             if(currentDifference==0){
                 consecutiveStableCount++;
+                if(lastStableWhiteboard.data)
+                    lastStableWhiteboard.release();
+                lastStableWhiteboard = currentWhiteboard.clone();
             }else{
                 consecutiveStableCount=0;
-            }
-
-            //if stable (more then 5 the same) and a change occurs then save
-            if(consecutiveStableCount>=5 && changedBoard){
-                saveImageWithTimestamp(currentWhiteboard);
             }
         }
     }
@@ -195,7 +199,7 @@ void WhiteboardWorker::processImage() {
 void WhiteboardWorker::saveImageWithTimestamp(const Mat& image) {
     // Construct the path to save the image
     stringstream ss;
-    ss << lecturePath << "/whiteboard/whiteBoard" << "-" << whiteboardNum << "-" << currentImageTime << ".png";
+    ss << lecturePath << "/whiteboard/whiteBoard" << "-" << whiteboardNum << "-" << stableTime << ".png";
     imwrite(ss.str(), image);
 
     // Print image save success
@@ -277,9 +281,9 @@ WBCorners WhiteboardWorker::getCornersFromFile(string deviceUSB) {
 }
 
 void WhiteboardWorker::saveLastImage() {
-    if(realImageIsStored) {
+    if(consecutiveStableCount>2) {
         // Save the smooth marker version of the old background image
         //Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
-        saveImageWithTimestamp(oldRefinedBackground);
+        saveImageWithTimestamp(lastStableWhiteboard);
     }
 }
