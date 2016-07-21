@@ -120,6 +120,8 @@ void MainWindow::populateCaptureWindow(){
     int position = 0;
     int vgaCount=0;
     int wbCount=0;
+    string USB;
+
     qDebug() << "Adding to Capture Windows";
     for(int i = 0; i < optionBoxes.length(); i++){
         //qDebug() << "On Number: " << i;
@@ -142,6 +144,7 @@ void MainWindow::populateCaptureWindow(){
 
             paolProcess* thread;
             //qDebug() << optionBoxes[i]->currentText();
+
             if(optionBoxes[i]->currentText() == "VGA2USB"){
                 qDebug() << "Adding USB from Camera Num:" << i;
                 thread = new VGAProcess(i, vgaCount, false, processLocation,true);
@@ -149,10 +152,22 @@ void MainWindow::populateCaptureWindow(){
             }
             else if(optionBoxes[i]->currentText() == "Whiteboard"){
                 qDebug() << "Adding Whiteboard from Camera Num:" << i;
+
+                std::string myCompare;
+                std::stringstream output;
+                output << i;
+                myCompare = output.str();
+
+                for(int n=0; n<usbVideo.size(); n++){
+                    if(usbVideo[n][1].compare(myCompare) == 0){
+                        USB = usbVideo[n][0];
+                        break;
+                    }
+                }
                 if(reverseChecks[i]->isChecked())
-                    thread = new WhiteboardProcess(usbVideo[i][0], i, wbCount, true, processLocation,true);
+                    thread = new WhiteboardProcess(USB, i, wbCount, true, processLocation,true);
                 else
-                    thread = new WhiteboardProcess(usbVideo[i][0], i, wbCount, true, processLocation,true);
+                    thread = new WhiteboardProcess(USB, i, wbCount, false, processLocation,true);
                 wbCount++;
             }
 
