@@ -119,6 +119,6 @@ void VGAWorker::printToLog(char *format, ...) {
 }
 
 void VGAWorker::saveLastImage() {
-    if(stableScreenCount>0)
+    //if(stableScreenCount>0)
         saveImageWithTimestamp(lastStableScreen);
 }

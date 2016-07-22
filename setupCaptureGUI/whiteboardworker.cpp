@@ -281,9 +281,9 @@ WBCorners WhiteboardWorker::getCornersFromFile(string deviceUSB) {
 }
 
 void WhiteboardWorker::saveLastImage() {
-    if(consecutiveStableCount>2) {
+    //if(consecutiveStableCount>2) {
         // Save the smooth marker version of the old background image
         //Mat oldRefinedBackgroundSmooth = PAOLProcUtils::smoothMarkerTransition(oldRefinedBackground);
         saveImageWithTimestamp(lastStableWhiteboard);
-    }
+    //}
 }

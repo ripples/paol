@@ -10,3 +10,7 @@ captureProcessCode/processCOMP
 captureProcessCode/processWB
 setupCaptureGUI/PAOL-LecCap-GUI.pro.user
 calendar-parser/target
+wbCornersusb*
+semesterDates.txt 
+cron_temp.txt
+courses.txt
