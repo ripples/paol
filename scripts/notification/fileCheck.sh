@@ -2,6 +2,12 @@
 
 # Used to check if the machine is working and if it's not, send an email. - File Checker.
 
+# Make sure that there is exactly one argument, path to code directory
+if [ "$#" -ne 1 ]; then
+	echo "Usage: ./fileCheck.sh <path to code directory>"
+	exit
+fi
+
 # Set the first argument as the code directory to check file
 Dir=$1
 
@@ -41,7 +47,9 @@ do
 	    rm -f $f2
 	else
 	    echo "Checkpoint missing. Sending email."
-	    echo -e "Subject: "$machine" isn't running\r\n\r\nThis machine must be off\nDate:"$now"" | msmtp --from=default -t paolmailalert@gmail.com  
+	    echo -e "Subject: "$machine" isn't running\r\n\r\nThis machine must be off\nDate:"$now"" | msmtp --from=default -t paolcalic@gmail.com  
 	fi
     done
 done
+
+exit

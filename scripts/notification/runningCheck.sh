@@ -2,6 +2,12 @@
 
 # Used to check if the machine is working and if it's not, send an email. - File Creator.
 
+# Make sure that there is exactly one argument, path to code directory
+if [ "$#" -ne 1 ]; then
+	echo "Usage: ./fileCheck.sh <path to code directory>"
+	exit
+fi
+
 # Set the first argument as the code directory to create file
 Dir=$1
 
