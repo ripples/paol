@@ -4,7 +4,7 @@
 
 # Make sure that there is exactly one argument, path to code directory
 if [ "$#" -ne 1 ]; then
-	echo "Usage: ./fileCheck.sh <path to code directory>"
+	echo "Usage: ./runningCheck.sh <path to code directory>"
 	exit
 fi
 

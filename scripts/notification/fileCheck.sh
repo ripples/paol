@@ -34,7 +34,6 @@ fi
 
 # Set date and which not running machine is sending the email.
 machine=
-now="$(date +'%T-%m-%d-%Y')"
 
 # Check file
 for directory in $rmt_runcheck/*
@@ -47,7 +46,7 @@ do
 	    rm -f $f2
 	else
 	    echo "Checkpoint missing. Sending email."
-	    echo -e "Subject: "$machine" isn't running\r\n\r\nThis machine must be off\nDate:"$now"" | msmtp --from=default -t paolcalic@gmail.com  
+	    python $Dir/paol-code/scripts/notification/sendemail.py $machine  
 	fi
     done
 done
