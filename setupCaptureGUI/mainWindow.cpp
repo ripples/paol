@@ -528,20 +528,50 @@ void MainWindow::captureVideo(){
     FILE *ptr;
     string outFileName;
     string audioSet;
+    string cameraAudio, cameraAudioStr;
+    stringstream audioNumFixStr;
+    int audioNumFix = -1;
 
     for(int h = 0; h < audioRecord.length(); h++){
         if(audioRecord[h]->isChecked()){
             out << h;
+            if(h != 0)
+                audioNumFix = h - 1;
         }
     }
 
+    //Set the string if the pulse audio needs to be fixed
+    if(audioNumFix != -1)
+        audioNumFixStr << audioNumFix;
+
+    cameraAudio = "v4l2-ctl --list-device | grep -A1 HD | grep -o 'video0[^\n]*' | xargs";
+
+    if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
+            while(fgets(buf, bufSize, ptr)){
+                outFileName += buf;
+                cameraAudioStr = outFileName;
+            }
+            fclose(ptr);
+        }
+
     //Set pulsesrc Audio for video record
-    if(out.str() == "" || out.str() == "0"){
-        //If there's no audio box selected, use the first C920 camera as default
-        audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+    if(cameraAudioStr == ""){
+        //If the string is empty, the first C920 camera isn't assigned to video0,
+        //so this need to be done to keep the pulsesrc audio working properly
+        if(out.str() == "" || out.str() == "1"){
+            audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+        } else {
+            audioSet = "pactl list short sources | cut -f2 | grep C920_"+audioNumFixStr.str()+".analog";
+        }
     } else {
-        //If there's an audio box selected, use its C920 camera
-        audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str()+".analog";
+        //Set pulsesrc Audio for video record
+        if(out.str() == "" || out.str() == "0"){
+            //If the first C920 camera is assigned to /dev/video0
+            audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+        } else {
+            //If the audio is assigned to any other C920 camera
+            audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str()+".analog";
+        }
     }
 
     if ((ptr = popen(audioSet.c_str(), "r")) != NULL){
@@ -551,6 +581,8 @@ void MainWindow::captureVideo(){
         }
         fclose(ptr);
     }
+
+    qDebug() << audioCamNum.c_str();
 
     for(int i = 0; i < optionBoxes.length(); i++){
         //Find if there is a Video camera selected

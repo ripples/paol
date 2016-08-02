@@ -59,7 +59,6 @@ void CommandLineThread::run() {
     for(unsigned int i = 0; i < procThreads.size(); i++) {
         procThreads[i]->start();
     }
-;
 
     // Wait for the duration of the lecture, then signal threads to finish
     sleep(lectureDuration);
@@ -165,13 +164,14 @@ void CommandLineThread::createThreadsFromConfigs() {
     int videoDeviceNum = -1;
     bool flipVideo;
     int audioNum = -1;
+    int audioNumFix;
     int bufSize = 512;
     char *buf = new char[bufSize];
     FILE *ptr;
     string outFileName;
-    string audioSet;
+    string audioSet, cameraAudio, cameraAudioStr;
     string videoDeviceNumStr,audioNumStr;
-    stringstream out;
+    stringstream out, audioNumFixStr;
 
     // Go through the thread configurations, creating the paolProcesses
     // and setting the FFmpeg process parameters along the way
@@ -216,13 +216,40 @@ void CommandLineThread::createThreadsFromConfigs() {
     //Set audio number
     out << audioNum;
 
+    //Set the string if the pulse audio needs to be fixed
+    audioNumFix = audioNum - 1;
+
+    if(audioNumFix != -1)
+        audioNumFixStr << audioNumFix;
+
+    cameraAudio = "v4l2-ctl --list-device | grep -A1 HD | grep -o 'video0[^\n]*' | xargs";
+
+    if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
+            while(fgets(buf, bufSize, ptr)){
+                outFileName += buf;
+                cameraAudioStr = outFileName;
+            }
+            fclose(ptr);
+        }
+
     //Set pulsesrc Audio for video record
-    if(out.str() == "0"){
-        //If the audio is assigned to C920 camera /dev/video0
-        audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+    if(cameraAudioStr == ""){
+        //If the string is empty, the first C920 camera isn't assigned to video0,
+        //so this need to be done to keep the pulsesrc audio working properly
+        if(out.str() == "1"){
+            audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+        } else {
+            audioSet = "pactl list short sources | cut -f2 | grep C920_"+audioNumFixStr.str()+".analog";
+        }
     } else {
-        //If the audio is assigned to any other C920 camera
-        audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str()+".analog";
+        //Set pulsesrc Audio for video record
+        if(out.str() == "0"){
+            //If the first C920 camera is assigned to /dev/video0
+            audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+        } else {
+            //If the audio is assigned to any other C920 camera
+            audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str()+".analog";
+        }
     }
 
     if ((ptr = popen(audioSet.c_str(), "r")) != NULL){
@@ -232,6 +259,8 @@ void CommandLineThread::createThreadsFromConfigs() {
         }
         fclose(ptr);
     }
+
+     qDebug() << audioNumStr.c_str();
 
     //new method of calling ffmpeg directly from the code without a script
     if(flipVideo){
