@@ -1,0 +1,4 @@
+user: paol
+host: paolpresent.ithaca.edu
+rmt_upload: /media/paol/paolData/uploaded
+rmt_runcheck: /media/paol/checkpoint
