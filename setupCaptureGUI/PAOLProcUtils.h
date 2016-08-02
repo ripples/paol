@@ -42,7 +42,7 @@ public:
 
     /// Consts for VGA processing
     static const int BOTTOM_MASK = 115;
-    static const float DIFF_THRESHOLD = .0002;
+    static constexpr float DIFF_THRESHOLD = 0.0002;
     static const int REPEAT = 3;
     static const int PIXEL_DIFF_THRESHOLD = 100;
     static const int BORDER_DIFF_THRESHOLD = 50;
