@@ -1563,20 +1563,17 @@ Mat PAOLProcUtils::getWhiteboardDifferences(const Mat &oldFrame, const Mat &newF
 
     // Process the difference between two images with the same resolution
     bool diff;
+    //bool first;
+    //int dist;
     float numDiff;
-    int dist;
-    bool first;
-    int cenx;
-    int ceny;
-    int total;
     bool oldWhite,newWhite;
     //mask is set to a blank state
     Mat mask = Mat::zeros(oldFrame.size(), oldFrame.type());
 
     numDiff = 0;
-    first = true;
+    //first = true;
     //distance --
-    dist = 0;
+    //dist = 0;
     //for every row
     for (int y = 0; y < (oldFrame.rows); y++)
     {
@@ -1786,7 +1783,7 @@ void PAOLProcUtils::sortCorners(WBCorners &corners) {
 
     // Get the two top and two bottom points
     vector<Point2f> topPoints, bottomPoints;
-    for(int i = 0; i < allCorners.size(); i++) {
+    for(unsigned int i = 0; i < allCorners.size(); i++) {
         // Put the corners above the center in topPoints, put the rest in bottomPoints
         if(allCorners[i].y < center.y)
             topPoints.push_back(allCorners[i]);

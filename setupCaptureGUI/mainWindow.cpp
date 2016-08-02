@@ -158,7 +158,7 @@ void MainWindow::populateCaptureWindow(){
                 output << i;
                 myCompare = output.str();
 
-                for(int n=0; n<usbVideo.size(); n++){
+                for(unsigned int n=0; n<usbVideo.size(); n++){
                     if(usbVideo[n][1].compare(myCompare) == 0){
                         USB = usbVideo[n][0];
                         break;
@@ -337,7 +337,7 @@ void MainWindow::createCameraSetupFile(){
             out << isFlipped;
             flipped = out.str();
 
-            for(int i=0; i<usbVideo.size(); i++){
+            for(unsigned int i=0; i<usbVideo.size(); i++){
                 if(usbVideo[i][1].compare(num) == 0){
                      USB = usbVideo[i][0];
                      break;
@@ -379,7 +379,7 @@ void MainWindow::createWBCornerTxt(){
     myCompare = output.str();
 
     //make wb corners correspond to USB instead of Wb number
-    for(int i=0; i<usbVideo.size(); i++){
+    for(unsigned int i=0; i<usbVideo.size(); i++){
         if(usbVideo[i][1].compare(myCompare) == 0){
              cornerLocation = usbVideo[i][0];
              break;
