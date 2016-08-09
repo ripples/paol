@@ -12,6 +12,7 @@ sudo apt-get install -y gnome-session-fallback
 sudo apt-get install -y default-jre
 sudo apt-get install -y default-jdk
 sudo apt-get install -y ant
+sudo apt-get install -y maven
 sudo apt-get install -y maven2
 
 #from http://code.google.com/p/qt-opencv-multithreaded/wiki/Documentation
@@ -21,10 +22,10 @@ sudo apt-get install -y maven2
 /home/paol/paol-code/scripts/install/ffmpegInstall.sh &
 
 #install gstreamer
-/home/paol/paol-code/scrpits/install/gstreamerInstall.sh &
+/home/paol/paol-code/scripts/install/gstreamerInstall.sh &
 
 #install notifications
-/home/paol/paol-code/scrpits/install/notificationInstall.sh
+/home/paol/paol-code/scripts/install/notificationInstall.sh
 
 #install imagemagick
 sudo apt-get install imagemagick
