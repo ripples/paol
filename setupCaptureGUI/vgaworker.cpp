@@ -1,5 +1,7 @@
 #include "vgaworker.h"
 
+const float VGAWorker::COMP_DIFF_THRESHOLD = .0002;
+
 VGAWorker::VGAWorker(int camNumIn, int compNum, bool camFlipped, string lecPath, bool guiRunning)
 {
     runningGUI=guiRunning;

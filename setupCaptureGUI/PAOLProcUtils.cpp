@@ -1,5 +1,7 @@
 #include "PAOLProcUtils.h"
 
+const float PAOLProcUtils::DIFF_THRESHOLD = 0.0002;
+
 ///////////////////////////////////////////////////////////////////
 ///
 ///   Methods to find and process differences (ie. find the lecturer)
