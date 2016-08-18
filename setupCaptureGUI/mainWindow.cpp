@@ -351,8 +351,11 @@ void MainWindow::createCameraSetupFile(){
 
         }
     }
-    //qDebug() << QString::fromUtf8(codePath+"cameraSetup.txt");
-    const char *path =(codePath+"/paol-code/cameraSetup.txt").c_str();
+    //qDebug() << QString::fromUtf8(codePath+"/paol-code/cameraSetup.txt");
+    string fullPath=codePath+"/paol-code/cameraSetup.txt";
+    const char *path =fullPath.data();//codePath+"/paol-code/cameraSetup.txt").c_str();
+    //qDebug(fullPath.c_str());
+    //qDebug(setupInfo.c_str());
     ofstream file(path);
     file << setupInfo;
 }
