@@ -1,13 +1,31 @@
 #include "commandlinethread.h"
 
 CommandLineThread::CommandLineThread(int argc, char **argv) {
+    FILE *ptr;
+    int bufSize = 512;
+    char *buf = new char[bufSize];
+    string locateCommand;
+    string setupLoc;
+
     /// Make sure there were exactly four arguments given to the program
     assert(argc == 4);
 
+    locateCommand="locate /paol-code/cameraSetup.txt";
+
+    if ((ptr = popen(locateCommand.c_str(), "r")) != NULL){
+            while(fgets(buf, bufSize, ptr)){
+                setupLoc += buf;
+            }
+            fclose(ptr);
+        }
+
     //set up path to file locations
-    int loc=QDir::currentPath().toStdString().find("/paol-code/");
-    std::string pathTemp=QDir::currentPath().toStdString();
-    codePath=pathTemp.substr(0,loc);
+    int loc=setupLoc.find("/paol-code/");
+    //printf("1-%s\n",setupLoc.c_str());
+    //         QDir::currentPath().toStdString().find("/paol-code/");
+    //std::string pathTemp=QDir::currentPath().toStdString();
+    codePath=setupLoc.substr(0,loc);
+    //printf("1-%s\n",codePath.c_str());
 
     /// Set course information
     // Set start time of lecture
@@ -112,6 +130,7 @@ void CommandLineThread::setThreadConfigs(string configLocation) {
     // Open the configuration file
     QString locAsQStr = QString::fromStdString(configLocation);
     QFile configFile(locAsQStr);
+    printf("%s\n",configLocation.c_str());
     assert(configFile.open(QIODevice::ReadOnly));
 
     // Initialize counts for how many whiteboards and VGA feeds there are
