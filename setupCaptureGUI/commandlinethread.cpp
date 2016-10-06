@@ -310,6 +310,7 @@ void CommandLineThread::createThreadsFromConfigs() {
         //ORIGINAL CODE - TESTING
 
     }
+    printf("%s",ffmpegCommand);
 
     /*old setup for running ffmpeg using script
     // Set the command for running ffmpeg
