@@ -28,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent) :
         codePath=pathTemp.substr(0,loc);
         //qDebug()<< QString::fromUtf8(codePath.c_str());
         videoUSB();
+        audioCode();
     }
 
 MainWindow::~MainWindow(){
@@ -273,6 +274,81 @@ void MainWindow::videoUSB(){
       }
 }
 
+void MainWindow::audioCode(){
+    FILE *pointer, *address;
+    int Size = 512;
+    char *buffer = new char[Size];
+    char *buffer2 = new char[Size];
+    std::string output;
+    std::string out;
+    pointer = popen("v4l2-ctl --list-devices", "r");
+    address = popen("pactl list short sources | cut -f2 | grep C920 | grep analog", "r");
+    int level = 0;
+    bool camera;
+    vector<string>temp;
+    vector<string>device;
+    vector<string> local;
+    ////////////////////////////////////
+     while(fgets(buffer, Size, pointer)){
+        if(level == 0){
+            output = std::string(buffer);
+            std::size_t found = output.find("HD Pro Webcam C920");
+            if(found != string::npos){
+                camera = true;
+                level++;
+            }
+            else{
+                camera = false;
+                level++;
+            }
+        }
+        else if(level == 1){
+            if(camera == true){
+                output = std::string(buffer);
+                std::size_t found = output.find("o");
+                std::string substring = output.substr(found + 1, 1);
+                temp.push_back(substring);
+                level++;
+            }
+            else{
+                level++;
+            }
+         }
+        else if(level == 2){
+             level = 0;
+        }
+     }
+     ////////////////////////////////////////////////////
+     while(fgets(buffer2, Size, address)){
+         out = std::string(buffer2);
+         string terminal = "alsa_input.usb-046d_HD_Pro_Webcam_C920_";
+         std::string mystring = out.substr(terminal.length(), 8);
+         device.push_back(mystring);
+     }
+     //////////////////////////////////////////////////////
+     if(temp.size() > 1){
+         string swap;
+         int n = temp.size();
+         for (int c = 0 ; c < ( n - 1 ); c++)
+           {
+             for (int d = 0 ; d < n - c - 1; d++)
+             {
+               if (temp[d] > temp[d+1])
+               {
+                 swap = temp[d];
+                 temp[d] = temp[d+1];
+                 temp[d+1] = swap;
+               }
+             }
+           }
+     }
+     for(unsigned int p=0; p<temp.size(); p++){
+         local.clear();
+         local.push_back(temp[p]);
+         local.push_back(device[p]);
+         audioNumber.push_back(local);
+     }
+}
 //Create string that will be stored to the INFO file
 void MainWindow::createInfoFile(){
     string INFOFileText = "";
@@ -314,7 +390,6 @@ void MainWindow::createInfoFile(){
 
 void MainWindow::createCameraSetupFile(){
     string setupInfo = "";
-
     for( int i = 0; i < optionBoxes.size(); i++){
         string device = optionBoxes[i]->currentText().toLatin1().data();
         int isFlipped = 0;
@@ -346,9 +421,15 @@ void MainWindow::createCameraSetupFile(){
             setupInfo = setupInfo + USB + " " + num + " " + flipped + " " + device + "\n";
 
             if(audioRecord[i]->isChecked() == true){
-                 setupInfo = setupInfo + USB + " " + num + " 0 Audio\n";
+               string audio;
+               for(unsigned int h=0; h<audioNumber.size(); h++){
+                   if(audioNumber[h][0].compare(num) == 0){
+                        audio = audioNumber[h][1];
+                        break;
+                   }
+               }
+                setupInfo = setupInfo + audio + " " + num + " 0 Audio\n";
             }
-
         }
     }
     //qDebug() << QString::fromUtf8(codePath+"/paol-code/cameraSetup.txt");
@@ -1143,7 +1224,7 @@ void MainWindow::on_lecDet_Previous_Button_clicked(){
 }
 
 /// LECTURE CAPTURE BUTTON
-void MainWindow::on_captureLecture_Terminate_Button_clicked(){   
+void MainWindow::on_captureLecture_Terminate_Button_clicked(){
     emit quitProcessing();
     //Kill gst process through system - send SIGINT
     system("ps -ef | awk '/[g]st-launch-1.0/{print $2}' | xargs kill -INT");

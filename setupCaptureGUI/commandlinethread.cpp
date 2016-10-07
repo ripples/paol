@@ -186,7 +186,10 @@ void CommandLineThread::createThreadsFromConfigs() {
     int audioNumFix;
     int bufSize = 512;
     char *buf = new char[bufSize];
+    char *buffer = new char[bufSize];
     FILE *ptr;
+    FILE *pointer;
+    string audioCommand;
     string outFileName;
     string audioSet, cameraAudio, cameraAudioStr;
     string videoDeviceNumStr,audioNumStr;
@@ -211,6 +214,7 @@ void CommandLineThread::createThreadsFromConfigs() {
         }
         else if(c.type == "Audio") {
             audioNum = c.deviceNum;
+            audioCommand = c.deviceUSB;
         }
         else {
             // We found a wrong type, so stop the program
@@ -232,7 +236,18 @@ void CommandLineThread::createThreadsFromConfigs() {
     videoDeviceNumStr = out.str();
     out.str(string());
 
-    //Set audio number
+    cameraAudio = "pactl list short sources | cut -f2 | grep " + audioCommand;
+
+    qDebug() << cameraAudio.c_str() << "\n";
+
+    if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
+            while(fgets(buf, bufSize, ptr)){
+                audioNumStr = std::string(buf);;
+            }
+            fclose(ptr);
+        }
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*    //Set audio number
     out << audioNum;
 
     //Set the string if the pulse audio needs to be fixed
@@ -277,7 +292,8 @@ void CommandLineThread::createThreadsFromConfigs() {
             audioNumStr = outFileName;
         }
         fclose(ptr);
-    }
+    }*/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
      qDebug() << audioNumStr.c_str();
 
@@ -310,6 +326,7 @@ void CommandLineThread::createThreadsFromConfigs() {
         //ORIGINAL CODE - TESTING
 
     }
+
     printf("%s",ffmpegCommand);
 
     /*old setup for running ffmpeg using script
