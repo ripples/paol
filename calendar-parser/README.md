@@ -1,3 +1,11 @@
+##How to fix it when broken
+If it is failing try reinstalling it then wiping out the creditials before rerunning it. Basically the following lines below. Also, you really do need to run the last line twice, the first time opens a browser window that you need to click allow on and the second makes it run the first time
+
+/home/paol/paol-code/scripts/install/installCalendarParser.sh
+rm -rf /home/paol/.credentials/calendar.json
+/home/paol/paol-code/calendar-parser/calendarToCron.sh 
+/home/paol/paol-code/calendar-parser/calendarToCron.sh 
+
 ## Calendar Parser
 This is the code that interacts with Google Calendars to generate cron jobs, initialize calendars, etc. Currently, calendar initialization is not being used.
 
