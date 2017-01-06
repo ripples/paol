@@ -327,7 +327,7 @@ void CommandLineThread::createThreadsFromConfigs() {
 
     }
 
-    printf("%s",ffmpegCommand);
+    //printf("%s",ffmpegCommand);
 
     /*old setup for running ffmpeg using script
     // Set the command for running ffmpeg
