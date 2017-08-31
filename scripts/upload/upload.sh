@@ -12,6 +12,7 @@ outDir=$1
 user=
 host=
 rmt_upload=
+rmt_upload2=
 
 # The location of the upload configuration file
 config=/home/paol/paol-code/uploadConfig.txt
@@ -24,15 +25,18 @@ while read a b; do
 		host=$b
 	elif [ "$a" = "rmt_upload:" ]; then
 		rmt_upload=$b
+	elif [ "$a" = "rmt_upload2:" ]; then
+		rmt_upload2=$b
 	fi
 done < $config
 
 echo "User: $user"
 echo "Host: $host"
 echo "Remote upload folder: $rmt_upload"
+echo "Remote upload folder: $rmt_upload2"
 
 # Exit if one of the parameters is not specified
-if [ -z "$user" ] || [ -z "$host" ] || [ -z "$rmt_upload" ]; then
+if [ -z "$user" ] || [ -z "$host" ] || [ -z "$rmt_upload" ] || [ -z "$rmt_upload2" ]; then
 	echo "Upload configuration file has the wrong format"
 	exit 1
 fi
@@ -50,7 +54,8 @@ sshid=/home/paol/.ssh/id_rsa
 ssh -i $sshid $user@$host touch /var/lock/manic.lck
 ssh -i $sshid $user@$host mkdir -p $rmt_upload/$sem/$class
 scp -r $outDir $user@$host:$rmt_upload/$sem/$class
-#rsync -avz -e "ssh -i $sshid" $outDir $user@$host:$rmt_upload/$sem/$class
+#the following is for files without video and NEEDS TESTING
+rsync -avz -e "ssh -i $sshid" --exclude *.mp4 $outDir $user@$host:$rmt_upload/$sem/$class 
 STATUS=$?
 ssh -i $sshid $user@$host rm /var/lock/manic.lck
 
