@@ -1,3 +1,4 @@
 user: paol
 host: paolpresent.ithaca.edu
 rmt_upload: /home/paol/media/uploaded
+rmt_upload2: /home/paol/media/uploaded2
