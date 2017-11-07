@@ -13,7 +13,7 @@ notificationInfo() {
 
 	email_list=$lecturer', '$admin
 	echo "Sending Notification"
-	python /home/paol/Desktop/workspace/Up-Running-Check/sendemail.py "$machineIP" "$courseID" "$classinfo" "${email_list//,}"
+	python /home/paol/paol-code/scripts/notification/sendemail.py "$machineIP" "$courseID" "$classinfo" "${email_list//,}"
 }
 
 
