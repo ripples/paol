@@ -14,9 +14,9 @@ toaddrs  = email_list
 msg = 'Subject: Machine ' + machine + " isn't running\n\nThis machine must be off. Turn it on for the recording.\nCourse ID-Section: " + courseID + "\nClasstime: " + classtime + "\nDate: " + str(now)
 username = 'paolcalic@gmail.com'
 password = 'secretPAOL'
-server = smtplib.SMTP('smtp.gmail.com:587')
+server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
 server.ehlo()
-server.starttls()
+# server.starttls()
 server.login(username,password)
 server.sendmail(fromaddr, toaddrs, msg)
 server.quit()
