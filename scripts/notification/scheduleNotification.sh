@@ -8,12 +8,12 @@ notificationInfo() {
 	admin=$(awk '$0 == "[ADMIN]" {i=1;next};i && i++ <= 1' "$1")
 	lecturer=$(awk '$0 == "[LECTURER]" {i=1;next};i && i++ <= 1' "$1")
 	courseID=$(awk '$0 == "[COURSEID-SECTION]" {i=1;next};i && i++ <= 1' "$1")
-	machineIP=$(awk '$0 == "[MACHINEIP]" {i=1;next};i && i++ <= 1' "$1")
+	machineNAME=$(awk '$0 == "[MACHINE]" {i=1;next};i && i++ <= 1' "$1")
 	classinfo=$classtime', '$day
 
 	email_list=$lecturer', '$admin
 	echo "Sending Notification"
-	python /home/paol/paol-code/scripts/notification/sendemail.py "$machineIP" "$courseID" "$classinfo" "${email_list//,}"
+	python /home/paol/paol-code/scripts/notification/sendemail.py "$machineNAME" "$courseID" "$classinfo" "${email_list//,}"
 }
 
 

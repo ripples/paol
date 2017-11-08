@@ -13,8 +13,8 @@ paolcalic@gmail.com
 [CLASSTIME-WEEKDAY]
 14:00-14:52/Monday, 14:00-14:52/Wednesday, 14:00-14:52/Friday
 
-[MACHINEIP]
-147.129.181.77
+[MACHINE]
+paolCap303
 [+]
 
 
