@@ -23,11 +23,11 @@ scheduleScriptRun() {
 	h=$2
 	wd=$3
 
-	if [[ $((10#$m - 9)) -lt 0 ]]; then
-		m=$((10#$m + 51)) && h=$((10#$h - 1))
+	if [[ $((10#$m - 5)) -lt 0 ]]; then
+		m=$((10#$m + 55)) && h=$((10#$h - 1))
 		# echo "$h:$m"
 	else
-		m=$((10#$m - 9)) 
+		m=$((10#$m - 5)) 
 	fi
 
 	crontab -l > mycron
@@ -58,7 +58,7 @@ calcTimeDifference() {
 	difference=$((10#$scheduledTime - 10#$currentTime))
 	# echo $difference
 
-	if [[ difference -lt 600 && difference -ge 0 ]]; then
+	if [[ difference -lt 300 && difference -ge 0 ]]; then
 		# echo "1"
 		return 1
 	else
