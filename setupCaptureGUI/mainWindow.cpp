@@ -322,8 +322,8 @@ void MainWindow::audioCode(){
      while(fgets(buffer2, Size, address)){
          out = std::string(buffer2);
          string terminal = "alsa_input.usb-046d_HD_Pro_Webcam_C920_";
-         std::string mystring = out.substr(terminal.length(), 8);
-         device.push_back(mystring);
+         alsaString = out.substr(terminal.length(), 8);
+         device.push_back(alsaString);
      }
      //////////////////////////////////////////////////////
      if(temp.size() > 1){
@@ -607,8 +607,7 @@ void MainWindow::captureVideo(){
     string audioCamNum;
     string s;
     stringstream out;
-    int bufSize = 512;
-    char *buf = new char[bufSize];
+    char buff[512];
     FILE *ptr;
     string outFileName;
     string audioSet;
@@ -628,43 +627,45 @@ void MainWindow::captureVideo(){
     if(audioNumFix != -1)
         audioNumFixStr << audioNumFix;
 
-    cameraAudio = "v4l2-ctl --list-device | grep -A1 HD | grep -o 'video0[^\n]*' | xargs";
+    cameraAudio = "v4l2-ctl --list-device | grep -A1 C920 | grep -o 'video0[^\\n]*' | xargs";
 
-    if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
-            while(fgets(buf, bufSize, ptr)){
-                outFileName += buf;
-                cameraAudioStr = outFileName;
-            }
-            fclose(ptr);
-        }
+
+    if(!(ptr = popen(cameraAudio.c_str(), "r"))){
+    }
+
+    while(fgets(buff, sizeof(buff), ptr)!=NULL){
+        outFileName += buff;
+        cameraAudioStr = outFileName;
+    }
+    pclose(ptr);
 
     //Set pulsesrc Audio for video record
     if(cameraAudioStr == ""){
         //If the string is empty, the first C920 camera isn't assigned to video0,
         //so this need to be done to keep the pulsesrc audio working properly
         if(out.str() == "" || out.str() == "1"){
-            audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+            audioSet = "pactl list short sources | cut -f2 | grep C920_ | head -1";
         } else {
-            audioSet = "pactl list short sources | cut -f2 | grep C920_"+audioNumFixStr.str()+".analog";
+            audioSet = "pactl list short sources | cut -f2 | grep C920_"+ alsaString;
         }
     } else {
         //Set pulsesrc Audio for video record
         if(out.str() == "" || out.str() == "0"){
             //If the first C920 camera is assigned to /dev/video0
-            audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
+            audioSet = "pactl list short sources | cut -f2 | grep C920_ | head -1";
         } else {
             //If the audio is assigned to any other C920 camera
-            audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str()+".analog";
+            audioSet = "pactl list short sources | cut -f2 | grep C920_"+ alsaString;
         }
     }
 
-    if ((ptr = popen(audioSet.c_str(), "r")) != NULL){
-        while(fgets(buf, bufSize, ptr)){
-            outFileName += buf;
-            audioCamNum = outFileName;
-        }
-        fclose(ptr);
+    if(!(ptr = popen(audioSet.c_str(), "r"))){
     }
+    while(fgets(buff, sizeof(buff), ptr)!=NULL){
+        outFileName += buff;
+        audioCamNum = outFileName;
+    }
+    pclose(ptr);
 
     qDebug() << audioCamNum.c_str();
 
@@ -688,22 +689,23 @@ void MainWindow::captureVideo(){
             + isChecked + " " + processLocation + "/video.mp4 &";
             */
 
+
             //call ffmpeg directly
             if(reverseChecks[i]->isChecked()==1){
                 //if camera is upside down then flip video in capture
                 vidCaptureString = "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
-                        " \\ ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid \\"+
-                        " myvid. ! queue ! x264enc ! mux.video_0 \\"+
-                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
-                        " ! voaacenc ! aacparse ! queue ! mux.audio_0 \\"+
+                        " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid"+
+                        " myvid. ! queue ! x264enc ! mux.video_0"+
+                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! queue ! audioconvert "+
+                        " ! voaacenc ! queue ! aacparse ! queue ! mux.audio_0"+
                         " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
             } else {
                 //set normal capture for right side up video
                 vidCaptureString =  "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
-                        " \\ ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid \\"+
-                        " myvid. ! queue ! mux.video_0 \\"+
-                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
-                        " ! voaacenc ! aacparse ! queue ! mux.audio_0 \\"+
+                        " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid"+
+                        " myvid. ! queue ! mux.video_0"+
+                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert "+
+                        " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
                         " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
 
 

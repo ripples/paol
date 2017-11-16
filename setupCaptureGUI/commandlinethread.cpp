@@ -301,19 +301,19 @@ void CommandLineThread::createThreadsFromConfigs() {
     if(flipVideo){
         //if camera is upside down then flip video in capture
         ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
-                " \\ ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid \\"+
-                " myvid. ! queue ! x264enc ! mux.video_0 \\"+
-                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
-                " ! voaacenc ! aacparse ! queue ! mux.audio_0 \\"+
+                " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid"+
+                " myvid. ! queue ! x264enc ! mux.video_0"+
+                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! queue ! audioconvert "+
+                " ! voaacenc ! queue ! aacparse ! queue ! mux.audio_0"+
                 " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
     } else {
         //set normal capture for right side up video
 
         ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
-                " \\ ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid \\"+
-                " myvid. ! queue ! mux.video_0 \\"+
-                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=44100,channels=2,depth=16 ! audioconvert "+
-                " ! voaacenc ! aacparse ! queue ! mux.audio_0 \\"+
+                " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid"+
+                " myvid. ! queue ! mux.video_0"+
+                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert "+
+                " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
                 " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
 
         //ORIGINAL CODE - TESTING
@@ -326,6 +326,7 @@ void CommandLineThread::createThreadsFromConfigs() {
         //ORIGINAL CODE - TESTING
 
     }
+    qDebug("--------------%s",ffmpegCommand.c_str());
 
     //printf("%s",ffmpegCommand);
 
