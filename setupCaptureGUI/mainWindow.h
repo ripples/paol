@@ -51,6 +51,7 @@ public:
     // GENERAL VARIABLES
     vector< vector<string> >usbVideo; //vector to store USB video info
     vector< vector<string> >audioNumber; //vector to store audio info
+    std::string alsaString;
     int camCount; //Amount of connected cameras
     int whiteboards; //Amount of selected whiteboards
     int captureDevices; // Devices that are either WBs or VGA2USB
