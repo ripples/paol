@@ -12,4 +12,5 @@ sudo apt-get install v4l-utils
 
 sudo apt-get install gstreamer1.0*
 sudo apt-get install gstreamer-tools
+sudo apt-get install ubuntu-restricted-extras
 
