@@ -55,6 +55,6 @@ You can open up a terminal and run the following command:
 $ sudo apt-get install ubuntu-restricted-extras
 ```
 
-or clicking here: [ubuntu-restricted-extras] (http://apt.ubuntu.com/p/ubuntu-restricted-extras)
+or clicking here: [ubuntu-restricted-extras](http://apt.ubuntu.com/p/ubuntu-restricted-extras)
 
 

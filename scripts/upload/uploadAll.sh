@@ -3,9 +3,6 @@ url=$1
 for semester in $(ls /home/paol/recordings/readyToUpload)
 do
     echo $semester
-    if [ $semester = "raw" ]; then
-	continue
-    fi;
     for course in $(ls /home/paol/recordings/readyToUpload/$semester)
     do
 	echo $course
