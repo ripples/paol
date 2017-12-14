@@ -13,6 +13,7 @@ parserDir="/home/paol/paol-code/calendar-parser"
 thisScript="$parserDir/calendarToCron.sh"
 updateCalJob="0 * * * * $thisScript $calendar"
 processAllJob="15 1 * * * /home/paol/paol-code/scripts/process/processAll.sh"
+rebootRepairJob="@reboot /home/paol/paol-code/scripts/notification/repairCaptureCron.sh"
 
 # Get the location of the capture program
 captureProgram=$(ls /home/paol/paol-code/build*/PAOL-LecCap-GUI)
@@ -25,7 +26,7 @@ cd $parserDir
 mvn -q exec:java -Dexec.mainClass="edu.umass.cs.ripples.paol.CalendarParser" -Dexec.args="$parserArgs" >> $log
 status=$?
 if [ $status = 0 ]; then
-	(cat $schedFile; echo "$updateCalJob"; echo "$processAllJob") | crontab -
+	(cat $schedFile; echo "$updateCalJob"; echo "$processAllJob"; echo "$rebootRepairJob") | crontab -
 	echo "Updated jobs in crontab" >> $log
 else
 	echo "Problem in calendar parser. Check for errors" >> $log
