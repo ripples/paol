@@ -13,8 +13,7 @@ main() {
 
 	scheduledCrons=$(crontab -l)
 
-	path="/home/paol/paol-code/build-PAOL-LecCap-*/PAOL-LecCap-GUI"
-	pathStandard="/home/paol/paol-code/build-PAOL-LecCap-GUI-Desktop_Qt_5_3_GCC_64bit-Debug/PAOL-LecCap-GUI"
+	path=$(ls /home/paol/paol-code/build*/PAOL-LecCap-GUI)
 
 	datenow=$(date '+%H %M %d %m')
 	currentHour=$(echo "$datenow" | awk '{print $1}')
@@ -26,7 +25,7 @@ main() {
 
 		checkjob=$(echo "$line" | awk '{print $6}')
 
-		if [[ "$checkjob" == "$path" || "$checkjob" == "$pathStandard" ]]; then
+		if [[ "$checkjob" == "$path" ]]; then
 			echo "capture cronjob: $line"
 			minute=$(echo "$line" | awk '{print $1}')
 			hour=$(echo "$line" | awk '{print $2}')
