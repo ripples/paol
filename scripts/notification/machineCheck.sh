@@ -1,5 +1,4 @@
 #!/bin/bash
-rmt_runcheck=/home/paol/Desktop/workspace/Up-Running-Check/notification
 rmt_runcheck=/home/paol/paol-code/scripts/notification/machines
 
 if [ "$#" -ne 1 ]; then

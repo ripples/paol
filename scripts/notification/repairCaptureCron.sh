@@ -13,7 +13,8 @@ main() {
 
 	scheduledCrons=$(crontab -l)
 
-	path="/home/paol/paol-code/build-PAOL-LecCap-GUI-Desktop_Qt_5_3_GCC_64bit-Debug/PAOL-LecCap-GUI"
+	path="/home/paol/paol-code/build-PAOL-LecCap-*/PAOL-LecCap-GUI"
+	pathStandard="/home/paol/paol-code/build-PAOL-LecCap-GUI-Desktop_Qt_5_3_GCC_64bit-Debug/PAOL-LecCap-GUI"
 
 	datenow=$(date '+%H %M %d %m')
 	currentHour=$(echo "$datenow" | awk '{print $1}')
@@ -25,7 +26,7 @@ main() {
 
 		checkjob=$(echo "$line" | awk '{print $6}')
 
-		if [[ "$checkjob" == "$path" ]]; then
+		if [[ "$checkjob" == "$path" || "$checkjob" == "$pathStandard" ]]; then
 			echo "capture cronjob: $line"
 			minute=$(echo "$line" | awk '{print $1}')
 			hour=$(echo "$line" | awk '{print $2}')
@@ -58,10 +59,10 @@ main() {
 					timeleft=$(( 10#$duration - 10#$difference - 60))
 					# echo "timeleft: $timeleft"
 
-					if [[ $((10#$currentMinute + 1)) -eq 60 ]]; then
-						currentMinute=$((10#$currentMinute = 00 )) && currentHour=$((10#$currentHour + 1))
+					if [[ $((10#$currentMinute + 2)) -eq 60 ]]; then
+						currentMinute=$((10#$currentMinute = 01 )) && currentHour=$((10#$currentHour + 1))
 					else
-						currentMinute=$((10#$currentMinute + 1)) 
+						currentMinute=$((10#$currentMinute + 2)) 
 					fi
 
 					addToCron "$currentMinute" "$currentHour" "$currentDay" "$currentMonth" "$path" "$term" "$course" "$timeleft"
