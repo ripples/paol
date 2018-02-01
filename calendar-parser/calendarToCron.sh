@@ -12,7 +12,7 @@ log="/home/paol/calendarToCronOut.log"
 parserDir="/home/paol/paol-code/calendar-parser"
 thisScript="$parserDir/calendarToCron.sh"
 updateCalJob="0 * * * * $thisScript $calendar"
-processAllJob="15 1 * * * /home/paol/paol-code/scripts/process/processAll.sh"
+processAllJob="15 1 * * * /home/paol/paol-code/scripts/upload/uploadAll.sh"
 rebootRepairJob="@reboot /home/paol/paol-code/scripts/notification/repairCaptureCron.sh"
 
 # Get the location of the capture program
