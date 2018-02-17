@@ -32,12 +32,16 @@ scheduleScriptRun() {
 
 	crontab -l > mycron
 
-	if $(! crontab -l | grep -q '/home/paol/paol-code/scripts/notification/machineCheck.sh schedule'); then
-		echo '00 5 * * 1-5 /home/paol/paol-code/scripts/notification/machineCheck.sh schedule' >> mycron
-		echo '00 23 * * 1-5 /home/paol/paol-code/scripts/notification/cronFix.sh' >> mycron
+	# if $(! crontab -l | grep -q '/home/paol/paol-code/scripts/notification/machineCheck.sh schedule'); then
+	# 	echo '00 5 * * 1-5 /home/paol/paol-code/scripts/notification/machineCheck.sh schedule' >> mycron
+	# 	echo '00 23 * * 1-5 /home/paol/paol-code/scripts/notification/cronFix.sh' >> mycron
+	# fi
+	notificationString="$m $h * * $wd /home/paol/paol-code/scripts/notification/machineCheck.sh notify"
+
+	if $(! crontab -l | grep -q '$notificationString'); then
+		echo "$notificationString" >> mycron
 	fi
 
-	echo "$m $h * * $wd /home/paol/paol-code/scripts/notification/machineCheck.sh notify" >> mycron
 	crontab mycron
 	rm mycron
 
@@ -108,6 +112,16 @@ main() {
 	# echo $classhours
 
 	datenow=$(date '+%H %M %A')
+
+	# crontab -l > mycron
+	# # Make sure the it will check for scheduled classes for the day
+	# if $(! crontab -l | grep -q '/home/paol/paol-code/scripts/notification/machineCheck.sh schedule'); then
+	# 	echo '00 5 * * 1-5 /home/paol/paol-code/scripts/notification/machineCheck.sh schedule' >> mycron
+	# 	echo '00 23 * * 1-5 /home/paol/paol-code/scripts/notification/cronFix.sh' >> mycron
+	# fi
+
+	# crontab mycron
+	# rm mycron
 
 	currentHour=$(echo "$datenow" | awk '{print $1}')
 	currentMinute=$(echo "$datenow" | awk '{print $2}')

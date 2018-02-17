@@ -7,6 +7,7 @@ sudo apt-get upgrade -y
 sudo apt-get install -y emacs
 sudo apt-get install -y gi
 sudo apt-get install -y gnome-session-flashback
+sudo apt-get install -y imagemagick
 
 #install google calendar api
 sudo apt-get install -y default-jre
