@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Make sure that there is exactly one argument, the path of the lecture to upload
-if [ "$#" -ne 2 ]; then
-	echo "Usage: ./upload.sh <path of lecture to upload> <url:port>"
+if [ "$#" -ne 1 ]; then
+	echo "Usage: ./upload.sh <path of lecture to upload>"
 	exit
 fi
 # Set the first argument as the lecture directory to upload
@@ -71,9 +71,9 @@ zip -r $outDir $(basename $outDir)
 cd $curDir
 outZip=$outDir
 outZip+='.zip'
-echo "Uploading zip $outZip in course $course to present"
+echo "Uploading zip $outZip in course $course to ${host}"
 uscript="curl -X POST \
-  http://present.cs.umass.edu:3001/upload/${course}/lecture-zip \
+  ${host}:3001/upload/${course}/lecture-zip \
   -H 'cache-control: no-cache' \
   -F 'file=@${outZip}'"
 

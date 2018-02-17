@@ -1,4 +1,4 @@
 user: paol
-host: present.cs.umass.edu:3001
+host: present.cs.umass.edu
 rmt_upload: ~/uploaded
 rmt_runcheck: /media/paol/checkpoint
