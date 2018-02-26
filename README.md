@@ -104,10 +104,4 @@ Upload:
 # prerequisites
 sudo apt install build-essential
 
-# run qmake you can set CONFIG to debug or release
-qmake ./PAOL-LecCap-GUI.pro -r -spec linux-g++-64 CONFIG+=debug
-
-# Then it will generate a MakeFile
-
-# then just simply execute
-make
+# run build.sh on paol-code directory. Make sure the path is correct
