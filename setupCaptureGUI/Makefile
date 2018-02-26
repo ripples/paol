@@ -1147,6 +1147,7 @@ moc_commandlinethread.cpp: ../../Qt5.3.1/5.3/gcc_64/include/QtWidgets/QApplicati
 		seglist.h \
 		whiteboardprocess.h \
 		whiteboardworker.h \
+		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QProcess \
 		commandlinethread.h
 	/home/paol/Qt5.3.1/5.3/gcc_64/bin/moc $(DEFINES) -I/home/paol/Qt5.3.1/5.3/gcc_64/mkspecs/linux-g++ -I/home/paol/paol-code/setupCaptureGUI -I/home/paol/Qt5.3.1/5.3/gcc_64/include -I/home/paol/Qt5.3.1/5.3/gcc_64/include/QtWidgets -I/home/paol/Qt5.3.1/5.3/gcc_64/include/QtGui -I/home/paol/Qt5.3.1/5.3/gcc_64/include/QtCore commandlinethread.h -o moc_commandlinethread.cpp
 
@@ -1817,6 +1818,7 @@ main.o: main.cpp mainWindow.h \
 		../../Qt5.3.1/5.3/gcc_64/include/QtGui/qinputmethod.h \
 		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QFile \
 		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QTextStream \
+		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QProcess \
 		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QCoreApplication
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
@@ -2064,6 +2066,7 @@ mainWindow.o: mainWindow.cpp mainWindow.h \
 		vgaprocess.h \
 		vgaworker.h \
 		ui_mainWindow.h \
+		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QVariant \
 		clickable_label.h \
 		../../Qt5.3.1/5.3/gcc_64/include/QtGui/QMouseEvent \
 		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QDebug
@@ -3142,7 +3145,8 @@ commandlinethread.o: commandlinethread.cpp commandlinethread.h \
 		uf.h \
 		seglist.h \
 		whiteboardprocess.h \
-		whiteboardworker.h
+		whiteboardworker.h \
+		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QProcess
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o commandlinethread.o commandlinethread.cpp
 
 worker.o: worker.cpp worker.h \
