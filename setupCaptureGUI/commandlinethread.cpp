@@ -94,10 +94,10 @@ void CommandLineThread::run() {
         procThreads[i]->wait();
     }
 
-    qDebug("Uploading All captured lectures");
-    system("~/paol-code/scripts/upload/uploadAll.sh");
+    //qDebug("Uploading All captured lectures");
+    //system("~/paol-code/scripts/upload/uploadAll.sh");
     // Let the main application know that this thread finished
-    qDebug("Finishing main thread");
+    qDebug("***Finishing main thread");
     emit finished();
 }
 

@@ -73,7 +73,7 @@ outZip=$outDir
 outZip+='.zip'
 echo "Uploading zip $outZip in course $course to ${host}"
 uscript="curl -X POST \
-  ${host}:3001/upload/${course}/lecture-zip \
+  ${host}:8080/upload/${course}/lecture-zip \
   -H 'cache-control: no-cache' \
   -F 'file=@${outZip}'"
 
