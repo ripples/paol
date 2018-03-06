@@ -2066,7 +2066,6 @@ mainWindow.o: mainWindow.cpp mainWindow.h \
 		vgaprocess.h \
 		vgaworker.h \
 		ui_mainWindow.h \
-		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QVariant \
 		clickable_label.h \
 		../../Qt5.3.1/5.3/gcc_64/include/QtGui/QMouseEvent \
 		../../Qt5.3.1/5.3/gcc_64/include/QtCore/QDebug
