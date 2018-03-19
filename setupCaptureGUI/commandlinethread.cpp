@@ -20,11 +20,12 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
         }
 
     //set up path to file locations
-    int loc=setupLoc.find("/paol-code/");
+//    int loc=setupLoc.find("/paol-code/");
     //printf("1-%s\n",setupLoc.c_str());
     //         QDir::currentPath().toStdString().find("/paol-code/");
     //std::string pathTemp=QDir::currentPath().toStdString();
-    codePath=setupLoc.substr(0,loc);
+//    codePath=setupLoc.substr(0,loc);
+    codePath="/home/paol";
     //printf("1-%s\n",codePath.c_str());
 
     /// Set course information
@@ -40,6 +41,7 @@ CommandLineThread::CommandLineThread(int argc, char **argv) {
     assert(lecturePath != "");
 
     // Read thread configuration from setup file
+//    string tempPath="/home/paol/paol-code/cameraSetup.txt";
     string tempPath=codePath+"/paol-code/cameraSetup.txt";
     setThreadConfigs(tempPath.c_str());
 }
@@ -107,7 +109,6 @@ string CommandLineThread::buildLecturePath(string semester, string course, time_
     struct tm * localTime;
     localTime = localtime(&startTime);
     strftime(formatDateBuffer,80,"%m-%d-%Y--%H-%M-%S",localTime);
-
     return codePath+"/recordings/readyToUpload/" + semester + "/" + course + "/" + formatDateBuffer;
 }
 
@@ -134,6 +135,10 @@ void CommandLineThread::setThreadConfigs(string configLocation) {
     QFile configFile(locAsQStr);
     printf("%s\n",configLocation.c_str());
     assert(configFile.open(QIODevice::ReadOnly));
+//    if(!configFile.open(QIODevice::ReadOnly))
+//        qDebug()<<configFile.errorString();
+//    else
+//        qDebug()<<"configFile opened.";
 
     // Initialize counts for how many whiteboards and VGA feeds there are
     whiteboardCount = 0;
@@ -310,13 +315,13 @@ void CommandLineThread::createThreadsFromConfigs() {
                 " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
     } else {
         //set normal capture for right side up video
-
-        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
-                " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid"+
-                " myvid. ! queue ! mux.video_0"+
-                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert "+
-                " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
-                " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
+          ffmpegCommand = "/home/paol/paol-code/cap.sh "+lecturePath+"/videoLarge "+videoDeviceNumStr+" "+audioNumStr;
+//        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
+//                " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid"+
+//                " myvid. ! queue ! mux.video_0"+
+//                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert "+
+//                " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
+//                " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
 
         //ORIGINAL CODE - TESTING
 

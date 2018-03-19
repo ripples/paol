@@ -275,6 +275,7 @@ void MainWindow::videoUSB(){
 }
 
 void MainWindow::audioCode(){
+    std::string model = "C930e";
     FILE *pointer, *address;
     int Size = 512;
     char *buffer = new char[Size];
@@ -282,7 +283,7 @@ void MainWindow::audioCode(){
     std::string output;
     std::string out;
     pointer = popen("v4l2-ctl --list-devices", "r");
-    address = popen("pactl list short sources | cut -f2 | grep C920 | grep analog", "r");
+    address = popen("pactl list short sources | cut -f2 | grep C9 | grep analog", "r");
     int level = 0;
     bool camera;
     vector<string>temp;
@@ -292,7 +293,8 @@ void MainWindow::audioCode(){
      while(fgets(buffer, Size, pointer)){
         if(level == 0){
             output = std::string(buffer);
-            std::size_t found = output.find("HD Pro Webcam C920");
+//            std::size_t found = output.find("HD Pro Webcam "+model);
+            std::size_t found = output.find("Logitech Webcam "+model);
             if(found != string::npos){
                 camera = true;
                 level++;
@@ -321,7 +323,8 @@ void MainWindow::audioCode(){
      ////////////////////////////////////////////////////
      while(fgets(buffer2, Size, address)){
          out = std::string(buffer2);
-         string terminal = "alsa_input.usb-046d_HD_Pro_Webcam_C920_";
+//         string terminal = "alsa_input.usb-046d_HD_Pro_Webcam_"+model+"_";
+         string terminal = "alsa_input.usb-046d_Logitech_Webcam_"+model+"_";
          alsaString = out.substr(terminal.length(), 8);
          device.push_back(alsaString);
      }
