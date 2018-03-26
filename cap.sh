@@ -46,10 +46,10 @@ AUDIOSTR=$3
 V4LDEV="/dev/video${VIDEONUM}"
 
 # capture width
-WIDTH=320
+WIDTH=640
 
 # capture height
-HEIGHT=240
+HEIGHT=480
 
 # bitrate for theoraenc
 BITRATE=256
@@ -77,7 +77,7 @@ echo "**"
 gst-launch-1.0 -e \
    v4l2src device=${V4LDEV} ! video/x-raw,width=${WIDTH},height=${HEIGHT} ! \
    videoconvert ! \
-   tee name="splitter" ! queue ! xvimagesink sync=false splitter. ! \
+   tee name="splitter" ! \
    queue ! videorate ! video/x-raw ! \
 theoraenc bitrate=${BITRATE} ! queue ! oggmux name=mux pulsesrc device=${AUDIOSTR} ! \
 audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert ! queue ! \
