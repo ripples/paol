@@ -275,7 +275,7 @@ void MainWindow::videoUSB(){
 }
 
 void MainWindow::audioCode(){
-    std::string model = "C930e";
+    std::string model = "C920";
     FILE *pointer, *address;
     int Size = 512;
     char *buffer = new char[Size];
@@ -293,8 +293,8 @@ void MainWindow::audioCode(){
      while(fgets(buffer, Size, pointer)){
         if(level == 0){
             output = std::string(buffer);
-//            std::size_t found = output.find("HD Pro Webcam "+model);
-            std::size_t found = output.find("Logitech Webcam "+model);
+            std::size_t found = output.find("HD Pro Webcam "+model);
+//            std::size_t found = output.find("Logitech Webcam "+model);
             if(found != string::npos){
                 camera = true;
                 level++;
@@ -323,8 +323,8 @@ void MainWindow::audioCode(){
      ////////////////////////////////////////////////////
      while(fgets(buffer2, Size, address)){
          out = std::string(buffer2);
-//         string terminal = "alsa_input.usb-046d_HD_Pro_Webcam_"+model+"_";
-         string terminal = "alsa_input.usb-046d_Logitech_Webcam_"+model+"_";
+         string terminal = "alsa_input.usb-046d_HD_Pro_Webcam_"+model+"_";
+//         string terminal = "alsa_input.usb-046d_Logitech_Webcam_"+model+"_";
          alsaString = out.substr(terminal.length(), 8);
          device.push_back(alsaString);
      }
