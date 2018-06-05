@@ -14,8 +14,8 @@ sudo apt-get install -y libpng-dev
 #install openCV
 cd
 cd Downloads
-wget https://sourceforge.net/projects/opencvlibrary/files/opencv-unix/3.4.1/opencv-3.4.1.zip/download
-unzip opencv-3.4.1.zip
+wget https://sourceforge.net/projects/opencvlibrary/files/opencv-unix/3.4.1/opencv-3.4.1.zip
+unzip opencv-3.4.1
 cd opencv-3.4.1/
 mkdir release 
 cd release
