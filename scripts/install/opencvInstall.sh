@@ -14,9 +14,9 @@ sudo apt-get install -y libpng-dev
 #install openCV
 cd
 cd Downloads
-wget http://downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.9/opencv-2.4.9.zip
-unzip opencv-2.4.9.zip
-cd opencv-2.4.9/
+wget https://sourceforge.net/projects/opencvlibrary/files/opencv-unix/3.4.1/opencv-3.4.1.zip/download
+unzip opencv-3.4.1.zip
+cd opencv-3.4.1/
 mkdir release 
 cd release
 cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local ..
