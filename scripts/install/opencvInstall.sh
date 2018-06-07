@@ -24,11 +24,13 @@ make
 sudo make install
 #fix the location of openCV3 if updating an existing system
 cd /usr/local/lib
+echo "shit"
 if [ -d "x86_64-linux-gnu" ]; then
-	cd x86*
-	cp -r * /usr/local/lib
-	cd /usr/local/lib
-	rm -rf x86*
+    echo "shit"
+    cd x86*
+    sudo cp -r * /usr/local/lib
+    cd /usr/local/lib
+    sudo rm -rf x86*
 fi
 sudo ldconfig
 
