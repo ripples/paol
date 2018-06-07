@@ -17,6 +17,7 @@
 #include <sstream>
 #include <algorithm>
 #include <QProcess>
+#include <iostream>
 
 using namespace std;
 

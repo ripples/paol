@@ -148,6 +148,8 @@ void CommandLineThread::setThreadConfigs(string configLocation) {
     QTextStream in(&configFile);
     while(!in.atEnd()) {
         QString line = in.readLine();
+        std::string text = line.toUtf8().constData();
+        std::cout << text << std::endl;
 
         // Only parse non-empty lines
         if(line.length() > 0) {
@@ -158,26 +160,41 @@ void CommandLineThread::setThreadConfigs(string configLocation) {
             char type[16];
             int scanRes = sscanf(line.toStdString().data(), "%s %d %d %s", deviceUSB, &deviceNum, &flipCam, type);
 
-            // Make sure exactly three items were found on the current line
+            /*// Make sure exactly three items were found on the current line
             assert(scanRes == 4);
+            */
 
-            // Set thread configuration struct for the current line
-            ProcThreadConfig p;
-            p.deviceUSB = string(deviceUSB);
-            p.deviceNum = deviceNum;
-            p.flipCam = flipCam;
-            p.type = string(type);
-            if(p.type == "Whiteboard") {
-                p.typeNum = whiteboardCount;
-                whiteboardCount++;
-            }
-            else if(p.type == "VGA2USB") {
-                p.typeNum = vgaCount;
-                vgaCount++;
-            }
+            if (scanRes == 4){
+                // Set thread configuration struct for the current line
+                ProcThreadConfig p;
+                p.deviceUSB = string(deviceUSB);
+                p.deviceNum = deviceNum;
+                p.flipCam = flipCam;
+                p.type = string(type);
+                if(p.type == "Whiteboard") {
+                    p.typeNum = whiteboardCount;
+                    whiteboardCount++;
+                }
+                else if(p.type == "VGA2USB") {
+                    p.typeNum = vgaCount;
+                    vgaCount++;
+                }
 
-            // Add the configuration struct to the set of configs
-            threadConfigs.push_back(p);
+                // Add the configuration struct to the set of configs
+                threadConfigs.push_back(p);
+            } else {
+                // Set thread configuration struct for the current line
+                ProcThreadConfig p;
+                sscanf(line.toStdString().data(), " %d %d %s", &deviceNum, &flipCam, type);
+                //p.deviceUSB = string(deviceUSB);
+                p.deviceNum = deviceNum;
+                p.flipCam = flipCam;
+                p.type = string(type);
+
+
+                // Add the configuration struct to the set of configs
+                threadConfigs.push_back(p);
+            }
         }
     }
 
@@ -334,6 +351,7 @@ void CommandLineThread::createThreadsFromConfigs() {
 
     }
     qDebug("--------------%s",ffmpegCommand.c_str());
+    std::cout << "----------------------" << ffmpegCommand.c_str() << std::endl;
 
     //printf("%s",ffmpegCommand);
 
