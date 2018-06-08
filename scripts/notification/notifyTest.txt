@@ -1,0 +1,22 @@
+[COURSEID-SECTION]
+TESTCOMP | 171-2
+[+]
+
+[LECTURER]
+vmarkov@ithaca.edu
+[+]
+
+[ADMIN]
+mdesmery@ithaca.edu
+[+]
+
+[CLASSTIME-WEEKDAY]
+12:42-20:00/Tuesday, 11:55-11:20/Monday
+
+[MACHINEIP]
+172.26.20.15
+[+]
+
+
+
+
