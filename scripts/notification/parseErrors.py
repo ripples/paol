@@ -3,7 +3,7 @@ import shlex
 import os
 import signal
 
-path = "/home/paol/recordings/readyToUpload/SUMMER18/COMPTEST3/06-07-2018--12-17-38/"
+path = "/home/paol/recordings/readyToUpload/2018/test1/06-05-2018--11-55-13/"
 
 
 def parseFile():
@@ -24,6 +24,9 @@ def parseFile():
         if "core dump" in theLine:
             print("Found")
             return True
+	if "warning" in theLine:
+	    print("Found")
+	    return True
         x += 1
 
     textFile.close()
@@ -45,6 +48,6 @@ def main():
         cmd = shlex.split(cmd)
         process = subprocess.Popen(cmd)
         (result, err) = process.communicate()
-    fileIn.close()
+    	fileIn.close()
 
 main()

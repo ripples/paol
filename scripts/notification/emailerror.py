@@ -6,6 +6,7 @@ machine = sys.argv[1]
 courseID = sys.argv[2]
 classtime = sys.argv[3]
 errorMess = sys.argv[4]
+errorMess = errorMess.replace("_", " ")
 
 email_list = "mdesmery@ithaca.edu"
 email_list = email_list.split(",")
