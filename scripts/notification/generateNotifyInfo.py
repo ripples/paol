@@ -100,6 +100,7 @@ def writeFromINFO(logDir, INFOPath):
         notifyInfoFile.write(line)
     notifyInfoFile.write('\n')
     notifyInfoFile.write('========== END OF FFMPEG.LOG FILE ==========\n')
+    notifyInfoFile.write('!!!!!!!!!!!!!!!!!!!!END OF ERROR REPORT!!!!!!!!!!!!!!!!!!!!\n\n')
 
     # closing files
     INFOFile.close()
