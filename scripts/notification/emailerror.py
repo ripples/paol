@@ -27,6 +27,7 @@ username = 'paolcalic@gmail.com'
 password = 'secretPAOL'
 print("email2")
 server = smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=20)
+server.set_debuglevel(1)
 print("email3")
 server.ehlo()
 print("email4")
