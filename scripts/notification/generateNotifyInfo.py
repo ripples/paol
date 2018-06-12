@@ -95,11 +95,10 @@ def writeFromINFO(logDir, INFOPath):
 
     # writes status of ffmpeg.log file and any information if errors were found
     notifyInfoFile.write('Status of ffmpeg.log: ' + status + '\n')
-    notifyInfoFile.write('========== FFMPEG.LOG FILE INFORMATION ==========')
+    notifyInfoFile.write('========== FFMPEG.LOG FILE INFORMATION ==========\n')
     for line in takeLines:
         notifyInfoFile.write(line)
-    if not takeLines:
-        notifyInfoFile.write('\n')
+    notifyInfoFile.write('\n')
     notifyInfoFile.write('========== END OF FFMPEG.LOG FILE ==========\n')
 
     # closing files
