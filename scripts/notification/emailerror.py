@@ -17,7 +17,7 @@ now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 fromaddr = 'paolcalic@gmail.com'
 toaddrs = email_list
 msg = 'Subject: ERROR NOTIFICATION FROM: ' + socket.gethostname() + "\r\n\nError Message: \n" + errorMess + "\nDate: " + str(now)
-
+print("email1")
 # body = '\r\n'.join(['To %s' % toaddrs,
 #                     'From: %s' % fromaddr,
 #                     'Subject: %s' % SUBJECT,
@@ -31,3 +31,4 @@ server.ehlo()
 server.login(username,password)
 server.sendmail(fromaddr, email_list, msg)
 server.quit()
+print("email2")
