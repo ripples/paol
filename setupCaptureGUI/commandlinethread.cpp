@@ -332,13 +332,15 @@ void CommandLineThread::createThreadsFromConfigs() {
                 " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
     } else {
         //set normal capture for right side up video
-          ffmpegCommand = "/home/paol/paol-code/cap.sh "+lecturePath+"/videoLarge "+videoDeviceNumStr+" "+audioNumStr;
+  //        ffmpegCommand = "/home/paol/paol-code/cap.sh "+lecturePath+"/videoLarge "+videoDeviceNumStr+" "+audioNumStr;
 //        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
 //                " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid"+
 //                " myvid. ! queue ! mux.video_0"+
 //                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert "+
 //                " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
 //                " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
+        ffmpegCommand = "gst-launch-1.0 v4l2src -e device=/dev/video" + videoDeviceNumStr +" ! video/x-h264, width=320, height=240, framerate=24/1 ! h264parse ! mp4mux ! filesink location="+ lecturePath +"/test.mp4";
+
 
         //ORIGINAL CODE - TESTING
 

@@ -696,21 +696,26 @@ void MainWindow::captureVideo(){
             //call ffmpeg directly
             if(reverseChecks[i]->isChecked()==1){
                 //if camera is upside down then flip video in capture
-                vidCaptureString = "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
-                        " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid"+
-                        " myvid. ! queue ! x264enc ! mux.video_0"+
-                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! queue ! audioconvert "+
-                        " ! voaacenc ! queue ! aacparse ! queue ! mux.audio_0"+
-                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
+//                vidCaptureString = "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
+//                        " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid"+
+//                        " myvid. ! queue ! x264enc ! mux.video_0"+
+//                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! queue ! audioconvert "+
+//                        " ! voaacenc ! queue ! aacparse ! queue ! mux.audio_0"+
+//                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
+                //For flipped video. Actually works but the file sizes are huge. Needs compressing
+                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s +" ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! videoflip method=vertical-flip ! x264enc tune=zerolatency ! h264parse ! mux.video_0 pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 ! audio/x-raw, rate=32000, channels=2 ! queue ! voaacenc ! aacparse ! mux.audio_0 mp4mux name=mux ! filesink location=" + processLocation + "/lecture.mp4";
             } else {
                 //set normal capture for right side up video
-                vidCaptureString =  "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
-                        " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid"+
-                        " myvid. ! queue ! mux.video_0"+
-                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert "+
-                        " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
-                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
+//                vidCaptureString =  "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
+//                        " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid"+
+//                        " myvid. ! queue ! mux.video_0"+
+//                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert "+
+//                        " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
+//                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
 
+                //For non-flipped video. Actually works but the file sizes are huge. Needs compressing
+                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s +" ! video/x-h264, width=320, height=240, framerate=24/1 ! h264parse ! queue ! mux. pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 "
+                        + " ! audio/x-raw, rate=32000, channels=2, depth=16 ! voaacenc ! aacparse ! queue ! mux. mp4mux name=mux ! filesink location="+ processLocation +"/lecture.mp4";
 
                 //ORIGINAL CODE <<<<<<<<<<<<<<<<<<<<<<<<<
                 /*vidCaptureString = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+s+
