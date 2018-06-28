@@ -22,18 +22,16 @@ cd release
 cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local ..
 make
 sudo make install
+
 #fix the location of openCV3 if updating an existing system
 cd /usr/local/lib
-echo "shit"
 if [ -d "x86_64-linux-gnu" ]; then
-    echo "shit"
     cd x86*
     sudo cp -r * /usr/local/lib
     cd /usr/local/lib
     sudo rm -rf x86*
 fi
 sudo ldconfig
-
 
 #needed by qtCreator
 sudo apt-get install -y libgl1-mesa-dev
