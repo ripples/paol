@@ -275,7 +275,7 @@ void MainWindow::videoUSB(){
 }
 
 void MainWindow::audioCode(){
-    std::string model = "C930e";
+    std::string model = "C920";
     FILE *pointer, *address;
     int Size = 512;
     char *buffer = new char[Size];
@@ -324,7 +324,8 @@ void MainWindow::audioCode(){
      while(fgets(buffer2, Size, address)){
          out = std::string(buffer2);
 //         string terminal = "alsa_input.usb-046d_HD_Pro_Webcam_"+model+"_";
-         string terminal = "alsa_input.usb-046d_Logitech_Webcam_"+model+"_";
+//         string terminal = "alsa_input.usb-046d_Logitech_Webcam_"+model+"_";
+         string terminal = "alsa_input.usb-046d_HD_Pro_Webcam_"+model+"_";
          alsaString = out.substr(terminal.length(), 8);
          device.push_back(alsaString);
      }
@@ -645,7 +646,7 @@ void MainWindow::captureVideo(){
     //Set pulsesrc Audio for video record
     if(cameraAudioStr == ""){
         //If the string is empty, the first C920 camera isn't assigned to video0,
-        //so this need to be done to keep the pulsesrc audio working properly
+        //so this needs to be done to keep the pulsesrc audio working properly
         if(out.str() == "" || out.str() == "1"){
             audioSet = "pactl list short sources | cut -f2 | grep C920_ | head -1";
         } else {
@@ -670,7 +671,7 @@ void MainWindow::captureVideo(){
     }
     pclose(ptr);
 
-    qDebug() << audioCamNum.c_str();
+    qDebug() << "------------" << audioCamNum.c_str() << "its here";
 
     for(int i = 0; i < optionBoxes.length(); i++){
         //Find if there is a Video camera selected
@@ -685,7 +686,11 @@ void MainWindow::captureVideo(){
             out << i;
             s = out.str();
 
-            audioCamNum.erase(std::remove(audioCamNum.begin(),audioCamNum.end(),' '),audioCamNum.end());
+           // audioCamNum.erase(std::remove(audioCamNum.begin(),audioCamNum.end(),' '),audioCamNum.end());
+
+            std::size_t found = audioCamNum.find("alsa");
+            audioCamNum.erase(0,found);
+           // qDebug() << audioCamNum.c_str();
 
             /* old way of calling ffmpeg from script
             vidCaptureString =codePath+"/paol-code/scripts/capture/videoCapturePortable /dev/video" + s + " hw:" + audioCamNum + " "
@@ -702,8 +707,9 @@ void MainWindow::captureVideo(){
 //                        " pulsesrc device="+audioCamNum+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! queue ! audioconvert "+
 //                        " ! voaacenc ! queue ! aacparse ! queue ! mux.audio_0"+
 //                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
-                //For flipped video. Actually works but the file sizes are huge. Needs compressing
-                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s +" ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! videoflip method=vertical-flip ! x264enc tune=zerolatency ! h264parse ! mux.video_0 pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 ! audio/x-raw, rate=32000, channels=2 ! queue ! voaacenc ! aacparse ! mux.audio_0 mp4mux name=mux ! filesink location=" + processLocation + "/lecture.mp4";
+                //For flipped video. Actually works
+                //vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s +" ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! videoflip method=vertical-flip ! x264enc tune=zerolatency ! h264parse ! mux.video_0 pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 ! audio/x-raw, rate=32000, channels=2 ! queue ! voaacenc ! aacparse ! mux.audio_0 mp4mux name=mux ! filesink location=" + processLocation + "/lecture.mp4";
+                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! videoflip method=vertical-flip ! x264enc tune=zerolatency bitrate=512 ! h264parse ! mux.video_0 pulsesrc device=" + audioCamNum + " volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux.audio_0 mp4mux name=mux ! filesink location=" + processLocation + "/lecture.mp4";
             } else {
                 //set normal capture for right side up video
 //                vidCaptureString =  "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
@@ -713,9 +719,13 @@ void MainWindow::captureVideo(){
 //                        " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
 //                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
 
-                //For non-flipped video. Actually works but the file sizes are huge. Needs compressing
-                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s +" ! video/x-h264, width=320, height=240, framerate=24/1 ! h264parse ! queue ! mux. pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 "
-                        + " ! audio/x-raw, rate=32000, channels=2, depth=16 ! voaacenc ! aacparse ! queue ! mux. mp4mux name=mux ! filesink location="+ processLocation +"/lecture.mp4";
+                //For non-flipped video. Actually works
+//                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s +" ! video/x-h264, width=320, height=240, framerate=24/1 ! h264parse ! queue ! mux. pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 "
+//                        + " ! audio/x-raw, rate=32000, channels=2, depth=16 ! voaacenc ! aacparse ! queue ! mux. mp4mux name=mux ! filesink location="+ processLocation +"/lecture.mp4";
+             //   vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video"+ s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=512 ! video/x-h264, profile=constrained-baseline ! h264parse ! mux. pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux. mp4mux name=mux ! filesink location=" + processLocation + "/test.mp4";
+
+                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video"+ s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=512 ! video/x-h264, profile=constrained-baseline ! h264parse ! mux. pulsesrc device=" + audioCamNum + " volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux. mp4mux name=mux ! filesink location=" + processLocation + "/test.mp4";
+
 
                 //ORIGINAL CODE <<<<<<<<<<<<<<<<<<<<<<<<<
                 /*vidCaptureString = "ffmpeg -s 853x480 -f video4linux2 -i /dev/video"+s+
@@ -724,7 +734,7 @@ void MainWindow::captureVideo(){
                         "-pix_fmt yuv420p -flags +aic+mv4 -threads 0 -r 30 video.mp4 ";*/
                 //ORIGINAL CODE <<<<<<<<<<<<<<<<<<<<<<<<
             }
-            qDebug("--------------%s",vidCaptureString.c_str());
+           // qDebug("--------------%s",vidCaptureString.c_str());
             ffmpegProcess->setStandardErrorFile(QString::fromStdString(processLocation + "/logs/ffmpeg.log"));
             ffmpegProcess->start(vidCaptureString.c_str());
         }
