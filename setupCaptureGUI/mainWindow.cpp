@@ -724,7 +724,7 @@ void MainWindow::captureVideo(){
 //                        + " ! audio/x-raw, rate=32000, channels=2, depth=16 ! voaacenc ! aacparse ! queue ! mux. mp4mux name=mux ! filesink location="+ processLocation +"/lecture.mp4";
              //   vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video"+ s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=512 ! video/x-h264, profile=constrained-baseline ! h264parse ! mux. pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux. mp4mux name=mux ! filesink location=" + processLocation + "/test.mp4";
 
-                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video"+ s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=512 ! video/x-h264, profile=constrained-baseline ! h264parse ! mux. pulsesrc device=" + audioCamNum + " volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux. mp4mux name=mux ! filesink location=" + processLocation + "/test.mp4";
+                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video"+ s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=512 ! video/x-h264, profile=constrained-baseline ! h264parse ! mux. pulsesrc device=" + audioCamNum + " volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux. mp4mux name=mux ! filesink location=" + processLocation + "/lecture.mp4";
 
 
                 //ORIGINAL CODE <<<<<<<<<<<<<<<<<<<<<<<<<
