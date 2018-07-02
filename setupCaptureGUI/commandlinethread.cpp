@@ -246,6 +246,8 @@ void CommandLineThread::createThreadsFromConfigs() {
         }
     }
 
+  //  qDebug << audioCommand.c_str() << "\n";
+
     // Make sure the video and audio device numbers were set by the configs
     assert(videoDeviceNum != -1 && audioNum != -1);
 
@@ -260,13 +262,17 @@ void CommandLineThread::createThreadsFromConfigs() {
     videoDeviceNumStr = out.str();
     out.str(string());
 
-    cameraAudio = "pactl list short sources | cut -f2 | grep " + audioCommand;
+  //  cameraAudio = "pactl list short sources | cut -f2 | grep " + audioCommand;
+
+    cameraAudio = "pactl list short sources | cut -f2 | grep alsa_input.usb";
+
+
 
     qDebug() << cameraAudio.c_str() << "\n";
 
     if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
             while(fgets(buf, bufSize, ptr)){
-                audioNumStr = std::string(buf);;
+                audioNumStr = std::string(buf);
             }
             fclose(ptr);
         }
@@ -324,12 +330,13 @@ void CommandLineThread::createThreadsFromConfigs() {
     //new method of calling ffmpeg directly from the code without a script
     if(flipVideo){
         //if camera is upside down then flip video in capture
-        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
-                " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid"+
-                " myvid. ! queue ! x264enc ! mux.video_0"+
-                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! queue ! audioconvert "+
-                " ! voaacenc ! queue ! aacparse ! queue ! mux.audio_0"+
-                " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
+//        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
+//                " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! avdec_h264 ! videoflip method=2 ! tee name=myvid"+
+//                " myvid. ! queue ! x264enc ! mux.video_0"+
+//                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! queue ! audioconvert "+
+//                " ! voaacenc ! queue ! aacparse ! queue ! mux.audio_0"+
+//                " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
+        ffmpegCommand = "gst-launch-1.0 v4l2src -e device=/dev/video" + videoDeviceNumStr + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! videoflip method=vertical-flip ! x264enc tune=zerolatency bitrate=512 ! h264parse ! mux.video_0 pulsesrc device=" + audioNumStr + " volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux.audio_0 mp4mux name=mux ! filesink location=" + lecturePath + "/lecture.mp4";
     } else {
         //set normal capture for right side up video
   //        ffmpegCommand = "/home/paol/paol-code/cap.sh "+lecturePath+"/videoLarge "+videoDeviceNumStr+" "+audioNumStr;
@@ -339,7 +346,8 @@ void CommandLineThread::createThreadsFromConfigs() {
 //                " pulsesrc device="+audioNumStr+" ! audio/x-raw,rate=32000,channels=2,depth=16 ! audioconvert "+
 //                " ! voaacenc ! aacparse ! queue ! mux.audio_0"+
 //                " mp4mux name=mux ! filesink location="+lecturePath+"/videoLarge.mp4";
-        ffmpegCommand = "gst-launch-1.0 v4l2src -e device=/dev/video" + videoDeviceNumStr +" ! video/x-h264, width=320, height=240, framerate=24/1 ! h264parse ! mp4mux ! filesink location="+ lecturePath +"/test.mp4";
+     //   ffmpegCommand = "gst-launch-1.0 v4l2src -e device=/dev/video" + videoDeviceNumStr +" ! video/x-h264, width=320, height=240, framerate=24/1 ! h264parse ! mp4mux ! filesink location="+ lecturePath +"/test.mp4";
+            ffmpegCommand = "gst-launch-1.0 v4l2src -e device=/dev/video"+ videoDeviceNumStr + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=512 ! video/x-h264, profile=constrained-baseline ! h264parse ! mux. pulsesrc device=" + audioNumStr + " volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux. mp4mux name=mux ! filesink location=" + lecturePath + "/lecture.mp4";
 
 
         //ORIGINAL CODE - TESTING
