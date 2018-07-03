@@ -238,15 +238,23 @@ void CommandLineThread::createThreadsFromConfigs() {
         }
         else if(c.type == "Audio") {
             audioNum = c.deviceNum;
-            audioCommand = c.deviceUSB;
+           // audioCommand = c.deviceUSB;
         }
         else {
             // We found a wrong type, so stop the program
             assert(false);
         }
     }
+      for(unsigned int i = 0; i < threadConfigs.size(); i++) {
+         ProcThreadConfig theThread = threadConfigs[i];
+          if (theThread.deviceNum == audioNum ){
+              audioCommand = theThread.deviceUSB;
+              break;
+          }
+      }
 
-  //  qDebug << audioCommand.c_str() << "\n";
+    cout << audioNum << "audioNum\n";
+    cout << videoDeviceNum << "videoDeviceNum\n";
 
     // Make sure the video and audio device numbers were set by the configs
     assert(videoDeviceNum != -1 && audioNum != -1);
@@ -261,14 +269,15 @@ void CommandLineThread::createThreadsFromConfigs() {
     out << videoDeviceNum;
     videoDeviceNumStr = out.str();
     out.str(string());
-
-  //  cameraAudio = "pactl list short sources | cut -f2 | grep " + audioCommand;
-
-    cameraAudio = "pactl list short sources | cut -f2 | grep alsa_input.usb";
+    cout << videoDeviceNum << "videoDeviceNum\n";
 
 
+    cameraAudio = "pactl list short sources | cut -f2 | grep " + audioCommand;
 
-    qDebug() << cameraAudio.c_str() << "\n";
+   // cameraAudio = "pactl list short sources | cut -f2 | grep alsa_input.usb";
+
+    qDebug() << audioCommand.c_str() << "audioCommand\n";
+    qDebug() << cameraAudio.c_str() << "cameraAudio\n";
 
     if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
             while(fgets(buf, bufSize, ptr)){
