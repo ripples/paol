@@ -86,7 +86,7 @@ void CommandLineThread::run() {
     // Stop FFmpeg
     //ffmpegProcess->write("q");
     //Kill gst process through system - send SIGINT
-    system("ps -ef | awk '/[g]st-launch-1.0/{print $2}' | xargs kill -INT");
+    system("ps -ef | awk '/[g]st-launch-1.0/ {print $2}' | xargs kill -INT");
     sleep(3);
     ffmpegProcess->closeWriteChannel();
 
@@ -159,10 +159,6 @@ void CommandLineThread::setThreadConfigs(string configLocation) {
             int flipCam;
             char type[16];
             int scanRes = sscanf(line.toStdString().data(), "%s %d %d %s", deviceUSB, &deviceNum, &flipCam, type);
-
-            /*// Make sure exactly three items were found on the current line
-            assert(scanRes == 4);
-            */
 
             if (scanRes == 4){
                 // Set thread configuration struct for the current line
@@ -272,7 +268,9 @@ void CommandLineThread::createThreadsFromConfigs() {
     cout << videoDeviceNum << "videoDeviceNum\n";
 
 
-    cameraAudio = "pactl list short sources | cut -f2 | grep " + audioCommand;
+    cameraAudio = "pactl list | grep -A4 " + audioCommand;
+
+    //  cameraAudio = "pactl list short sources | cut -f2 | grep " + audioCommand;
 
    // cameraAudio = "pactl list short sources | cut -f2 | grep alsa_input.usb";
 
@@ -285,56 +283,67 @@ void CommandLineThread::createThreadsFromConfigs() {
             }
             fclose(ptr);
         }
+    qDebug() << audioNumStr.c_str() << "audioNumStr\n";
+
+
+    std::size_t found = audioNumStr.find("usb-");
+    audioNumStr.erase(0,found);
+    audioNumStr.erase(audioNumStr.length()-2,audioNumStr.length());
+    qDebug() << audioNumStr.c_str() << "audioNumStr\n";
+
+    audioNumStr = "alsa_input." + audioNumStr + ".analog-stereo";
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*    //Set audio number
-    out << audioNum;
+//    //Set audio number
+//    out << audioNum;
 
-    //Set the string if the pulse audio needs to be fixed
-    audioNumFix = audioNum - 1;
+//    //Set the string if the pulse audio needs to be fixed
+//    audioNumFix = audioNum - 1;
 
-    if(audioNumFix != -1)
-        audioNumFixStr << audioNumFix;
+//    if(audioNumFix != -1)
+//        audioNumFixStr << audioNumFix;
 
-    cameraAudio = "v4l2-ctl --list-device | grep -A1 HD | grep -o 'video0[^\n]*' | xargs";
+ //   cameraAudio = "v4l2-ctl --list-device | grep -A1 HD | grep -o video0 | xargs";
 
-    if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
-            while(fgets(buf, bufSize, ptr)){
-                outFileName += buf;
-                cameraAudioStr = outFileName;
-            }
-            fclose(ptr);
-        }
+//    if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
+//            while(fgets(buf, bufSize, ptr)){
+//                outFileName += buf;
+//                cameraAudioStr = outFileName;
+//            }
+//            fclose(ptr);
+//        }
 
-    //Set pulsesrc Audio for video record
-    if(cameraAudioStr == ""){
-        //If the string is empty, the first C920 camera isn't assigned to video0,
-        //so this need to be done to keep the pulsesrc audio working properly
-        if(out.str() == "1"){
-            audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
-        } else {
-            audioSet = "pactl list short sources | cut -f2 | grep C920_"+audioNumFixStr.str()+".analog";
-        }
-    } else {
-        //Set pulsesrc Audio for video record
-        if(out.str() == "0"){
-            //If the first C920 camera is assigned to /dev/video0
-            audioSet = "pactl list short sources | cut -f2 | grep C920.analog";
-        } else {
-            //If the audio is assigned to any other C920 camera
-            audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str()+".analog";
-        }
-    }
+//     qDebug() << cameraAudioStr.c_str() << "cameraAudioStr\n";
+//    // qDebug() << audioNumFixStr.c_str() << "out\n";
 
-    if ((ptr = popen(audioSet.c_str(), "r")) != NULL){
-        while(fgets(buf, bufSize, ptr)){
-            outFileName += buf;
-            audioNumStr = outFileName;
-        }
-        fclose(ptr);
-    }*/
+//    //Set pulsesrc Audio for video record
+//    if(cameraAudioStr == ""){
+//        //If the string is empty, the first C920 camera isn't assigned to video0,
+//        //so this need to be done to keep the pulsesrc audio working properly
+//        if(out.str() == "1"){
+//            audioSet = "pactl list short sources | cut -f2 | grep C920";
+//        } else {
+//            audioSet = "pactl list short sources | cut -f2 | grep C920_"+audioNumFixStr.str();
+//        }
+//    } else {
+//        //Set pulsesrc Audio for video record
+//        if(out.str() == "0"){
+//            //If the first C920 camera is assigned to /dev/video0
+//            audioSet = "pactl list short sources | cut -f2 | grep C920";
+//        } else {
+//            //If the audio is assigned to any other C920 camera
+//            audioSet = "pactl list short sources | cut -f2 | grep C920_"+out.str();
+//        }
+//    }
+
+//    if ((ptr = popen(audioSet.c_str(), "r")) != NULL){
+//        while(fgets(buf, bufSize, ptr)){
+//            outFileName += buf;
+//            audioNumStr = outFileName;
+//        }
+//        fclose(ptr);
+//    }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-     qDebug() << audioNumStr.c_str();
 
     //new method of calling ffmpeg directly from the code without a script
     if(flipVideo){
@@ -370,7 +379,7 @@ void CommandLineThread::createThreadsFromConfigs() {
 
     }
     qDebug("--------------%s",ffmpegCommand.c_str());
-    std::cout << "----------------------" << ffmpegCommand.c_str() << std::endl;
+  //  std::cout << "----------------------" << ffmpegCommand.c_str() << std::endl;
 
     //printf("%s",ffmpegCommand);
 
