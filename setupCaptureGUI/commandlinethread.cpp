@@ -291,27 +291,45 @@ void CommandLineThread::createThreadsFromConfigs() {
     audioNumStr.erase(audioNumStr.length()-2,audioNumStr.length());
     qDebug() << audioNumStr.c_str() << "audioNumStr\n";
 
-    string tempAnalog = audioNumStr + ".analog-stereo";
-    string tempIec = audioNumStr + ".iec958-stereo";
+    string tempAnalog = "analog";
+    string tempIec = "iec958";
 
-    string allDev = "pactl list short sources | cut -f2 | grep C9";
-    string theDevices;
+    //string allDev = "pactl list short sources | cut -f2 | grep alsa_input.usb >> dev.txt";
+    string setDev = "pacmd set-card-profile alsa_card." + audioNumStr + " input:analog-stereo";
+    string setDevOut;
 
-    if ((ptr = popen(allDev.c_str(), "r")) != NULL){
-            while(fgets(buf, bufSize, ptr)){
-                theDevices = std::string(buf);
+    if ((pointer = popen(setDev.c_str(), "r")) != NULL){
+            while(fgets(buffer, bufSize, pointer)){
+                setDevOut += buffer;
             }
-            fclose(ptr);
+            fclose(pointer);
         }
-    std::size_t foundTwo = theDevices.find(tempAnalog);
-    std::size_t foundThree = theDevices.find(tempIec);
-    cout << foundTwo << " FOUND2" << endl;
-    cout << foundThree << " FOUND3" << endl;
-    if (foundThree != std::string::npos){
-         audioNumStr = "alsa_input." + audioNumStr + ".iec958-stereo";
-    } else {
-        audioNumStr = "alsa_input." + audioNumStr + ".analog-stereo";
-    }
+//    qDebug() << allDevOut.c_str() << "The Devices\n";
+//    cout << allDevOut << endl;
+//    ifstream in("dev.txt");
+//    char fileOut[255];
+//    while(in){
+//        in.getline(fileOut,255);
+//    }
+//    in.close();
+
+//    ofstream ofs;
+//    ofs.open("dev.txt", ofstream::out | ofstream::trunc);
+//    ofs.close();
+//    string theDevices(fileOut);
+
+
+//    std::size_t foundTwo = theDevices.find_first_of(tempAnalog);
+//    std::size_t foundThree = theDevices.find_first_of(tempIec);
+//    cout << foundTwo << " FOUND2" << endl;
+//    cout << foundThree << " FOUND3" << endl;
+//    if (foundThree != std::string::npos){
+//         audioNumStr = "alsa_input." + audioNumStr + ".iec958-stereo";
+//    } else {
+//        audioNumStr = "alsa_input." + audioNumStr + ".analog-stereo";
+//    }
+
+    audioNumStr = "alsa_input." + audioNumStr + ".analog-stereo";
 
 
 
