@@ -291,7 +291,30 @@ void CommandLineThread::createThreadsFromConfigs() {
     audioNumStr.erase(audioNumStr.length()-2,audioNumStr.length());
     qDebug() << audioNumStr.c_str() << "audioNumStr\n";
 
-    audioNumStr = "alsa_input." + audioNumStr + ".analog-stereo";
+    string tempAnalog = audioNumStr + ".analog-stereo";
+    string tempIec = audioNumStr + ".iec958-stereo";
+
+    string allDev = "pactl list short sources | cut -f2 | grep C9";
+    string theDevices;
+
+    if ((ptr = popen(allDev.c_str(), "r")) != NULL){
+            while(fgets(buf, bufSize, ptr)){
+                theDevices = std::string(buf);
+            }
+            fclose(ptr);
+        }
+    std::size_t foundTwo = theDevices.find(tempAnalog);
+    std::size_t foundThree = theDevices.find(tempIec);
+    cout << foundTwo << " FOUND2" << endl;
+    cout << foundThree << " FOUND3" << endl;
+    if (foundThree != std::string::npos){
+         audioNumStr = "alsa_input." + audioNumStr + ".iec958-stereo";
+    } else {
+        audioNumStr = "alsa_input." + audioNumStr + ".analog-stereo";
+    }
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //    //Set audio number
 //    out << audioNum;
