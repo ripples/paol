@@ -41,3 +41,5 @@ def main():
     process = subprocess.Popen(cmd)
     (result, err) = process.communicate()
     print 'last'
+
+main()
