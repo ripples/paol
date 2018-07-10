@@ -157,15 +157,20 @@ def updateCrontab(events, my_cron):
         timeSplit = event.split(' ')
         hmTime = timeSplit[0].split(":")
 
-        # Retrieves only the hours from string
+        # gets minute for job, sets it to a minute before
         minute = hmTime[1]
+        intMin = int(minute)
+        toChange = intMin - 1
+        minute = str(toChange)
 
-        # Gets/sets minutes of job
+
+        # gets hour for job
         hour = hmTime[0]
 
-        # Removes the four letter subject code from string
+        # get class name
         className = timeSplit[2]
 
+        # get job duration
         duration = timeSplit[3]
         semesterDate = getSemesterDate()
 
