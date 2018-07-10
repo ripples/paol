@@ -9,12 +9,12 @@ sudo apt-get install -y gi
 sudo apt-get install -y gnome-session-flashback
 sudo apt-get install -y imagemagick
 
-#install google calendar api
-sudo apt-get install -y default-jre
-sudo apt-get install -y default-jdk
-sudo apt-get install -y ant
-sudo apt-get install -y maven
-sudo apt-get install -y maven2
+#install google calendar api - maven/java not needed anymore
+#sudo apt-get install -y default-jre
+#sudo apt-get install -y default-jdk
+#sudo apt-get install -y ant
+#sudo apt-get install -y maven
+#sudo apt-get install -y maven2
 
 #from http://code.google.com/p/qt-opencv-multithreaded/wiki/Documentation
 /home/paol/paol-code/scripts/install/opencvInstall.sh 

@@ -73,7 +73,7 @@ def getCalEvents(calIds, service):
 
     # iterates through dictionary for calendar name
     for item in calIds:
-        if item is calName:
+        if calName in item:
             found = True
             break
 
