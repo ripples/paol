@@ -187,7 +187,7 @@ def updateCrontab(events, my_cron):
 
         # Cron Job to be sent to crontab
         job = my_cron.new(
-            command="/home/paol/paol-code/build-PAOL-LecCap-GUI-Desktop_Qt_5_11_0_GCC_64bit-Debug/PAOL-LecCap-GUI " +
+            command="/home/paol/paol-code/build-PAOL-LecCap-GUI-Desktop_Qt*/PAOL-LecCap-GUI " +
                     semesterDate + ' ' + className + ' ' + duration, comment="job")
         job.hour.on(hour)
         job.minute.on(minute)
