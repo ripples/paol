@@ -27,6 +27,9 @@ def main():
     message = ''
     output = parseInfos()
 
+    if not output:
+	return
+
     for i in output:
         message += i
     # replaces ' ' with '_' because python hates white space
