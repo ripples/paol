@@ -26,20 +26,19 @@ def parseInfos():
 def main():
     message = ''
     output = parseInfos()
-    print 'first'
 
     for i in output:
         message += i
     # replaces ' ' with '_' because python hates white space
     message = message.replace(" ", "_")
-    print 'second'
+
     # command to be sent to shell, takes command line arguements to be sent to emailerror.py
-    cmd = "python /home/paol/paol-code/scripts/notification/emailerror.py TEST " + "'" + message + "'"
-    print 'third'
+    cmd = "python /home/paol/paol-code/scripts/notification/emailerror.py " + "'" + message + "'"
+
     # sends command to shell
     cmd = shlex.split(cmd)
     process = subprocess.Popen(cmd)
     (result, err) = process.communicate()
-    print 'last'
+
 
 main()

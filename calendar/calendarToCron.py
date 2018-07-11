@@ -131,20 +131,22 @@ def defaultCron(my_cron):
     # Job to check if machines are on (runs at 7:55am)
     jobOne = my_cron.new(command="/home/paol/paol-code/scripts/notification/machineCheck.sh", comment="default")
     jobOne.hour.on(7)
-    jobOne.minute.on(55)
+    jobOne.minute.on(0)
 
     # Job to update cron jobs from google calendar (runs 5 minutes after midnight every day)
     jobTwo = my_cron.new(command="/home/paol/paol-code/calendar/calendarToCron.sh", comment="default")
-    jobTwo.hour.on(0)
-    jobTwo.minute.on(5)
+    jobTwo.hour.on(1)
+    jobTwo.minute.on(0)
 
     # Job for email notifications (runs at 5pm)
     jobThree = my_cron.new(command="/home/paol/paol-code/scripts/notification/emailNotification.sh", comment="default")
     jobThree.hour.on(17)
+    jobThree.minute.on(0)
 
     # Job to upload all recordings for the day (runs at 11pm)
     jobFour = my_cron.new(command="/home/paol/paol-code/scripts/upload/uploadAll.sh", comment="default")
     jobFour.hour.on(23)
+    jobFour.minute.on(0)
 
     my_cron.write()
 
@@ -159,13 +161,22 @@ def updateCrontab(events, my_cron):
 
         # gets minute for job, sets it to a minute before
         minute = hmTime[1]
-        intMin = int(minute)
-        toChange = intMin - 1
-        minute = str(toChange)
-
 
         # gets hour for job
         hour = hmTime[0]
+
+        # convert and adjust time for recording
+        intMin = int(minute)
+        intHour = int(hour)
+
+        if intMin == 0:
+            intMin = 59
+            intHour = intHour - 1
+        else:
+            intMin = intMin - 1
+
+        minute = str(intMin)
+        hour = str(intHour)
 
         # get class name
         className = timeSplit[2]
@@ -178,8 +189,6 @@ def updateCrontab(events, my_cron):
         job = my_cron.new(
             command="/home/paol/paol-code/build-PAOL-LecCap-GUI-Desktop_Qt_5_11_0_GCC_64bit-Debug/PAOL-LecCap-GUI " +
                     semesterDate + ' ' + className + ' ' + duration, comment="job")
-
-        # print("Cron Job: " + job)
         job.hour.on(hour)
         job.minute.on(minute)
         my_cron.write()
