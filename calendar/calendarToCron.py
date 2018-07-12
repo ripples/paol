@@ -133,8 +133,8 @@ def defaultCron(my_cron):
     jobOne.hour.on(7)
     jobOne.minute.on(0)
 
-    # Job to update cron jobs from google calendar (runs 5 minutes after midnight every day)
-    jobTwo = my_cron.new(command="/home/paol/paol-code/calendar/calendarToCron.sh", comment="default")
+    # Job to update cron jobs from google calendar (runs 1 hour after midnight every day)
+    jobTwo = my_cron.new(command="/home/paol/paol-code/calendar/updateCron.sh", comment="default")
     jobTwo.hour.on(1)
     jobTwo.minute.on(0)
 
