@@ -1,9 +1,4 @@
 user: paol
-host: present.cs.umass.edu
-rmt_upload: ~/uploaded
-rmt_runcheck: /media/paol/checkpoint
-
-user: paol
 host: paolpresent.ithaca.edu
 rmt_upload: /media/paol/paolData/uploaded
 rmt_upload2: /media/paol/paolData/uploaded2
