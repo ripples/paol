@@ -148,6 +148,11 @@ def defaultCron(my_cron):
     jobFour.hour.on(23)
     jobFour.minute.on(0)
 
+    # Job to mark date in cron log
+    jobFive = my_cron.new(command="date >> /home/paol/recordings/cron.log", comment="default")
+    jobFive.hour.on(1)
+    jobFive.minute.on(30)
+
     my_cron.write()
 
 
@@ -188,7 +193,7 @@ def updateCrontab(events, my_cron):
         # Cron Job to be sent to crontab
         job = my_cron.new(
             command="/home/paol/paol-code/build-PAOL-LecCap-GUI-Desktop_Qt*/PAOL-LecCap-GUI " +
-                    semesterDate + ' ' + className + ' ' + duration, comment="job")
+                    semesterDate + ' ' + className + ' ' + duration + ' >> /home/paol/recordings/cron.log', comment="job")
         job.hour.on(hour)
         job.minute.on(minute)
         my_cron.write()
