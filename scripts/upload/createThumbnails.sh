@@ -7,11 +7,11 @@ cd $outDir
 cd whiteboard
 for image in *.png
 do
-    convert $image -resize 100x100 ${image%.*}-thumb.png
+    	convert $image -resize 100x100 ${image%.*}-thumb.png
 done
 
 cd ../computer
 for image in *.png
 do
-    convert $image -resize 100x100 ${image%.*}-thumb.png
+    	convert $image -resize 100x100 ${image%.*}-thumb.png
 done

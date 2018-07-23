@@ -51,13 +51,15 @@ class=$(basename $(dirname $outDir))
 
 #upload files
 sshid=/home/paol/.ssh/id_rsa
-ssh -i $sshid $user@$host touch /var/lock/manic.lck
+# ssh -i $sshid $user@$host touch /var/lock/manic.lck
 ssh -i $sshid $user@$host mkdir -p $rmt_upload/$sem/$class
 scp -r $outDir $user@$host:$rmt_upload/$sem/$class
 #the following is for files without video and NEEDS TESTING
-rsync -avz -e "ssh -i $sshid" --exclude *.mp4 $outDir $user@$host:$rmt_upload/$sem/$class 
+sudo rsync -avz -e "ssh -i $sshid" $outDir $user@$host:$rmt_upload/$sem/$class 
 STATUS=$?
-ssh -i $sshid $user@$host rm /var/lock/manic.lck
+# ssh -i $sshid $user@$host rm /var/lock/manic.lck
+
+# --exclude *.mp4
 
 # The path where the uploaded lectures should go
 uploaded=/home/paol/recordings/uploaded
