@@ -852,22 +852,33 @@ void MainWindow::on_mainMenu_Setup_Cameras_clicked(){
 }
 
 void MainWindow::on_mainMenu_Upload_Lectures_clicked(){
-    string uploadScript=codePath+"/paol-code/scripts/upload/uploadAll.sh "+codePath;
+  //  string uploadScript=codePath+"/paol-code/scripts/upload/uploadAll.sh "+codePath;
+    string uploadScript="/home/paol/paol-code/scripts/upload/uploadAll.sh";
     qDebug("%s",uploadScript.c_str());
-    QProcess *runUpload=new QProcess(this);
-    runUpload->start(uploadScript.c_str());
+//    QProcess *runUpload=new QProcess(this);
+//    runUpload->start(uploadScript.c_str());
 
-    //Check if upload is still running
-    //This way the GUI freezes
-    qDebug() << "Uploading files. GUI blocked. Please wait.";
-    runUpload->waitForFinished(-1);
+//    //Check if upload is still running
+//    //This way the GUI freezes
+//    qDebug() << "Uploading files. GUI blocked. Please wait.";
+//    runUpload->waitForFinished(-1);
 
-    if(runUpload->exitCode() !=0){
-        qDebug() << "Error";
-    }
-    else{
-        qDebug() << "Upload is Done";
-    }
+//    if(runUpload->exitCode() !=0){
+//        qDebug() << "Error";
+//    }
+//    else{
+//        qDebug() << "Upload is Done";
+//    }
+    string dump;
+    int bufSize = 512;
+    char *buf = new char[bufSize];
+    FILE *ptr;
+    if ((ptr = popen(uploadScript.c_str(), "r")) != NULL){
+            while(fgets(buf, bufSize, ptr)){
+                dump = std::string(buf);
+            }
+            fclose(ptr);
+        }
 
 }
 
