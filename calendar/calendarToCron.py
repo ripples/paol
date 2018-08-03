@@ -132,6 +132,11 @@ def defaultCron(my_cron):
     jobOne = my_cron.new(command="mkdir /home/paol/recordings/ -p", comment="default")
     jobOne.hour.on(1)
     jobOne.minute.on(15)	
+
+    # Job to restart machine in order to release cameras
+    jobSix = my_cron.new(command="sudo reboot", comment="default")
+    jobSix.hour.on(0)
+    jobSix.minute.on(01)
 	
     # Job to mark date in cron log
     jobFive = my_cron.new(command="date >> /home/paol/recordings/cron.log", comment="default")
