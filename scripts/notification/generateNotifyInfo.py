@@ -49,6 +49,9 @@ def getINFOPath(rootDir):
 
 
 def writeFromINFO(logDir, INFOPath):
+    # boolean to determine if errors need to emailed
+    problemsFound = False
+
     # check to see if ffmpeg.log file exists
     if os.path.isfile(logDir + '/' + 'ffmpeg.log'):
         ffempegExists = True
@@ -81,7 +84,8 @@ def writeFromINFO(logDir, INFOPath):
             notifyInfoFile.write('Status of errors: FOUND\n')
 
             # adds file to email list if errors are present
-            filesToEmail.append(logDir + '/' + 'notifyInfo.txt')
+            # filesToEmail.append(logDir + '/' + 'notifyInfo.txt')
+            problemsFound = True
 
             FFMFile = open(logDir + '/' + 'ffmpeg.log', 'r')
             takeLines = FFMFile.readlines()
@@ -90,8 +94,16 @@ def writeFromINFO(logDir, INFOPath):
             notifyInfoFile.write('Status of errors: NOT FOUND\n')
     else:
         # adds file to email list if ffmpeg.log file is not found
-        filesToEmail.append(logDir + '/' + 'notifyInfo.txt')
+        # filesToEmail.append(logDir + '/' + 'notifyInfo.txt')
+        problemsFound = True
         status = 'NOT FOUND\n'
+
+    # writes status of lecture video
+    if not findLectureFile(logDir):
+        notifyInfoFile.write('Status of lecture.mp4: NOT FOUND\n')
+        problemsFound = True
+    else:
+        notifyInfoFile.write('Status of lecture.mp4: FOUND\n')
 
     # writes status of ffmpeg.log file and any information if errors were found
     notifyInfoFile.write('Status of ffmpeg.log: ' + status + '\n')
@@ -100,11 +112,20 @@ def writeFromINFO(logDir, INFOPath):
         notifyInfoFile.write(line)
     notifyInfoFile.write('\n')
     notifyInfoFile.write('========== END OF FFMPEG.LOG FILE ==========\n')
-    notifyInfoFile.write('!!!!!!!!!!!!!!!!!!!!END OF ERROR REPORT!!!!!!!!!!!!!!!!!!!!\n\n')
+
+    # add file to email list if problem is detected
+    if problemsFound:
+        filesToEmail.append(logDir + '/' + 'notifyInfo.txt')
 
     # closing files
     INFOFile.close()
     notifyInfoFile.close()
+
+
+def findLectureFile(logDir):
+    # adjusts file path too find lecture video
+    vidPath = logDir.replace('logs', 'lecture.mp4')
+    return os.path.isfile(vidPath)
 
 
 def findErrors(file):
