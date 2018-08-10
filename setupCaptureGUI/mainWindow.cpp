@@ -665,6 +665,7 @@ void MainWindow::captureVideo(){
 
     if(!(ptr = popen(audioSet.c_str(), "r"))){
     }
+    //Runs pactl/grep command
     while(fgets(buff, sizeof(buff), ptr)!=NULL){
         outFileName += buff;
         audioCamNum = outFileName;
@@ -698,7 +699,7 @@ void MainWindow::captureVideo(){
             */
 
 
-            //call ffmpeg directly
+
             if(reverseChecks[i]->isChecked()==1){
                 //if camera is upside down then flip video in capture
 //                vidCaptureString = "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
@@ -708,10 +709,9 @@ void MainWindow::captureVideo(){
 //                        " ! voaacenc ! queue ! aacparse ! queue ! mux.audio_0"+
 //                        " mp4mux name=mux ! filesink location="+processLocation+"/videoLarge.mp4";
                 //For flipped video. Actually works
-                //vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s +" ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! videoflip method=vertical-flip ! x264enc tune=zerolatency ! h264parse ! mux.video_0 pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 ! audio/x-raw, rate=32000, channels=2 ! queue ! voaacenc ! aacparse ! mux.audio_0 mp4mux name=mux ! filesink location=" + processLocation + "/lecture.mp4";
                 vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! videoflip method=vertical-flip ! x264enc tune=zerolatency bitrate=512 ! h264parse ! mux.video_0 pulsesrc device=" + audioCamNum + " volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux.audio_0 mp4mux name=mux ! filesink location=" + processLocation + "/lecture.mp4";
             } else {
-                //set normal capture for right side up video
+
 //                vidCaptureString =  "gst-launch-1.0 -e v4l2src device=/dev/video"+s+
 //                        " ! video/x-h264,width=320, height=240, framerate=24/1 ! h264parse ! tee name=myvid"+
 //                        " myvid. ! queue ! mux.video_0"+
@@ -723,7 +723,7 @@ void MainWindow::captureVideo(){
 //                vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video" + s +" ! video/x-h264, width=320, height=240, framerate=24/1 ! h264parse ! queue ! mux. pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 "
 //                        + " ! audio/x-raw, rate=32000, channels=2, depth=16 ! voaacenc ! aacparse ! queue ! mux. mp4mux name=mux ! filesink location="+ processLocation +"/lecture.mp4";
              //   vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video"+ s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=512 ! video/x-h264, profile=constrained-baseline ! h264parse ! mux. pulsesrc device=alsa_input.usb-046d_HD_Pro_Webcam_C920_318C23BF-02.analog-stereo volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux. mp4mux name=mux ! filesink location=" + processLocation + "/test.mp4";
-
+                 //set normal capture for right side up video
                 vidCaptureString = "gst-launch-1.0 v4l2src -e device=/dev/video"+ s + " ! video/x-raw, width=320, height=240, framerate=24/1 ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=512 ! video/x-h264, profile=constrained-baseline ! h264parse ! mux. pulsesrc device=" + audioCamNum + " volume=8 ! audio/x-raw, rate=32000, channels=2, depth=16 ! queue ! voaacenc ! aacparse ! mux. mp4mux name=mux ! filesink location=" + processLocation + "/lecture.mp4";
 
 
@@ -735,7 +735,9 @@ void MainWindow::captureVideo(){
                 //ORIGINAL CODE <<<<<<<<<<<<<<<<<<<<<<<<
             }
            // qDebug("--------------%s",vidCaptureString.c_str());
+            //Sets location for log
             ffmpegProcess->setStandardErrorFile(QString::fromStdString(processLocation + "/logs/ffmpeg.log"));
+            //Runs process for vidcapture command
             ffmpegProcess->start(vidCaptureString.c_str());
         }
     }

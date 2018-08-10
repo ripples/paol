@@ -277,6 +277,7 @@ void CommandLineThread::createThreadsFromConfigs() {
     qDebug() << audioCommand.c_str() << "audioCommand\n";
     qDebug() << cameraAudio.c_str() << "cameraAudio\n";
 
+    //Runs audio command
     if ((ptr = popen(cameraAudio.c_str(), "r")) != NULL){
             while(fgets(buf, bufSize, ptr)){
                 audioNumStr = std::string(buf);
@@ -295,9 +296,11 @@ void CommandLineThread::createThreadsFromConfigs() {
     string tempIec = "iec958";
 
     //string allDev = "pactl list short sources | cut -f2 | grep alsa_input.usb >> dev.txt";
+    //Command to get the device capturing audio
     string setDev = "pacmd set-card-profile alsa_card." + audioNumStr + " input:analog-stereo";
     string setDevOut;
 
+    //Runs command to get device recording audio
     if ((pointer = popen(setDev.c_str(), "r")) != NULL){
             while(fgets(buffer, bufSize, pointer)){
                 setDevOut += buffer;
@@ -386,7 +389,7 @@ void CommandLineThread::createThreadsFromConfigs() {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    //new method of calling ffmpeg directly from the code without a script
+    //Uses g-streamer to capture video
     if(flipVideo){
         //if camera is upside down then flip video in capture
 //        ffmpegCommand = "gst-launch-1.0 -e v4l2src device=/dev/video"+videoDeviceNumStr+
